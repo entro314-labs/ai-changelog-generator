@@ -113,6 +113,9 @@
   },
   "homepage": "https://github.com/entro314-labs/AI-changelog-generatorp#readme",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
   },
   "funding": {
