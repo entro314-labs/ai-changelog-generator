@@ -581,7 +581,7 @@ export class ChangelogService {
     // Generate AI-style description
     const description = this.generateChangeDescription(change);
     
-    // Calculate confidence score (placeholder for now)
+    // Calculate confidence score based on change analysis
     const confidence = this.calculateChangeConfidence(change);
     
     // Format like commit entry
@@ -1260,7 +1260,7 @@ export class ChangelogService {
     if (path) {
       if (path.includes('setup') && functionalChanges.length === 0) {
         if (removedContent.includes('test') && addedContent.includes('validate')) {
-          functionalChanges.push('migrated testing from setup script to main validation system');
+          functionalChanges.push('replaced test functions with validation system');
         }
       }
       

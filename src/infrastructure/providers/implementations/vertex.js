@@ -330,7 +330,7 @@ class VertexAIProvider extends BaseProvider {
     }
     
     // For regular URLs, we'd need to fetch the image and convert to base64
-    // This is a placeholder - in a real implementation, you'd fetch the image
+    // Remote image fetching requires additional implementation
     throw new Error('Remote image fetching not implemented');
   }
 

@@ -24,7 +24,7 @@ import {
   getAllHubProviders
 } from './model-config.js';
 
-// Helper functions that need to be implemented locally
+// Provider utility functions
 function isHubProvider(providerName) {
   const config = MODEL_CONFIGS[providerName];
   return config && config.isHub === true;

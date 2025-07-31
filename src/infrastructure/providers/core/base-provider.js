@@ -1,8 +1,6 @@
 /**
  * Abstract Base Provider for AI models.
  * Defines the interface that all provider plugins must implement.
- * 
- * Migrated from /lib/providers/base-provider.js to new /src architecture
  */
 import { AbstractMethodError } from '../../../shared/utils/consolidated-utils.js';
 

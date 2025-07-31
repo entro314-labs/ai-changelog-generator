@@ -1,7 +1,7 @@
 /**
  * Comprehensive JSON Operations Utility
  * Provides advanced JSON parsing, stringification, and error handling capabilities
- * Based on the original lib-old/utils/json-utils.js with enhancements
+ * Handles JSON parsing, validation, and error recovery with detailed diagnostics
  */
 
 export class JsonUtils {

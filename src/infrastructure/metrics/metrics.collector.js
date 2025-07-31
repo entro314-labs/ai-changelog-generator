@@ -5,7 +5,6 @@ import { formatDuration } from '../../shared/utils/consolidated-utils.js';
  * Metrics Collector Service
  * 
  * Centralized metrics collection and reporting
- * Extracted from scattered metrics tracking in main class
  */
 export class MetricsCollector {
   constructor() {

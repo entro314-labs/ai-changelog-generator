@@ -1,7 +1,7 @@
 /**
  * CLI Entry Point Utilities
  * Provides process error handlers, startup tips, and common CLI patterns
- * Based on the original lib-old/utils/cli-entry-utils.js with enhancements
+ * Provides CLI error handling, validation, and user interface utilities
  */
 
 import fs from 'fs';
@@ -408,7 +408,7 @@ export function validateGitRepository(pathToCheck = process.cwd(), options = {})
     const result = { valid: true, path: pathToCheck };
     
     if (checkCommits) {
-      // This would require git command execution - simplified for now
+      // Git validation requires command execution
       result.hasCommits = true; // Assume true for basic validation
     }
     

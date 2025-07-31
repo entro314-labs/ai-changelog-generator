@@ -4,17 +4,16 @@ import { ApplicationService } from './application/services/application.service.j
 import colors from './shared/constants/colors.js';
 
 /**
- * Refactored AI Changelog Generator - Main Facade Class
+ * AI Changelog Generator - Main Facade Class
  * 
- * This class has been refactored from a 3,376-line monolith into a clean facade
- * that delegates to domain services through the ApplicationService layer.
+ * Provides the primary interface for changelog generation functionality
+ * by delegating to domain services through the ApplicationService layer.
  * 
- * Original size: 3,376 lines with 50+ methods
- * Refactored size: ~150 lines with 8 main methods
- * 
- * Complexity reduction: 97%
- * Maintainability: Excellent
- * Testability: High
+ * Features:
+ * - Automatic changelog generation from git commits
+ * - Working directory change analysis
+ * - Multiple AI provider support
+ * - Interactive and batch modes
  */
 export class AIChangelogGenerator {
   constructor(options = {}) {
@@ -28,7 +27,7 @@ export class AIChangelogGenerator {
     this.silent = options.silent || false;
     
     if (!this.silent) {
-      console.log(colors.successMessage('🚀 AI Changelog Generator initialized (refactored architecture)'));
+      console.log(colors.successMessage('🚀 AI Changelog Generator initialized'));
     }
   }
 

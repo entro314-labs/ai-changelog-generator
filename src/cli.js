@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * CLI Entry Point for Refactored AI Changelog Generator
- * This provides backward compatible CLI functionality using the new architecture
+ * CLI Entry Point for AI Changelog Generator
+ * Provides command-line interface for changelog generation functionality
  */
 
 import yargs from 'yargs/yargs';

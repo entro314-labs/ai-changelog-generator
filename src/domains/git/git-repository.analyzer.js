@@ -4,11 +4,12 @@ import colors from '../../shared/constants/colors.js';
 /**
  * Git Repository Analyzer
  * 
- * Extracts the missing critical analysis methods from main class:
- * - analyzeBranches() (132 lines) - Branch analysis functionality
- * - analyzeComprehensive() (141 lines) - Comprehensive repository analysis  
- * - analyzeUntrackedFiles() (132 lines) - Untracked files analysis
- * - assessRepositoryHealth() (200+ lines) - Repository health assessment
+ * Repository analysis and branch management functionality
+ * Provides comprehensive git repository analysis including:
+ * - Branch analysis and comparison
+ * - Untracked files detection and categorization  
+ * - Repository health assessment
+ * - Code quality and structure analysis
  */
 export class GitRepositoryAnalyzer {
   constructor(gitManager, aiAnalysisService) {

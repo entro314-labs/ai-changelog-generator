@@ -5,10 +5,6 @@ import colors from '../../shared/constants/colors.js';
  * Workspace Changelog Service
  * 
  * Handles changelog generation from working directory changes
- * Extracted from main AIChangelogGenerator class methods:
- * - generateComprehensiveWorkspaceChangelog() (120→30 lines)
- * - generateAIChangelogContentFromChanges() (80→20 lines)
- * - generateBasicChangelogContentFromChanges() (40→10 lines)
  */
 export class WorkspaceChangelogService {
   constructor(aiAnalysisService, gitService = null) {
@@ -63,7 +59,7 @@ export class WorkspaceChangelogService {
     }
 
     try {
-      // Build comprehensive prompt with ALL change details - inspired by old implementation
+      // Build comprehensive prompt with ALL change details
       const prompt = `Generate a comprehensive AI changelog for the following working directory changes:
 
 **Analysis Mode**: ${analysisMode}
@@ -106,7 +102,7 @@ EXAMPLES of FORBIDDEN ASSUMPTIONS:
 
 ONLY describe what you can literally see in the diff content. Do not invent connections or integrations.`;
 
-      // Make ONE AI call with all the context (like the old implementation)
+      // Make AI call with all the context
       const messages = [
         {
           role: "system", 
@@ -344,7 +340,7 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
   // Integration with main changelog service
   async generateCommitStyleWorkingDirectoryEntries(options = {}) {
     try {
-      // Use passed working directory analysis if available, otherwise get current changes
+      // Use provided working directory analysis or get current changes
       let rawChanges;
       if (options.workingDirAnalysis && options.workingDirAnalysis.changes) {
         rawChanges = options.workingDirAnalysis.changes;

@@ -1,14 +1,12 @@
 /**
  * Consolidated Utility Functions
  * 
- * This file consolidates overlapping functions from multiple utility files:
- * - data-utils.js: convertSetsToArrays, extractCommitScope
- * - format-utils.js: formatDuration, getHealthColor 
- * - json-utils.js: JSON operations (basic - see json-utils.js for advanced)
- * - text-utils.js: text processing functions
- * - file-utils.js: file categorization and analysis
- * 
- * Eliminates duplication across 7,359 lines of utility code
+ * Provides comprehensive utility functions for AI changelog generation:
+ * - Data manipulation and conversion utilities
+ * - Format and presentation utilities
+ * - File analysis and categorization
+ * - Text processing and analysis
+ * - Commit analysis and changelog generation
  * 
  * For advanced JSON operations with error detection, use JsonUtils from './json-utils.js'
  * For specialized error handling, use error classes from './error-classes.js'
@@ -76,7 +74,6 @@ export class ProviderError extends AIChangelogError {
 
 /**
  * Convert Sets to Arrays for JSON serialization
- * Previously duplicated in data-utils.js and analysis-utils.js
  */
 export function convertSetsToArrays(obj) {
   if (obj === null || typeof obj !== 'object') {
@@ -101,7 +98,6 @@ export function convertSetsToArrays(obj) {
 /**
  * Enhanced conventional commit parsing
  * Based on git-conventional-commits patterns with breaking change detection
- * Previously in data-utils.js, now enhanced with full conventional commit support
  */
 export function extractCommitScope(message) {
   // Enhanced regex to match conventional commits format: type(scope)!: description
@@ -131,7 +127,6 @@ export function extractCommitScope(message) {
 
 /**
  * Parse conventional commit message with full body analysis
- * Adapted from git-conventional-commits/lib/gitCommitConvention.js
  */
 export function parseConventionalCommit(subject, body = '') {
   const parsed = extractCommitScope(subject);
@@ -183,7 +178,6 @@ export function parseConventionalCommit(subject, body = '') {
 
 /**
  * Generate markdown link for commit hash
- * Adapted from git-conventional-commits/lib/changelogGenerator.js
  */
 export function markdownCommitLink(commitHash, commitUrl, shortHash = true) {
   if (!commitUrl) {
@@ -235,7 +229,6 @@ export function processIssueReferences(text, issueUrl, issueRegex) {
 
 /**
  * Deep merge objects
- * Previously scattered across multiple files
  */
 export function deepMerge(target, source) {
   const result = { ...target };
@@ -257,7 +250,6 @@ export function deepMerge(target, source) {
 
 /**
  * Format duration in human-readable format
- * Previously in format-utils.js
  */
 export function formatDuration(ms) {
   if (ms < 1000) return `${ms}ms`;
@@ -268,7 +260,6 @@ export function formatDuration(ms) {
 
 /**
  * Interactive configuration prompt (simplified)
- * Originally from interactive-config.js
  */
 export function promptForConfig(message = 'Configure settings', defaultValue = '') {
   console.log(colors.infoMessage(message));
@@ -277,7 +268,6 @@ export function promptForConfig(message = 'Configure settings', defaultValue = '
 
 /**
  * Get health status color
- * Previously in format-utils.js
  */
 export function getHealthColor(status) {
   const colorMap = {
@@ -315,7 +305,6 @@ export function formatPercentage(value, total) {
 
 /**
  * Categorize file by path and extension
- * Previously in file-utils.js
  */
 export function categorizeFile(filePath) {
   if (!filePath || typeof filePath !== 'string') {
@@ -380,7 +369,6 @@ export function categorizeFile(filePath) {
 
 /**
  * Detect programming language from file extension
- * Previously in file-utils.js
  */
 export function detectLanguage(filePath) {
   if (!filePath || typeof filePath !== 'string') {
@@ -425,7 +413,6 @@ export function detectLanguage(filePath) {
 
 /**
  * Assess file importance based on path and type
- * Previously in file-utils.js
  */
 export function assessFileImportance(filePath, status) {
   if (!filePath || typeof filePath !== 'string') {
@@ -478,7 +465,6 @@ export function assessFileImportance(filePath, status) {
 
 /**
  * Assess overall complexity of changes
- * Previously in text-utils.js
  */
 export function assessOverallComplexity(diffContent, fileCount) {
   const lines = diffContent.split('\n');
@@ -519,7 +505,6 @@ export function assessOverallComplexity(diffContent, fileCount) {
 
 /**
  * Assess risk level of changes
- * Previously in text-utils.js
  */
 export function assessRisk(diffContent, fileCount, commitMessage) {
   let risk = 'low';
@@ -571,7 +556,6 @@ export function assessRisk(diffContent, fileCount, commitMessage) {
 
 /**
  * Check if changes are breaking
- * Previously in text-utils.js
  */
 export function isBreakingChange(commitMessage, diffContent) {
   if (!commitMessage || typeof commitMessage !== 'string') {
@@ -597,7 +581,6 @@ export function isBreakingChange(commitMessage, diffContent) {
 
 /**
  * Assess business relevance of changes
- * Previously in text-utils.js
  */
 export function assessBusinessRelevance(commitMessage, filePaths) {
   if (!commitMessage || typeof commitMessage !== 'string') {
@@ -636,7 +619,6 @@ export function assessBusinessRelevance(commitMessage, filePaths) {
 
 /**
  * Safe JSON parse with fallback
- * Previously in json-utils.js
  */
 export function safeJsonParse(jsonString, fallback = null) {
   // Use the advanced JsonUtils for better error handling
@@ -645,7 +627,6 @@ export function safeJsonParse(jsonString, fallback = null) {
 
 /**
  * Safe JSON stringify with formatting
- * Previously in json-utils.js
  */
 export function safeJsonStringify(obj, indent = 2) {
   try {
@@ -718,12 +699,11 @@ export function throttle(func, limit) {
 }
 
 // ========================================
-// ANALYSIS UTILITIES (Missing from refactor)
+// ANALYSIS UTILITIES
 // ========================================
 
 /**
  * Analyze semantic changes in code diffs
- * Previously missing from analysis-utils.js migration
  */
 export function analyzeSemanticChanges(diff, filePath) {
   const analysis = {
@@ -821,7 +801,6 @@ export function analyzeSemanticChanges(diff, filePath) {
 
 /**
  * Analyze functional impact of code changes
- * Previously missing from analysis-utils.js migration
  */
 export function analyzeFunctionalImpact(diff, filePath, status) {
   const impact = {
@@ -907,7 +886,6 @@ export function analyzeFunctionalImpact(diff, filePath, status) {
 
 /**
  * Generate analysis summary from semantic and functional analysis
- * Previously missing from analysis-utils.js migration
  */
 export function generateAnalysisSummary(semanticAnalysis, functionalImpact) {
   const summary = {
@@ -965,7 +943,6 @@ export function generateAnalysisSummary(semanticAnalysis, functionalImpact) {
 
 /**
  * Perform semantic analysis on files and commit message
- * Previously missing from analysis-utils.js migration
  */
 export function performSemanticAnalysis(files, subject, body) {
   const conventionalCommit = parseConventionalCommit(subject, body);
@@ -1021,12 +998,11 @@ export function performSemanticAnalysis(files, subject, body) {
 }
 
 // ========================================
-// AI UTILITIES (Missing from refactor)
+// AI UTILITIES
 // ========================================
 
 /**
  * Build enhanced prompt for AI analysis
- * Previously missing from ai-utils.js migration
  */
 export function buildEnhancedPrompt(commitAnalysis, analysisMode = 'standard') {
   const { subject, files = [], semanticAnalysis = {}, diffStats = {}, complexity = {}, riskAssessment = {} } = commitAnalysis;
@@ -1269,7 +1245,6 @@ export function validateImpactAssessment(impact, commitAnalysis) {
 
 /**
  * Parse AI response content
- * Previously missing from ai-utils.js migration
  */
 export function parseAIResponse(content, originalCommit = {}) {
   if (!content) {
@@ -1371,12 +1346,11 @@ function extractCategoryFromText(content) {
 }
 
 // ========================================
-// CHANGELOG UTILITIES (Missing from refactor)
+// CHANGELOG UTILITIES
 // ========================================
 
 /**
  * Process working directory changes for changelog generation
- * Previously missing from changelog-utils.js migration
  */
 /**
  * Get raw working directory changes from git status
@@ -1484,7 +1458,6 @@ export function processWorkingDirectoryChanges(workingDirChanges, gitManager = n
 
 /**
  * Summarize file changes for changelog
- * Previously missing from changelog-utils.js migration
  */
 export function summarizeFileChanges(changes) {
   if (!changes || changes.length === 0) {
@@ -1558,7 +1531,6 @@ export function summarizeFileChanges(changes) {
 
 /**
  * Build commit changelog from analyzed commits
- * Previously missing from changelog-utils.js migration
  */
 export function buildCommitChangelog(analyzedCommits, releaseInsights, version, options = {}) {
   const { metrics, includeAttribution = true } = options;
@@ -1719,12 +1691,11 @@ function assessWorkspaceComplexity(categorizedChanges, totalFiles) {
 }
 
 // ========================================
-// CLI OUTPUT UTILITIES (Missing from refactor)
+// CLI OUTPUT UTILITIES
 // ========================================
 
 /**
  * Handle unified output for analysis commands
- * Previously in cli-utils.js
  */
 export function handleUnifiedOutput(data, config) {
   const { format = 'markdown', outputFile, silent } = config;
@@ -1780,12 +1751,11 @@ export function outputData(data, format = 'markdown') {
 }
 
 // ========================================
-// INTERACTIVE UTILITIES (Missing from refactor)
+// INTERACTIVE UTILITIES
 // ========================================
 
 /**
  * Run interactive mode with full menu system
- * Previously missing from interactive-utils.js migration
  */
 export async function runInteractiveMode() {
   const { select, intro } = await import('@clack/prompts');
@@ -1813,7 +1783,6 @@ export async function runInteractiveMode() {
 
 /**
  * Analyze changes for commit message with detailed analysis
- * Previously missing from interactive-utils.js migration
  */
 export function analyzeChangesForCommitMessage(changes, includeScope = false) {
   if (!changes || !Array.isArray(changes) || changes.length === 0) {
@@ -1933,7 +1902,6 @@ export function analyzeChangesForCommitMessage(changes, includeScope = false) {
 
 /**
  * Select specific commits with interactive interface
- * Previously missing from interactive-utils.js migration  
  */
 export async function selectSpecificCommits(maxCommits = 20) {
   const { multiselect, note } = await import('@clack/prompts');
@@ -1993,12 +1961,11 @@ export async function selectSpecificCommits(maxCommits = 20) {
 }
 
 // ========================================
-// MISSING FUNCTIONS FROM FILE-UTILS
+// FILE UTILITIES (EXTENDED)
 // ========================================
 
 /**
  * Assess change complexity based on diff output
- * Previously from file-utils.js
  */
 export function assessChangeComplexity(diff) {
   if (!diff || diff === 'Binary file or diff unavailable') return { score: 1 };
@@ -2024,7 +1991,7 @@ export function assessChangeComplexity(diff) {
 }
 
 // ========================================
-// MISSING FUNCTIONS FROM CHANGELOG-UTILS  
+// CHANGELOG UTILITIES (EXTENDED)
 // ========================================
 
-// processWorkingDirectoryChanges already exists above at line 1080
+// Additional changelog utility functions

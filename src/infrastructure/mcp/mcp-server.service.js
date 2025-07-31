@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * AI Changelog Generator MCP Server (Refactored Architecture)
- * Uses the new domain services for clean separation of concerns
+ * AI Changelog Generator MCP Server
+ * Provides Model Context Protocol interface for changelog generation
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-// Import refactored services
+// Import application services
 import { ApplicationService } from '../../application/services/application.service.js';
 import { ChangelogOrchestrator } from '../../application/orchestrators/changelog.orchestrator.js';
 import { GitRepositoryAnalyzer } from '../../domains/git/git-repository.analyzer.js';

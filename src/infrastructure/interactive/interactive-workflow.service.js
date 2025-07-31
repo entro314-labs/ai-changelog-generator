@@ -4,14 +4,12 @@ import colors from '../../shared/constants/colors.js';
 /**
  * Interactive Workflow Service
  * 
- * Extracts the missing interactive and utility methods from main class:
- * - runInteractiveMode() (4 lines) - Interactive mode entry point
- * - validateCommitMessage() (43 lines) - Commit message validation
- * - generateCommitSuggestion() (34 lines) - Commit message suggestions
- * - analyzeChangesForCommitMessage() (6 lines) - Changes analysis for commit
- * - selectSpecificCommits() (4 lines) - Commit selection interface
- * - generateChangelogForRecentCommits() (19 lines) - Recent commits changelog
- * - generateChangelogForCommits() (66 lines) - Specific commits changelog
+ * Interactive workflow management and commit message utilities
+ * Provides user interaction features including:
+ * - Interactive mode for guided changelog generation
+ * - Commit message validation and suggestions
+ * - Commit selection interfaces
+ * - Change analysis for commit message generation
  */
 export class InteractiveWorkflowService {
   constructor(gitService, aiAnalysisService, changelogService) {

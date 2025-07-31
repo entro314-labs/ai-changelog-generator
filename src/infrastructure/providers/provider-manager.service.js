@@ -16,10 +16,9 @@ import { OpenAIProvider } from './implementations/openai.js';
 import VertexAIProvider from './implementations/vertex.js';
 
 /**
- * Migrated ProviderManager Service
+ * ProviderManager Service
  * 
  * Manages AI provider loading, selection, and fallback logic
- * Originally from /lib/provider-manager.js
  */
 export class ProviderManagerService {
   constructor(config = {}, options = {}) {

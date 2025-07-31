@@ -15,7 +15,7 @@ class LMStudioProvider extends BaseProvider {
   initializeClient() {
     const clientOptions = buildClientOptions(this.getProviderConfig(), {
       baseURL: 'http://localhost:1234/v1',
-      apiKey: 'lm-studio', // Placeholder, not required by LM Studio
+      apiKey: 'lm-studio', // Not required by LM Studio
       timeout: 120000,
       maxRetries: 2
     });
