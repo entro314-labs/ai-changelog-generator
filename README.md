@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/@entro314labs/ai-github-changelog-generator-cli-mcp)
+[![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/@entro314labs/ai-changelog-generator)
 [![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/entro314-labs/AI-changelog-generator)
 [![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -13,7 +13,7 @@
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/bedrock/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/npm/v/@entro314labs/ai-github-changelog-generator-cli-mcp?style=for-the-badge&color=brightgreen)](https://www.npmjs.com/package/@entro314labs/ai-github-changelog-generator-cli-mcp)
+[![Version](https://img.shields.io/npm/v/@entro314labs/ai-changelog-generator?style=for-the-badge&color=brightgreen)](https://www.npmjs.com/package/@entro314labs/ai-changelog-generator)
 
 </div>
 
@@ -95,14 +95,20 @@ Model Context Protocol server for Claude Desktop and other MCP-compatible tools
 
 ```bash
 # Install globally
-npm install -g @entro314labs/ai-github-changelog-generator-cli-mcp
+npm install -g @entro314labs/ai-changelog-generator
 
 # Or use directly with npx
-npx @entro314labs/ai-github-changelog-generator-cli-mcp init
+npx @entro314labs/ai-changelog-generator init
+
+# Or clone and run from source
+git clone https://github.com/entro314-labs/AI-changelog-generator.git
+cd AI-changelog-generator
+npm install
 ```
 
 ### Basic Usage
 
+#### Using installed package:
 ```bash
 # Generate changelog from recent commits
 ai-changelog
@@ -113,9 +119,32 @@ ai-changelog --interactive
 # Analyze working directory changes
 ai-changelog working-dir
 
+# Start MCP server
+ai-changelog-mcp
+
 # Get help
 ai-changelog --help
 ```
+
+#### Using bash wrappers (from source):
+```bash
+# Generate changelog from recent commits
+./ai-changelog.sh
+
+# Interactive mode with guided setup  
+./ai-changelog.sh --interactive
+
+# Analyze working directory changes
+./ai-changelog.sh working-dir
+
+# Start MCP server
+./ai-changelog-mcp.sh
+
+# Get help
+./ai-changelog.sh --help
+```
+
+> **💡 Bash Wrappers**: The `.sh` scripts automatically validate your Node.js environment, install dependencies if needed, and provide helpful error messages. Perfect for development, CI/CD, and direct execution from source.
 
 That's it! Your AI-powered changelog is ready to generate.
 
@@ -359,6 +388,6 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 **Made with ❤️ by entro314labs**
 
-[GitHub](https://github.com/entro314-labs) • [NPM Package](https://www.npmjs.com/package/@entro314labs/ai-github-changelog-generator-cli-mcp) • [Issues](https://github.com/entro314-labs/AI-changelog-generator/issues) • [Discussions](https://github.com/entro314-labs/AI-changelog-generator/discussions)
+[GitHub](https://github.com/entro314-labs) • [NPM Package](https://www.npmjs.com/package/@entro314labs/ai-changelog-generator) • [Issues](https://github.com/entro314-labs/AI-changelog-generator/issues) • [Discussions](https://github.com/entro314-labs/AI-changelog-generator/discussions)
 
 </div>

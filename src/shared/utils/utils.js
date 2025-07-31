@@ -1650,7 +1650,7 @@ export function buildCommitChangelog(analyzedCommits, releaseInsights, version, 
 
   // Add attribution footer
   if (includeAttribution !== false) {
-    changelog += `---\n\n*Generated using [ai-github-changelog-generator-cli-mcp](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*\n`;
+    changelog += `---\n\n*Generated using [ai-changelog-generator](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*\n`;
   }
 
   return changelog;

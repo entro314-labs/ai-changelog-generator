@@ -250,7 +250,7 @@ This major release transforms the tool into a universal AI changelog generator s
 
 **Recommended Migration Steps**
 1. Update to Node.js 22+ if needed
-2. Install v3.0.0: `npm install -g ai-github-changelog-generator-cli-mcp@3.0.0`
+2. Install v3.0.0: `npm install -g ai-changelog-generator@3.0.0`
 3. Test existing configuration: `ai-changelog --validate`
 4. Optionally add new provider API keys for expanded capabilities
 5. Explore new providers: `ai-changelog configure`
@@ -430,7 +430,7 @@ This release significantly improves the tool's reliability and usefulness by:
 
 ### Added
 - **Attribution Footer**: Added optional attribution footer to generated changelogs
-  - Displays link to the project: "Generated using [ai-github-changelog-generator-cli-mcp](https://github.com/entro314-labs/AI-changelog-generator)"
+  - Displays link to the project: "Generated using [ai-changelog-generator](https://github.com/entro314-labs/AI-changelog-generator)"
   - Enabled by default for promotional purposes while respecting user preferences
   - CLI flag `--no-attribution` to disable attribution footer
   - MCP parameter `includeAttribution: false` to disable attribution in MCP server
@@ -798,4 +798,4 @@ This release significantly improves the tool's reliability and usefulness by:
 
 ---
 
-*Generated using [ai-github-changelog-generator-cli-mcp](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*
+*Generated using [ai-changelog-generator](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*

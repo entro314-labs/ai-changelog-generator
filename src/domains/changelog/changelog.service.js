@@ -293,7 +293,7 @@ export class ChangelogService {
 
     // Attribution footer
     changelog += `---\n\n`;
-    changelog += `*Generated using [ai-github-changelog-generator-cli-mcp](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*\n`;
+    changelog += `*Generated using [ai-changelog-generator](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*\n`;
 
     return changelog;
   }
