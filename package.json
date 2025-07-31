@@ -116,7 +116,6 @@
   "homepage": "https://github.com/entro314-labs/AI-changelog-generatorp#readme",
   "license": "MIT",
   "engines": {
-    "node": "22.15.30"
   },
   "funding": {
     "type": "github",
@@ -130,10 +129,5 @@
   "volta": {
     "node": "22.15.30",
     "npm": "11.4.1"
-  },
-  "pnpm": {
-    "overrides": {
-      //"@types/node": "22.15.30"
-    }
   }
 }

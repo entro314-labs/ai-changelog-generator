@@ -1,4 +1,4 @@
-import { buildCommitChangelog, summarizeFileChanges, processWorkingDirectoryChanges, formatDuration, sleep, handleUnifiedOutput, parseConventionalCommit, markdownCommitLink, markdownCommitRangeLink, processIssueReferences } from '../../shared/utils/consolidated-utils.js';
+import { buildCommitChangelog, summarizeFileChanges, processWorkingDirectoryChanges, formatDuration, sleep, handleUnifiedOutput, parseConventionalCommit, markdownCommitLink, markdownCommitRangeLink, processIssueReferences } from '../../shared/utils/utils.js';
 import colors from '../../shared/constants/colors.js';
 import path from 'path';
 import { WorkspaceChangelogService } from './workspace-changelog.service.js';

@@ -1,9 +1,9 @@
-import { runInteractiveMode, analyzeChangesForCommitMessage, selectSpecificCommits } from '../../shared/utils/consolidated-utils.js';
+import { runInteractiveMode, analyzeChangesForCommitMessage, selectSpecificCommits } from '../../shared/utils/utils.js';
 import colors from '../../shared/constants/colors.js';
 
 /**
  * Interactive Workflow Service
- * 
+ *
  * Interactive workflow management and commit message utilities
  * Provides user interaction features including:
  * - Interactive mode for guided changelog generation
@@ -58,7 +58,7 @@ export class InteractiveWorkflowService {
     // Check for imperative mood
     const imperativeWords = ['add', 'fix', 'update', 'remove', 'create', 'implement', 'refactor'];
     const firstWord = firstLine.split(' ')[0].toLowerCase().replace(/[^a-z]/g, '');
-    
+
     if (!imperativeWords.some(word => firstWord.startsWith(word))) {
       suggestions.push('Use imperative mood (e.g., "Add feature" not "Added feature")');
     }
@@ -81,10 +81,10 @@ export class InteractiveWorkflowService {
     try {
       // If no message provided, analyze current changes
       let analysisContext = '';
-      
+
       if (!message) {
         // Use the shared utility function for getting working directory changes
-        const { getWorkingDirectoryChanges } = await import('../../shared/utils/consolidated-utils.js');
+        const { getWorkingDirectoryChanges } = await import('../../shared/utils/utils.js');
         const changes = getWorkingDirectoryChanges();
         if (changes && changes.length > 0) {
           analysisContext = this.analyzeChangesForCommitMessage(changes, true);
@@ -93,7 +93,7 @@ export class InteractiveWorkflowService {
 
       // Use AI to suggest better commit message
       if (this.aiAnalysisService.hasAI) {
-        const prompt = message 
+        const prompt = message
           ? `Improve this commit message following conventional commit format and best practices:
 
 Original: "${message}"
@@ -153,7 +153,7 @@ Provide 3 suggestions.`;
     const fileCount = changes.length;
 
     let summary = `${fileCount} file${fileCount === 1 ? '' : 's'} changed`;
-    
+
     if (primaryCategory) {
       summary += ` in ${primaryCategory}`;
     }
@@ -288,7 +288,7 @@ Provide 3 suggestions.`;
       if (!categories[category]) categories[category] = [];
       categories[category].push(change);
     });
-    
+
     // Sort by count
     return Object.fromEntries(
       Object.entries(categories).sort(([,a], [,b]) => b.length - a.length)
@@ -299,9 +299,9 @@ Provide 3 suggestions.`;
     if (!filePath || typeof filePath !== 'string') {
       return 'other';
     }
-    
+
     const path = filePath.toLowerCase();
-    
+
     if (path.includes('/test/') || path.includes('.test.') || path.includes('.spec.')) {
       return 'tests';
     }
@@ -317,13 +317,13 @@ Provide 3 suggestions.`;
     if (path.includes('/style/') || path.endsWith('.css') || path.endsWith('.scss')) {
       return 'styles';
     }
-    
+
     return 'other';
   }
 
   extractScopes(changes) {
     const scopes = new Set();
-    
+
     changes.forEach(change => {
       const parts = change.path.split('/');
       if (parts.length > 1) {
@@ -334,7 +334,7 @@ Provide 3 suggestions.`;
         }
       }
     });
-    
+
     return Array.from(scopes).slice(0, 3); // Limit to 3 scopes
   }
 
@@ -342,7 +342,7 @@ Provide 3 suggestions.`;
     // Parse AI response to extract suggestions
     const lines = content.split('\n').filter(line => line.trim());
     const suggestions = [];
-    
+
     lines.forEach(line => {
       // Remove numbering and clean up
       const cleaned = line.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').trim();
@@ -350,32 +350,32 @@ Provide 3 suggestions.`;
         suggestions.push(cleaned);
       }
     });
-    
+
     return suggestions.length > 0 ? suggestions : [content.trim()];
   }
 
   generateRuleBasedCommitSuggestion(message, context) {
     const suggestions = [];
-    
+
     if (message) {
       // Improve existing message
       const improved = this.improveCommitMessage(message);
       suggestions.push(improved);
     }
-    
+
     if (context) {
       // Generate from context
       const fromContext = this.generateFromContext(context);
       suggestions.push(fromContext);
     }
-    
+
     // Add generic suggestions
     suggestions.push(
       'feat: add new functionality',
       'fix: resolve issue with component',
       'docs: update documentation'
     );
-    
+
     return {
       success: true,
       suggestions: suggestions.slice(0, 3),
@@ -386,16 +386,16 @@ Provide 3 suggestions.`;
   improveCommitMessage(message) {
     // Basic improvements
     let improved = message.trim();
-    
+
     // Add conventional commit prefix if missing
     if (!/^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)/.test(improved)) {
       improved = `feat: ${improved}`;
     }
-    
+
     // Ensure imperative mood
     improved = improved.replace(/^(\w+)ed\s/, '$1 ');
     improved = improved.replace(/^(\w+)s\s/, '$1 ');
-    
+
     return improved;
   }
 
@@ -403,7 +403,7 @@ Provide 3 suggestions.`;
     if (!context || typeof context !== 'string') {
       return 'feat: implement changes';
     }
-    
+
     if (context.includes('test')) {
       return 'test: add test coverage';
     }
@@ -416,7 +416,7 @@ Provide 3 suggestions.`;
     if (context.includes('fix') || context.includes('bug')) {
       return 'fix: resolve issue';
     }
-    
+
     return 'feat: implement changes';
   }
 
@@ -425,18 +425,18 @@ Provide 3 suggestions.`;
     if (!results) return;
 
     console.log(colors.header('\n📊 Interactive Session Results:'));
-    
+
     if (results.changelog) {
       console.log(colors.subheader('Generated Changelog:'));
       console.log(results.changelog);
     }
-    
+
     if (results.insights) {
       console.log(colors.subheader('\n📈 Insights:'));
       console.log(`Total commits: ${colors.number(results.insights.totalCommits)}`);
       console.log(`Risk level: ${colors.highlight(results.insights.riskLevel)}`);
     }
-    
+
     if (results.analyzedCommits) {
       console.log(colors.subheader(`\n🔍 Processed ${colors.number(results.analyzedCommits.length)} commits`));
     }

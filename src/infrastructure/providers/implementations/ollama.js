@@ -1,6 +1,6 @@
 import { Ollama } from 'ollama';
 import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../../shared/utils/utils.js';
 import { applyMixins } from '../utils/base-provider-helpers.js';
 import { buildClientOptions } from '../utils/provider-utils.js';
 
@@ -17,7 +17,7 @@ class OllamaProvider extends BaseProvider {
     const clientOptions = buildClientOptions(this.getProviderConfig(), {
       host: 'http://localhost:11434'
     });
-    
+
     this.client = new Ollama({
       host: clientOptions.host
     });
@@ -34,7 +34,7 @@ class OllamaProvider extends BaseProvider {
   async generateCompletion(messages, options = {}) {
     if (!this.isAvailable()) {
       return this.handleProviderError(
-        new Error('Ollama provider is not configured'), 
+        new Error('Ollama provider is not configured'),
         'generate_completion'
       );
     }
@@ -100,7 +100,7 @@ class OllamaProvider extends BaseProvider {
     }
 
     const modelName = options.model || this.config.OLLAMA_EMBEDDING_MODEL || this.config.AI_MODEL_EMBEDDING || 'nomic-embed-text';
-    
+
     const response = await this.client.embeddings({
       model: modelName,
       prompt: text,
@@ -137,7 +137,7 @@ class OllamaProvider extends BaseProvider {
     if (!this.isAvailable()) {
       throw new ProviderError('Ollama provider is not configured', 'ollama', 'isAvailable');
     }
-    
+
     try {
       const pullStream = await this.client.pull({ model: modelName, stream: true });
       return { stream: pullStream, model: modelName };

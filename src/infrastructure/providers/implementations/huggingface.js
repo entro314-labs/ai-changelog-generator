@@ -6,7 +6,7 @@
 
 import { InferenceClient } from '@huggingface/inference';
 import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../../shared/utils/utils.js';
 import { applyMixins } from '../utils/base-provider-helpers.js';
 import { buildClientOptions } from '../utils/provider-utils.js';
 
@@ -14,7 +14,7 @@ class HuggingFaceProvider extends BaseProvider {
   constructor(config) {
     super(config);
     this.client = null;
-    
+
     if (this.isAvailable()) {
       this.initializeClient();
     }
@@ -24,7 +24,7 @@ class HuggingFaceProvider extends BaseProvider {
     const clientOptions = buildClientOptions(this.getProviderConfig(), {
       timeout: 60000
     });
-    
+
     this.client = new InferenceClient({
       token: clientOptions.apiKey,
       endpointUrl: clientOptions.endpointUrl,
@@ -43,7 +43,7 @@ class HuggingFaceProvider extends BaseProvider {
   async generateCompletion(messages, options = {}) {
     if (!this.isAvailable()) {
       return this.handleProviderError(
-        new Error('Hugging Face provider is not configured'), 
+        new Error('Hugging Face provider is not configured'),
         'generate_completion'
       );
     }
@@ -52,7 +52,7 @@ class HuggingFaceProvider extends BaseProvider {
       const modelConfig = this.getProviderModelConfig();
       const modelId = options.model || modelConfig.standardModel;
       const provider = options.provider || 'auto';
-      
+
       const params = {
         model: modelId,
         messages: this.formatMessages(messages),
@@ -61,7 +61,7 @@ class HuggingFaceProvider extends BaseProvider {
         top_p: options.top_p || 0.95,
         stream: false
       };
-      
+
       if (provider && provider !== 'auto') {
         params.provider = provider;
       }
@@ -73,10 +73,10 @@ class HuggingFaceProvider extends BaseProvider {
 
       if (options.stream && typeof options.onStreamData === 'function') {
         params.stream = true;
-        
+
         let fullContent = '';
         const stream = this.client.chatCompletionStream(params);
-        
+
         for await (const chunk of stream) {
           const chunkContent = chunk.choices[0]?.delta?.content || '';
           if (chunkContent) {
@@ -88,7 +88,7 @@ class HuggingFaceProvider extends BaseProvider {
               done: false
             });
           }
-          
+
           if (chunk.choices[0]?.finish_reason) {
             options.onStreamData({
               content: '',
@@ -99,7 +99,7 @@ class HuggingFaceProvider extends BaseProvider {
             break;
           }
         }
-        
+
         return {
           content: fullContent,
           model: modelId,
@@ -109,11 +109,11 @@ class HuggingFaceProvider extends BaseProvider {
       }
 
       const response = await this.client.chatCompletion(params);
-      
+
       const choice = response.choices[0];
       const content = choice.message.content;
-      
-      const toolCalls = choice.message.tool_calls ? 
+
+      const toolCalls = choice.message.tool_calls ?
         choice.message.tool_calls.map(call => ({
           id: call.id,
           type: call.type,
@@ -135,7 +135,7 @@ class HuggingFaceProvider extends BaseProvider {
         console.warn('Hugging Face rate limit hit, implementing backoff...');
         await this.sleep(2000);
       }
-      
+
       return this.handleProviderError(error, 'generate_completion', { model: options.model });
     }
   }

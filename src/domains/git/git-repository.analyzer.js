@@ -1,13 +1,13 @@
-import { handleUnifiedOutput, outputData } from '../../shared/utils/consolidated-utils.js';
+import { handleUnifiedOutput, outputData } from '../../shared/utils/utils.js';
 import colors from '../../shared/constants/colors.js';
 
 /**
  * Git Repository Analyzer
- * 
+ *
  * Repository analysis and branch management functionality
  * Provides comprehensive git repository analysis including:
  * - Branch analysis and comparison
- * - Untracked files detection and categorization  
+ * - Untracked files detection and categorization
  * - Repository health assessment
  * - Code quality and structure analysis
  */
@@ -167,7 +167,7 @@ export class GitRepositoryAnalyzer {
 
     try {
       const comprehensiveData = this.gitManager.getComprehensiveAnalysis();
-      
+
       if (!comprehensiveData) {
         const errorMsg = 'Failed to get comprehensive analysis';
         if (format === 'json') {
@@ -212,7 +212,7 @@ export class GitRepositoryAnalyzer {
 
       // Display comprehensive analysis
       console.log(colors.header('\n📊 Comprehensive Repository Analysis:'));
-      
+
       // Repository statistics
       console.log(colors.subheader('\n📈 Repository Statistics:'));
       console.log(`   ${colors.label('Total commits')}: ${colors.number(comprehensiveData.totalCommits || 0)}`);
@@ -279,7 +279,7 @@ export class GitRepositoryAnalyzer {
 
     try {
       const untrackedFiles = this.gitManager.getUntrackedFiles();
-      
+
       if (untrackedFiles.length === 0) {
         const message = 'No untracked files found';
         if (format === 'json') {
@@ -327,7 +327,7 @@ export class GitRepositoryAnalyzer {
 
       // Markdown format display
       console.log(colors.header('\n📄 Untracked Files Analysis:'));
-      
+
       Object.entries(categories).forEach(([category, files]) => {
         if (files.length > 0) {
           console.log(colors.subheader(`\n📁 ${category} (${colors.number(files.length)} files):`));
@@ -402,7 +402,7 @@ export class GitRepositoryAnalyzer {
 
       // Display health assessment
       console.log(colors.header('\n🏥 Repository Health Assessment:'));
-      
+
       // Overall score
       const gradeColor = this.getGradeColor(healthScore.grade);
       console.log(colors.subheader(`\n📊 Overall Health: ${gradeColor(healthScore.grade)} (${colors.number(healthScore.overall)}/100)`));
@@ -498,7 +498,7 @@ export class GitRepositoryAnalyzer {
 
     return {
       totalCommits: recentCommits.length,
-      recentCommitCount: recentCommits.filter(c => 
+      recentCommitCount: recentCommits.filter(c =>
         new Date(c.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       ).length,
       avgCommitMessageLength: recentCommits.reduce((sum, c) => sum + c.subject.length, 0) / recentCommits.length || 0,
@@ -533,7 +533,7 @@ export class GitRepositoryAnalyzer {
     else if (metrics.recentCommitCount < 5) activityLevel -= 20;
 
     const overall = Math.round((commitQuality + branchHygiene + fileOrganization + activityLevel) / 4);
-    
+
     let grade = 'F';
     if (overall >= 90) grade = 'A';
     else if (overall >= 80) grade = 'B';

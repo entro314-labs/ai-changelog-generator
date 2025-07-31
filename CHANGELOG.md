@@ -790,7 +790,7 @@ This release significantly improves the tool's reliability and usefulness by:
 
 - (feature) Expanded provider support and CLI options - Enhanced provider-manager.service.js and ollama.js to support additional AI providers and improved error handling. Updated cli.controller.js to expose new configuration and provider selection options. (85%)
 
-- (fix) Resolved utility and workflow issues - Fixed bugs in consolidated-utils.js related to object merging and string formatting. Improved interactive-workflow.service.js for more robust user prompts and error handling. (85%)
+- (fix) Resolved utility and workflow issues - Fixed bugs in utils.js related to object merging and string formatting. Improved interactive-workflow.service.js for more robust user prompts and error handling. (85%)
 
 - (chore) Updated dependencies and project metadata - Modified package.json to add new dependencies (js-yaml, yaml), update scripts, and adjust project metadata for configuration and documentation improvements. (85%)
 

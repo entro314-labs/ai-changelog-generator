@@ -1,6 +1,6 @@
 import { OpenAI } from 'openai';
 import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../../shared/utils/utils.js';
 import { applyMixins, ProviderResponseHandler } from '../utils/base-provider-helpers.js';
 import { buildClientOptions } from '../utils/provider-utils.js';
 
@@ -18,7 +18,7 @@ export class OpenAIProvider extends BaseProvider {
       timeout: 60000,
       maxRetries: 2
     });
-    
+
     this.openai = new OpenAI({
       apiKey: clientOptions.apiKey,
       organization: clientOptions.organization,
@@ -146,7 +146,7 @@ export class OpenAIProvider extends BaseProvider {
     try {
       const models = await this.getAvailableModels();
       const model = models.find(m => m.name === modelName);
-      
+
       if (model) {
         return {
           available: true,
@@ -176,7 +176,7 @@ export class OpenAIProvider extends BaseProvider {
       const response = await this.generateCompletion([
         { role: 'user', content: 'Hello' }
       ], { max_tokens: 5 });
-      
+
       return {
         success: true,
         model: response.model,
@@ -203,7 +203,7 @@ export class OpenAIProvider extends BaseProvider {
 
   getModelRecommendation(commitDetails) {
     const { files = 0, lines = 0, breaking = false, complex = false } = commitDetails;
-    
+
     // Use o1 for highly complex reasoning tasks
     if (breaking || complex || files > 50 || lines > 5000) {
       return {
@@ -211,7 +211,7 @@ export class OpenAIProvider extends BaseProvider {
         reason: 'Highly complex change requiring advanced reasoning'
       };
     }
-    
+
     // Use GPT-4o for complex changes
     if (files > 20 || lines > 1000) {
       return {
@@ -219,7 +219,7 @@ export class OpenAIProvider extends BaseProvider {
         reason: 'Complex change requiring advanced analysis'
       };
     }
-    
+
     // Use GPT-4o mini for medium changes
     if (files > 5 || lines > 200) {
       return {
@@ -227,7 +227,7 @@ export class OpenAIProvider extends BaseProvider {
         reason: 'Medium-sized change requiring good analysis'
       };
     }
-    
+
     // Use GPT-4o mini for small changes (more capable than 3.5-turbo)
     return {
       model: 'gpt-4o-mini',
@@ -238,7 +238,7 @@ export class OpenAIProvider extends BaseProvider {
   async selectOptimalModel(commitInfo) {
     const recommendation = this.getModelRecommendation(commitInfo);
     const validation = await this.validateModelAvailability(recommendation.model);
-    
+
     if (validation.available) {
       return {
         model: recommendation.model,

@@ -6,7 +6,7 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../../shared/utils/utils.js';
 import { applyMixins } from '../utils/base-provider-helpers.js';
 import { buildClientOptions } from '../utils/provider-utils.js';
 
@@ -16,7 +16,7 @@ class GoogleProvider extends BaseProvider {
     this.genAI = null;
     this.modelCache = new Map();
     this.maxCacheSize = 50; // Limit cache size to prevent memory leaks
-    
+
     if (this.isAvailable()) {
       this.initializeClient();
     }
@@ -28,7 +28,7 @@ class GoogleProvider extends BaseProvider {
       timeout: 60000,
       maxRetries: 2
     });
-    
+
     this.genAI = new GoogleGenAI({
       apiKey: clientOptions.apiKey,
       apiVersion: clientOptions.apiVersion,
@@ -54,7 +54,7 @@ class GoogleProvider extends BaseProvider {
   async generateCompletion(messages, options = {}) {
     if (!this.isAvailable()) {
       return this.handleProviderError(
-        new Error('Google provider is not configured'), 
+        new Error('Google provider is not configured'),
         'generate_completion'
       );
     }
@@ -62,9 +62,9 @@ class GoogleProvider extends BaseProvider {
     try {
       const modelConfig = this.getProviderModelConfig();
       const modelName = options.model || modelConfig.standardModel;
-      
+
       const systemInstruction = messages.find(m => m.role === 'system')?.content;
-      
+
       // Separate system instruction from chat history
       const history = messages
         .filter(m => m.role !== 'system')
@@ -81,7 +81,7 @@ class GoogleProvider extends BaseProvider {
                 return {
                   inlineData: {
                     mimeType: 'image/jpeg',
-                    data: part.image_url.url.startsWith('data:image/') 
+                    data: part.image_url.url.startsWith('data:image/')
                       ? part.image_url.url.split(',')[1]
                       : Buffer.from(part.image_url.url).toString('base64')
                   }
@@ -142,20 +142,20 @@ class GoogleProvider extends BaseProvider {
               parameters: tool.function.parameters
             }]
           }));
-          
+
           const model = this.genAI.models.getModel(modelName);
           const chat = model.startChat({
             tools,
             history: history.slice(0, -1),
             systemInstruction: systemInstruction ? { text: systemInstruction } : undefined
           });
-          
+
           const lastMessage = history[history.length - 1];
           const result = await chat.sendMessage(lastMessage.parts);
           const response = result.response;
-          
+
           const functionCalls = response.functionCalls();
-          
+
           return {
             content: response.text(),
             model: modelName,
@@ -177,7 +177,7 @@ class GoogleProvider extends BaseProvider {
       }
 
       // Standard completion without tools
-      const model = this.genAI.getGenerativeModel({ 
+      const model = this.genAI.getGenerativeModel({
         model: modelName,
         generationConfig,
         safetySettings,
@@ -189,7 +189,7 @@ class GoogleProvider extends BaseProvider {
       });
 
       const response = await result.response;
-      
+
       return {
         content: response.text(),
         model: modelName,

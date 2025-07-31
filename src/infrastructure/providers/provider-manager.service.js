@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { ProviderError } from '../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../shared/utils/utils.js';
 import colors from '../../shared/constants/colors.js';
 
 // Import all providers from new location
@@ -17,7 +17,7 @@ import VertexAIProvider from './implementations/vertex.js';
 
 /**
  * ProviderManager Service
- * 
+ *
  * Manages AI provider loading, selection, and fallback logic
  */
 export class ProviderManagerService {
@@ -30,7 +30,7 @@ export class ProviderManagerService {
       defaultProviderName: 'openai',
       ...options
     };
-    
+
     // Static provider mapping with new classes
     this.providerClasses = {
       'anthropic': AnthropicProvider,
@@ -44,7 +44,7 @@ export class ProviderManagerService {
       'openai': OpenAIProvider,
       'vertex': VertexAIProvider
     };
-    
+
     this.loadProviders();
     this.determineActiveProvider();
   }
@@ -63,19 +63,19 @@ export class ProviderManagerService {
             available: provider.isAvailable(),
             capabilities: provider.getCapabilities ? provider.getCapabilities() : {}
           });
-          
+
           // Collect provider status for summary instead of individual messages
         } catch (error) {
           console.error(colors.errorMessage(`Failed to load provider ${name}: ${error.message}`));
         }
       }
-      
+
       if (!process.env.MCP_SERVER_MODE) {
         const available = this.providers.filter(p => p.available).length;
         const isDevelopmentProvider = name => ['dummy', 'mock'].includes(name);
         const productionProviders = this.providers.filter(p => !isDevelopmentProvider(p.name));
         const availableProduction = productionProviders.filter(p => p.available);
-        
+
         if (availableProduction.length > 0) {
           console.log(colors.infoMessage(`✅ ${availableProduction.length} provider${availableProduction.length > 1 ? 's' : ''} ready: ${availableProduction.map(p => p.name).join(', ')}`));
         }
@@ -91,11 +91,11 @@ export class ProviderManagerService {
    */
   determineActiveProvider() {
     const { AI_PROVIDER: requestedProvider } = this.config;
-    
+
     // Handle explicit provider request
     if (requestedProvider && requestedProvider.toLowerCase() !== 'auto') {
       const provider = this.findProviderByName(requestedProvider);
-      
+
       if (provider && provider.instance.isAvailable()) {
         this.activeProvider = provider.instance;
         if (!process.env.MCP_SERVER_MODE) {
@@ -111,7 +111,7 @@ export class ProviderManagerService {
 
     // Auto-select the first available provider
     const availableProviders = this.providers.filter(p => p.available);
-    
+
     if (availableProviders.length === 0) {
       console.log(colors.warningMessage('⚠️  No AI providers configured'));
       console.log(colors.infoMessage('💡 To enable AI-powered analysis:'));
@@ -125,7 +125,7 @@ export class ProviderManagerService {
 
     // Priority order for auto-selection
     const priorityOrder = ['openai', 'anthropic', 'azure', 'google', 'vertex', 'huggingface', 'ollama', 'lmstudio'];
-    
+
     for (const providerName of priorityOrder) {
       const provider = availableProviders.find(p => p.name === providerName);
       if (provider) {
@@ -168,7 +168,7 @@ export class ProviderManagerService {
    */
   switchProvider(providerName) {
     const provider = this.findProviderByName(providerName);
-    
+
     if (!provider) {
       return {
         success: false,
@@ -208,7 +208,7 @@ export class ProviderManagerService {
    */
   async testProvider(providerName) {
     const provider = this.findProviderByName(providerName);
-    
+
     if (!provider) {
       return {
         success: false,
@@ -238,7 +238,7 @@ export class ProviderManagerService {
    */
   getProviderCapabilities(providerName) {
     const provider = this.findProviderByName(providerName);
-    
+
     if (!provider) {
       return null;
     }
@@ -251,7 +251,7 @@ export class ProviderManagerService {
    */
   async validateAll() {
     const results = {};
-    
+
     for (const provider of this.providers) {
       if (provider.available) {
         try {
@@ -269,7 +269,7 @@ export class ProviderManagerService {
         };
       }
     }
-    
+
     return results;
   }
 
@@ -280,7 +280,7 @@ export class ProviderManagerService {
     const total = this.providers.length;
     const available = this.providers.filter(p => p.available).length;
     const configured = available;
-    
+
     return {
       total,
       available,
@@ -301,7 +301,7 @@ export class ProviderManagerService {
     if (newConfig) {
       this.config = { ...this.config, ...newConfig };
     }
-    
+
     this.providers = [];
     this.activeProvider = null;
     this.loadProviders();

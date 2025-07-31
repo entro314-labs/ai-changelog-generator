@@ -1,9 +1,9 @@
-import { getWorkingDirectoryChanges, summarizeFileChanges, categorizeFile, detectLanguage, assessFileImportance } from '../../shared/utils/consolidated-utils.js';
+import { getWorkingDirectoryChanges, summarizeFileChanges, categorizeFile, detectLanguage, assessFileImportance } from '../../shared/utils/utils.js';
 import colors from '../../shared/constants/colors.js';
 
 /**
  * Workspace Changelog Service
- * 
+ *
  * Handles changelog generation from working directory changes
  */
 export class WorkspaceChangelogService {
@@ -17,8 +17,8 @@ export class WorkspaceChangelogService {
 
       // Get working directory changes as raw array
       const rawChanges = getWorkingDirectoryChanges();
-      
-      
+
+
       if (!rawChanges || !Array.isArray(rawChanges) || rawChanges.length === 0) {
         console.log(colors.infoMessage('No changes detected in working directory.'));
         return null;
@@ -33,8 +33,8 @@ export class WorkspaceChangelogService {
 
       // Generate changelog content
       const changelog = await this.generateChangelogContent(
-        enhancedChanges, 
-        changesSummary, 
+        enhancedChanges,
+        changesSummary,
         workspaceContext,
         options.analysisMode || 'standard'
       );
@@ -71,8 +71,8 @@ ${Object.entries(changesSummary.categories).map(([cat, files]) =>
   `**${cat}**: ${files.map(f => {
     // Find the full change object with diff content
     const fullChange = changes.find(change => (change.path || change.filePath) === (f.path || f.filePath));
-    const diffPreview = fullChange?.diff ? 
-      (fullChange.diff.length > 200 ? fullChange.diff.substring(0, 200) + '...' : fullChange.diff) : 
+    const diffPreview = fullChange?.diff ?
+      (fullChange.diff.length > 200 ? fullChange.diff.substring(0, 200) + '...' : fullChange.diff) :
       'No diff available';
     return `${f.status} ${f.path} (${diffPreview.replace(/\n/g, ' ')})`;
   }).join('\n   ')}`
@@ -105,7 +105,7 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
       // Make AI call with all the context
       const messages = [
         {
-          role: "system", 
+          role: "system",
           content: "You are an expert at analyzing code changes and generating factual changelog entries. You MUST only describe changes that are visible in the provided diff content. Never make assumptions, never invent integrations, never speculate about how files work together. Be precise and factual - only describe what you can literally see in the diffs."
         },
         {
@@ -119,22 +119,22 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
         temperature: 0.3
       };
 
-      
+
       const response = await this.aiAnalysisService.aiProvider.generateCompletion(messages, options);
-      
+
       let changelog = response.content || response.text;
-      
+
       // Add metadata
       const timestamp = new Date().toISOString().split('T')[0];
-      
+
       // Ensure proper changelog format
       if (!changelog.includes('# ')) {
         changelog = `# Working Directory Changelog - ${timestamp}\n\n${changelog}`;
       }
-      
+
       // Add generation metadata
       changelog += `\n\n---\n\n*Generated from ${changesSummary.totalFiles} working directory changes*\n`;
-      
+
       return changelog;
 
     } catch (error) {
@@ -151,7 +151,7 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
       } else {
         console.warn(colors.warningMessage(`⚠️  AI analysis failed: ${error.message}`));
       }
-      
+
       console.warn(colors.infoMessage('🔄 Falling back to pattern-based analysis'));
       return this.generateBasicChangelogContentFromChanges(changes, changesSummary);
     }
@@ -159,28 +159,28 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
 
   generateBasicChangelogContentFromChanges(changes, changesSummary) {
     const timestamp = new Date().toISOString().split('T')[0];
-    
+
     let changelog = `# Working Directory Changes - ${timestamp}\n\n`;
-    
+
     // Basic summary
     changelog += `## Summary\n`;
     changelog += `${changes.length} files modified across ${Object.keys(changesSummary.categories).length} categories.\n\n`;
-    
+
     // Changes by category
     changelog += this.buildChangesByCategory(changes, changesSummary);
-    
+
     // Basic recommendations
     changelog += `## Recommendations\n`;
     changelog += `- Review changes before committing\n`;
     changelog += `- Consider adding tests for new functionality\n`;
     changelog += `- Update documentation if needed\n\n`;
-    
+
     return changelog;
   }
 
   async enhanceChangesWithDiff(changes) {
     const enhancedChanges = [];
-    
+
     for (const change of changes) {
       let enhancedChange = {
         ...change,
@@ -194,10 +194,10 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
       if (this.gitService) {
         try {
           const diffAnalysis = await this.gitService.analyzeWorkingDirectoryFileChange(
-            change.status, 
+            change.status,
             change.path || change.filePath
           );
-          
+
           if (diffAnalysis) {
             enhancedChange.diff = diffAnalysis.diff;
             enhancedChange.beforeContent = diffAnalysis.beforeContent;
@@ -213,7 +213,7 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
 
       enhancedChanges.push(enhancedChange);
     }
-    
+
     return enhancedChanges;
   }
 
@@ -237,8 +237,8 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
   }
 
   assessWorkspaceRisk(changes) {
-    const highRiskFiles = changes.filter(change => 
-      change.importance === 'critical' || 
+    const highRiskFiles = changes.filter(change =>
+      change.importance === 'critical' ||
       change.category === 'configuration' ||
       change.status === 'D'
     );
@@ -256,7 +256,7 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
 
   generateRecommendations(changes) {
     const recommendations = [];
-    
+
     const hasTests = changes.some(change => change.category === 'tests');
     const hasSource = changes.some(change => change.category === 'source');
     const hasConfig = changes.some(change => change.category === 'configuration');
@@ -288,16 +288,16 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
 
   buildChangesByCategory(changes, changesSummary) {
     let content = `## Changes by Category\n\n`;
-    
+
     Object.entries(changesSummary.categories).forEach(([category, files]) => {
       const categoryIcon = this.getCategoryIcon(category);
       content += `### ${categoryIcon} ${category.charAt(0).toUpperCase() + category.slice(1)} (${files.length} files)\n\n`;
-      
+
       files.forEach(file => {
         const statusIcon = this.getStatusIcon(file.status);
         content += `- ${statusIcon} ${file.path}\n`;
       });
-      
+
       content += '\n';
     });
 
@@ -347,7 +347,7 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
       } else {
         rawChanges = getWorkingDirectoryChanges();
       }
-      
+
       if (!rawChanges || !Array.isArray(rawChanges) || rawChanges.length === 0) {
         return { entries: [] };
       }
@@ -368,8 +368,8 @@ ${Object.entries(changesSummary.categories).map(([cat, files]) =>
   `**${cat}**: ${files.map(f => {
     // Find the full change object with diff content
     const fullChange = enhancedChanges.find(change => (change.path || change.filePath) === (f.path || f.filePath));
-    const diffPreview = fullChange?.diff ? 
-      (fullChange.diff.length > 200 ? fullChange.diff.substring(0, 200) + '...' : fullChange.diff) : 
+    const diffPreview = fullChange?.diff ?
+      (fullChange.diff.length > 200 ? fullChange.diff.substring(0, 200) + '...' : fullChange.diff) :
       'No diff available';
     return `${f.status} ${f.path} (${diffPreview.replace(/\n/g, ' ')})`;
   }).join('\n   ')}`
@@ -399,7 +399,7 @@ Generate one entry per file or logical change group. Only describe what you can 
       // Make AI call
       const messages = [
         {
-          role: "system", 
+          role: "system",
           content: "You are an expert at analyzing code changes and generating factual commit-style changelog entries. You MUST only describe changes that are visible in the provided diff content. Never make assumptions, never invent integrations, never speculate. Be precise and factual - only describe what you can literally see in the diffs."
         },
         {
@@ -413,16 +413,16 @@ Generate one entry per file or logical change group. Only describe what you can 
         temperature: 0.3
       };
 
-      
+
       const response = await this.aiAnalysisService.aiProvider.generateCompletion(messages, options_ai);
-      
+
       let content = response.content || response.text;
-      
+
       // Parse entries from response
       const entries = content.split('\n')
         .filter(line => line.trim().startsWith('-'))
         .map(line => line.trim());
-      
+
       return {
         entries,
         changes: enhancedChanges,
@@ -441,7 +441,7 @@ Generate one entry per file or logical change group. Only describe what you can 
         console.warn(colors.warningMessage(`⚠️  AI analysis failed: ${error.message}`));
         console.warn(colors.infoMessage('💡 Using basic file change detection instead'));
       }
-      
+
       // Return basic entries from the changes we were given instead of getting fresh ones
       const fallbackChanges = rawChanges || getWorkingDirectoryChanges();
       const basicEntries = fallbackChanges.map(change => {
@@ -451,20 +451,20 @@ Generate one entry per file or logical change group. Only describe what you can 
         const changeDesc = status === 'M' ? 'updated' : status === 'A' ? 'added' : status === 'D' ? 'deleted' : 'changed';
         return `- (${changeType}) Modified ${filePath} - File ${changeDesc} (pattern-based analysis)`;
       });
-      
+
       return { entries: basicEntries };
     }
   }
 
   async generateWorkspaceChangelog(version = null, options = {}) {
     const result = await this.generateComprehensiveWorkspaceChangelog(options);
-    
+
     if (!result) {
       return null;
     }
 
     let changelog = result.changelog;
-    
+
     // Add version information if provided
     if (version) {
       changelog = changelog.replace(
@@ -491,7 +491,7 @@ Generate one entry per file or logical change group. Only describe what you can 
     section += `- **Primary Category:** ${context.primaryCategory}\n`;
     section += `- **Risk Level:** ${context.riskLevel}\n`;
     section += `- **Complexity:** ${context.complexity}\n\n`;
-    
+
     if (context.recommendations.length > 0) {
       section += `### Recommendations\n\n`;
       context.recommendations.forEach(rec => {

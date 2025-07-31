@@ -4,7 +4,7 @@
  */
 
 import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../../shared/utils/utils.js';
 
 class MockProvider extends BaseProvider {
   constructor(config = {}) {
@@ -77,8 +77,8 @@ class MockProvider extends BaseProvider {
 
     const model = options.model || 'mock-standard';
     const lastMessage = messages[messages.length - 1];
-    const prompt = typeof lastMessage === 'string' 
-      ? lastMessage 
+    const prompt = typeof lastMessage === 'string'
+      ? lastMessage
       : (lastMessage.content || '');
 
     // Check for predefined responses
@@ -114,7 +114,7 @@ class MockProvider extends BaseProvider {
    */
   _generateMockChangelog(commitMessage) {
     const typeMatch = commitMessage.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)(\(.+\))?:/);
-    
+
     if (!typeMatch) {
       return 'Mock changelog entry for conventional commit';
     }
@@ -156,7 +156,7 @@ class MockProvider extends BaseProvider {
     // Simple logic based on commit complexity
     const filesChanged = commitInfo.files?.length || 0;
     const linesChanged = (commitInfo.additions || 0) + (commitInfo.deletions || 0);
-    
+
     if (filesChanged > 10 || linesChanged > 500 || commitInfo.breaking) {
       return {
         model: 'mock-advanced',
@@ -192,7 +192,7 @@ class MockProvider extends BaseProvider {
     }
 
     const isAvailable = this.models.includes(model);
-    
+
     return {
       available: isAvailable,
       model: isAvailable ? model : null,

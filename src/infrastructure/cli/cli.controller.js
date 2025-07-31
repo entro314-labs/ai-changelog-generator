@@ -4,7 +4,7 @@ import { access } from 'fs/promises';
 import path from 'path';
 import { ApplicationService } from '../../application/services/application.service.js';
 import colors from '../../shared/constants/colors.js';
-import { formatDuration, promptForConfig } from '../../shared/utils/consolidated-utils.js';
+import { formatDuration, promptForConfig } from '../../shared/utils/utils.js';
 import { setupProcessErrorHandlers, handleCLIError, getDefaultStartupTips } from '../../shared/utils/cli-entry-utils.js';
 
 export class CLIController {

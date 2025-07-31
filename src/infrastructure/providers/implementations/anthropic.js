@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../../shared/utils/utils.js';
 import { applyMixins, ProviderResponseHandler } from '../utils/base-provider-helpers.js';
 import { buildClientOptions } from '../utils/provider-utils.js';
 
@@ -22,7 +22,7 @@ export class AnthropicProvider extends BaseProvider {
         'X-Client-Version': '1.0.0'
       }
     });
-    
+
     this.anthropic = new Anthropic({
       apiKey: clientOptions.apiKey,
       baseURL: clientOptions.baseURL,
@@ -54,11 +54,11 @@ export class AnthropicProvider extends BaseProvider {
       'generate_completion',
       async () => {
         const modelConfig = this.getProviderModelConfig();
-        
+
         // Anthropic API uses a slightly different message format
         const systemMessage = messages.find(m => m.role === 'system');
         const userMessages = messages.filter(m => m.role !== 'system');
-        
+
         const params = {
           model: options.model || modelConfig.standardModel || this.getDefaultModel(),
           system: systemMessage ? systemMessage.content : undefined,
@@ -83,7 +83,7 @@ export class AnthropicProvider extends BaseProvider {
         const response = await this.anthropic.messages.create(params);
 
         // Check if there are tool calls in the response
-        const toolCalls = response.content.some(c => c.type === 'tool_use') 
+        const toolCalls = response.content.some(c => c.type === 'tool_use')
           ? response.content.filter(c => c.type === 'tool_use').map(c => c.tool_use)
           : null;
 
@@ -190,7 +190,7 @@ export class AnthropicProvider extends BaseProvider {
     try {
       const models = await this.getAvailableModels();
       const model = models.find(m => m.name === modelName);
-      
+
       if (model) {
         return {
           available: true,
@@ -220,7 +220,7 @@ export class AnthropicProvider extends BaseProvider {
       const response = await this.generateCompletion([
         { role: 'user', content: 'Hello' }
       ], { max_tokens: 5 });
-      
+
       return {
         success: true,
         model: response.model,
@@ -241,7 +241,7 @@ export class AnthropicProvider extends BaseProvider {
         messages: [{ role: 'user', content: 'Test' }],
         max_tokens: 1
       });
-      
+
       return {
         success: true,
         model: response.model,
@@ -269,7 +269,7 @@ export class AnthropicProvider extends BaseProvider {
 
   getModelRecommendation(commitDetails) {
     const { files = 0, lines = 0, breaking = false, complex = false } = commitDetails;
-    
+
     // Use the most capable model for complex or breaking changes
     if (breaking || complex || files > 20 || lines > 1000) {
       return {
@@ -277,7 +277,7 @@ export class AnthropicProvider extends BaseProvider {
         reason: 'Complex or breaking change requiring advanced reasoning'
       };
     }
-    
+
     // Use standard model for medium changes
     if (files > 5 || lines > 200) {
       return {
@@ -285,7 +285,7 @@ export class AnthropicProvider extends BaseProvider {
         reason: 'Medium-sized change requiring good analysis'
       };
     }
-    
+
     // Use efficient model for small changes
     return {
       model: 'claude-3-haiku-20240307',
@@ -296,7 +296,7 @@ export class AnthropicProvider extends BaseProvider {
   async selectOptimalModel(commitInfo) {
     const recommendation = this.getModelRecommendation(commitInfo);
     const validation = await this.validateModelAvailability(recommendation.model);
-    
+
     if (validation.available) {
       return {
         model: recommendation.model,

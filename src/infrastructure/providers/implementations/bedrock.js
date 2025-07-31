@@ -6,7 +6,7 @@
 
 import { BedrockRuntimeClient, InvokeModelCommand, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
 import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../../shared/utils/utils.js';
 import { applyMixins, ProviderResponseHandler } from '../utils/base-provider-helpers.js';
 import { buildClientOptions } from '../utils/provider-utils.js';
 
@@ -25,7 +25,7 @@ export class BedrockProvider extends BaseProvider {
       timeout: 60000,
       maxRetries: 2
     });
-    
+
     this.bedrockClient = new BedrockRuntimeClient({
       region: clientOptions.region || this.config.AWS_REGION || 'us-east-1',
       credentials: this.config.AWS_ACCESS_KEY_ID ? {
@@ -70,7 +70,7 @@ export class BedrockProvider extends BaseProvider {
       async () => {
         const modelConfig = this.getProviderModelConfig();
         const modelId = options.model || modelConfig.standardModel || this.getDefaultModel();
-        
+
         // Use Converse API for modern interface
         if (this.supportsConverseAPI(modelId)) {
           return await this.generateWithConverseAPI(messages, options, modelId);
@@ -152,7 +152,7 @@ export class BedrockProvider extends BaseProvider {
   async generateWithInvokeModel(messages, options, modelId) {
     // Format for specific model types
     let body;
-    
+
     if (modelId.includes('claude')) {
       // Anthropic Claude format
       const systemMessage = messages.find(m => m.role === 'system')?.content;
@@ -328,7 +328,7 @@ export class BedrockProvider extends BaseProvider {
     try {
       const models = await this.getAvailableModels();
       const model = models.find(m => m.name === modelName);
-      
+
       if (model) {
         return {
           available: true,
@@ -362,7 +362,7 @@ export class BedrockProvider extends BaseProvider {
       const response = await this.generateCompletion([
         { role: 'user', content: 'Hello' }
       ], { max_tokens: 5 });
-      
+
       return {
         success: true,
         model: response.model,

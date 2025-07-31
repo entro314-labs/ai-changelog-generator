@@ -1,4 +1,4 @@
-import { buildEnhancedPrompt, parseAIResponse, summarizeFileChanges } from '../../shared/utils/consolidated-utils.js';
+import { buildEnhancedPrompt, parseAIResponse, summarizeFileChanges } from '../../shared/utils/utils.js';
 import colors from '../../shared/constants/colors.js';
 
 export class AIAnalysisService {
@@ -45,7 +45,7 @@ export class AIAnalysisService {
       };
 
       const optimalModel = await this.aiProvider.selectOptimalModel(commitInfo);
-      
+
       if (optimalModel?.model) {
         if (optimalModel.capabilities?.reasoning) {
           console.log(colors.aiMessage('Using reasoning model for complex analysis'));
@@ -70,19 +70,19 @@ export class AIAnalysisService {
       const modelToUse = selectedModel || this.aiProvider?.modelConfig?.default || 'unknown';
       const filesCount = commitAnalysis.files?.length || 0;
       const linesChanged = (commitAnalysis.diffStats?.insertions || 0) + (commitAnalysis.diffStats?.deletions || 0);
-      
+
       console.log(colors.infoMessage(`Selected model: ${colors.highlight(modelToUse)} for commit (${colors.number(filesCount)} files, ${colors.number(linesChanged)} lines)`));
-      
+
       // Skip model validation for now to avoid token limit issues
       // const modelCheck = await this.aiProvider.validateModelAvailability(modelToUse);
       // if (!modelCheck.available) {
       //   console.warn(colors.warningMessage(`⚠️  Selected model '${modelToUse}' not available, falling back to rule-based analysis`));
       //   console.warn(colors.warningMessage(`   Error: ${modelCheck.error || 'Model validation failed'}`));
-      //   
+      //
       //   if (modelCheck.alternatives && modelCheck.alternatives.length > 0) {
       //     console.warn(colors.infoMessage(`   💡 Available alternatives: ${modelCheck.alternatives.join(', ')}`));
       //   }
-      //   
+      //
       //   this.metrics.ruleBasedFallbacks++;
       //   return this.generateRuleBasedSummary(commitAnalysis);
       // }
@@ -90,7 +90,7 @@ export class AIAnalysisService {
       const prompt = buildEnhancedPrompt(commitAnalysis, this.analysisMode);
       const systemPrompt = this.promptEngine.systemPrompts.master;
       const modeSpecificPrompt = this.promptEngine.systemPrompts[this.analysisMode] || this.promptEngine.systemPrompts.standard;
-      
+
       const optimizedPrompt = this.promptEngine.optimizeForProvider(
         prompt,
         this.aiProvider.getName ? this.aiProvider.getName() : 'unknown',
@@ -109,12 +109,12 @@ export class AIAnalysisService {
       ];
 
       this.metrics.apiCalls++;
-      const response = await this.aiProvider.generateCompletion(messages, { 
+      const response = await this.aiProvider.generateCompletion(messages, {
         model: modelToUse,
         max_tokens: 2000,
         temperature: 0.3
       });
-      
+
       if (response?.usage) {
         this.metrics.totalTokens += (response.usage.prompt_tokens || 0) + (response.usage.completion_tokens || 0);
       }
@@ -125,7 +125,7 @@ export class AIAnalysisService {
     } catch (error) {
       // Provide helpful error messages and guidance
       const errorContext = this.getErrorContext(error);
-      
+
       if (errorContext.isConnectionError) {
         console.warn(colors.warningMessage(`⚠️  AI provider connection failed: ${errorContext.message}`));
         if (errorContext.suggestions.length > 0) {
@@ -140,7 +140,7 @@ export class AIAnalysisService {
         console.warn(colors.warningMessage(`⚠️  AI analysis failed: ${error.message}`));
         console.warn(colors.infoMessage('💡 Falling back to pattern-based analysis'));
       }
-      
+
       this.metrics.ruleBasedFallbacks++;
       return this.generateRuleBasedSummary(commitAnalysis);
     }
@@ -149,7 +149,7 @@ export class AIAnalysisService {
   async analyzeChanges(changes, type, outputMode = 'console') {
     try {
       const changesSummary = summarizeFileChanges(changes);
-      
+
       const changesData = {
         changeType: type,
         totalFiles: changes.length,
@@ -180,7 +180,7 @@ ${Object.entries(changesSummary.categories).map(([cat, files]) =>
 
       const messages = [
         {
-          role: "system", 
+          role: "system",
           content: this.promptEngine.systemPrompts.changesAnalysis || "You are an expert at analyzing code changes."
         },
         {
@@ -205,7 +205,7 @@ ${Object.entries(changesSummary.categories).map(([cat, files]) =>
 
   generateRuleBasedSummary(commitAnalysis) {
     const { subject, files, diffStats, categories, importance } = commitAnalysis;
-    
+
     // Use intelligent tagging for better rule-based analysis
     const analysis = this.tagger.analyzeCommit({
       message: subject,
@@ -225,7 +225,7 @@ ${Object.entries(changesSummary.categories).map(([cat, files]) =>
   analyzeChangesRuleBased(changes, type) {
     const categories = this.categorizeChanges(changes);
     const primaryCategory = Object.keys(categories)[0] || 'other';
-    
+
     return {
       summary: `${type}: ${changes.length} files modified in ${primaryCategory}`,
       category: primaryCategory,
@@ -255,14 +255,14 @@ ${Object.entries(changesSummary.categories).map(([cat, files]) =>
 
   assessImpact(changes) {
     if (changes.length > 20) return 'high';
-    if (changes.length > 5) return 'medium'; 
+    if (changes.length > 5) return 'medium';
     return 'low';
   }
 
   isUserFacing(changes) {
-    return changes.some(change => 
+    return changes.some(change =>
       change.path && typeof change.path === 'string' && (
-        change.path.includes('/ui/') || 
+        change.path.includes('/ui/') ||
         change.path.includes('/component/') ||
         change.path.includes('/page/')
       )
@@ -310,7 +310,7 @@ ${Object.entries(changesSummary.categories).map(([cat, files]) =>
 
       const systemPrompt = this.promptEngine.systemPrompts.master;
       const modeSpecificPrompt = this.promptEngine.systemPrompts[this.analysisMode] || this.promptEngine.systemPrompts.standard;
-      
+
       const optimizedPrompt = this.promptEngine.optimizeForProvider(
         basePrompt,
         this.aiProvider.getName ? this.aiProvider.getName() : 'unknown',
@@ -347,7 +347,7 @@ ${Object.entries(changesSummary.categories).map(([cat, files]) =>
 
       const systemPrompt = this.promptEngine.systemPrompts.master;
       const modeSpecificPrompt = this.promptEngine.systemPrompts[this.analysisMode] || this.promptEngine.systemPrompts.standard;
-      
+
       const optimizedPrompt = this.promptEngine.optimizeForProvider(
         basePrompt,
         this.aiProvider.getName ? this.aiProvider.getName() : 'unknown',
@@ -372,7 +372,7 @@ ${Object.entries(changesSummary.categories).map(([cat, files]) =>
       const prompt = `Analyze these untracked files and provide recommendations:
 
 Files by category:
-${Object.entries(categories).map(([cat, files]) => 
+${Object.entries(categories).map(([cat, files]) =>
   `${cat}: ${files.length} files (${files.slice(0, 5).join(', ')}${files.length > 5 ? '...' : ''})`
 ).join('\n')}
 
@@ -399,9 +399,9 @@ Be concise and actionable.`;
 
   getErrorContext(error) {
     const errorMessage = error.message.toLowerCase();
-    
+
     // Connection errors
-    if (errorMessage.includes('fetch failed') || 
+    if (errorMessage.includes('fetch failed') ||
         errorMessage.includes('connection refused') ||
         errorMessage.includes('unreachable') ||
         errorMessage.includes('timeout')) {
@@ -415,9 +415,9 @@ Be concise and actionable.`;
         ]
       };
     }
-    
+
     // Authentication errors
-    if (errorMessage.includes('api key') || 
+    if (errorMessage.includes('api key') ||
         errorMessage.includes('401') ||
         errorMessage.includes('unauthorized') ||
         errorMessage.includes('invalid key')) {
@@ -431,9 +431,9 @@ Be concise and actionable.`;
         ]
       };
     }
-    
+
     // Model availability errors
-    if (errorMessage.includes('model') && 
+    if (errorMessage.includes('model') &&
         (errorMessage.includes('not found') || errorMessage.includes('unavailable'))) {
       return {
         isConfigurationError: true,
@@ -445,7 +445,7 @@ Be concise and actionable.`;
         ]
       };
     }
-    
+
     // Rate limiting
     if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
       return {
@@ -458,7 +458,7 @@ Be concise and actionable.`;
         ]
       };
     }
-    
+
     // Generic error
     return {
       isConnectionError: false,

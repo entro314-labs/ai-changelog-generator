@@ -4,7 +4,7 @@
  */
 
 import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../../shared/utils/utils.js';
 
 class DummyProvider extends BaseProvider {
   constructor(config = {}) {

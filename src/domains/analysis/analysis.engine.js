@@ -1,4 +1,4 @@
-import { analyzeSemanticChanges, analyzeFunctionalImpact, generateAnalysisSummary, performSemanticAnalysis, assessOverallComplexity, assessRisk, assessBusinessRelevance, categorizeFile, detectLanguage, assessFileImportance, assessChangeComplexity, getWorkingDirectoryChanges } from '../../shared/utils/consolidated-utils.js';
+import { analyzeSemanticChanges, analyzeFunctionalImpact, generateAnalysisSummary, performSemanticAnalysis, assessOverallComplexity, assessRisk, assessBusinessRelevance, categorizeFile, detectLanguage, assessFileImportance, assessChangeComplexity, getWorkingDirectoryChanges } from '../../shared/utils/utils.js';
 import colors from '../../shared/constants/colors.js';
 
 export class AnalysisEngine {
@@ -21,7 +21,7 @@ export class AnalysisEngine {
     switch (type) {
       case 'changes':
         return this.analyzeCurrentChanges(config);
-      case 'commits': 
+      case 'commits':
         return this.analyzeRecentCommits(config.limit || 10, config);
       case 'branches':
         return this.analyzeBranches(config);
@@ -36,10 +36,10 @@ export class AnalysisEngine {
 
   async analyzeCurrentChanges(config = {}) {
     let enhancedChanges = [];
-    
+
     try {
       const changes = getWorkingDirectoryChanges();
-      
+
       if (changes.length === 0) {
         console.log(colors.infoMessage('No changes detected in working directory.'));
         return { changes: [], analysis: null };
@@ -56,13 +56,13 @@ export class AnalysisEngine {
           if (i % 5 === 0 || i === changes.length - 1) {
             process.stdout.write(`\r  Progress: ${i + 1}/${changes.length} files analyzed`);
           }
-          
+
           // Use git service to get detailed diff analysis
           let detailedAnalysis = null;
           if (this.gitService && this.gitService.analyzeWorkingDirectoryFileChange) {
             detailedAnalysis = await this.gitService.analyzeWorkingDirectoryFileChange(change.status, change.path);
           }
-          
+
           if (detailedAnalysis) {
             // Use the rich analysis from git service
             enhancedChanges.push({
@@ -99,7 +99,7 @@ export class AnalysisEngine {
           });
         }
       }
-      
+
       // Clear the progress line
       process.stdout.write('\n');
 
@@ -151,15 +151,15 @@ export class AnalysisEngine {
     } catch (error) {
       console.error(colors.errorMessage('Error analyzing current changes:'), error.message);
       // Return enhanced changes if they were created before the error
-      return { 
-        changes: enhancedChanges, 
+      return {
+        changes: enhancedChanges,
         analysis: enhancedChanges.length > 0 ? {
           summary: `${enhancedChanges.length} working directory changes detected (analysis failed)`,
           category: 'working-directory',
           impact: 'medium',
           userFacing: false
         } : null,
-        error: error.message 
+        error: error.message
       };
     }
   }
@@ -250,7 +250,7 @@ export class AnalysisEngine {
     const categories = this.categorizeChanges(changes);
     const complexity = this.assessOverallChangeComplexity(changes);
     const risk = this.assessOverallChangeRisk(changes);
-    
+
     return {
       categories,
       complexity,
@@ -276,23 +276,23 @@ export class AnalysisEngine {
     const totalComplexity = changes.reduce((sum, change) => {
       return sum + (change.complexity?.score || 0);
     }, 0);
-    
+
     const avgComplexity = totalComplexity / changes.length;
-    
+
     if (avgComplexity > 0.7) return 'high';
     if (avgComplexity > 0.4) return 'medium';
     return 'low';
   }
 
   assessOverallChangeRisk(changes) {
-    const riskFactors = changes.filter(change => 
-      change.importance === 'critical' || 
+    const riskFactors = changes.filter(change =>
+      change.importance === 'critical' ||
       change.category === 'core' ||
       change.status === 'D' // Deletions are risky
     );
-    
+
     if (riskFactors.length > changes.length * 0.3) return 'high';
-    if (riskFactors.length > 0) return 'medium'; 
+    if (riskFactors.length > 0) return 'medium';
     return 'low';
   }
 
@@ -303,7 +303,7 @@ export class AnalysisEngine {
   }
 
   hasUserFacingChanges(changes) {
-    return changes.some(change => 
+    return changes.some(change =>
       change.category === 'ui' ||
       change.category === 'frontend' ||
       (change.path && change.path.includes('/component/')) ||
@@ -322,10 +322,10 @@ export class AnalysisEngine {
     commits.forEach(commit => {
       const type = commit.categories?.[0] || 'other';
       types[type] = (types[type] || 0) + 1;
-      
+
       totalFiles += commit.files?.length || 0;
       totalLines += (commit.diffStats?.insertions || 0) + (commit.diffStats?.deletions || 0);
-      
+
       if (commit.breakingChanges?.length > 0) breakingChanges++;
       if (commit.risk === 'high') highRiskCommits++;
     });
@@ -346,7 +346,7 @@ export class AnalysisEngine {
   calculateOverallRisk(commits) {
     const highRisk = commits.filter(c => c.risk === 'high').length;
     const ratio = highRisk / commits.length;
-    
+
     if (ratio > 0.3) return 'high';
     if (ratio > 0.1) return 'medium';
     return 'low';
@@ -355,7 +355,7 @@ export class AnalysisEngine {
   calculateOverallComplexity(commits) {
     const avgFiles = commits.reduce((sum, c) => sum + (c.files?.length || 0), 0) / commits.length;
     const avgLines = commits.reduce((sum, c) => sum + ((c.diffStats?.insertions || 0) + (c.diffStats?.deletions || 0)), 0) / commits.length;
-    
+
     if (avgFiles > 15 || avgLines > 200) return 'high';
     if (avgFiles > 5 || avgLines > 50) return 'medium';
     return 'low';
@@ -365,15 +365,15 @@ export class AnalysisEngine {
     // Simple trend analysis based on recent patterns
     const recentCommits = commits.slice(0, Math.min(5, commits.length));
     const categories = recentCommits.map(c => c.categories?.[0] || 'other');
-    
+
     const categoryCount = {};
     categories.forEach(cat => {
       categoryCount[cat] = (categoryCount[cat] || 0) + 1;
     });
-    
+
     const dominantCategory = Object.entries(categoryCount)
       .sort(([,a], [,b]) => b - a)[0];
-    
+
     return {
       dominantCategory: dominantCategory?.[0] || 'mixed',
       frequency: dominantCategory?.[1] || 0,
@@ -389,7 +389,7 @@ export class AnalysisEngine {
 
   combineAnalyses(aiAnalysis, ruleBasedAnalysis) {
     if (!aiAnalysis) return ruleBasedAnalysis;
-    
+
     return {
       ...ruleBasedAnalysis,
       aiInsights: aiAnalysis,
@@ -400,21 +400,21 @@ export class AnalysisEngine {
 
   generateCommitsSummary(commits, analysis) {
     const { totalCommits, commitTypes, riskLevel, complexity } = analysis;
-    
+
     let summary = `Analyzed ${totalCommits} recent commits. `;
-    
+
     if (Object.keys(commitTypes).length > 0) {
       const dominantType = Object.entries(commitTypes)
         .sort(([,a], [,b]) => b - a)[0];
       summary += `Primary activity: ${dominantType[1]} ${dominantType[0]} commits. `;
     }
-    
+
     summary += `Risk level: ${riskLevel}. Complexity: ${complexity}.`;
-    
+
     if (analysis.breakingChanges > 0) {
       summary += ` ⚠️ ${analysis.breakingChanges} commits contain breaking changes.`;
     }
-    
+
     return summary;
   }
 

@@ -1,4 +1,4 @@
-import { categorizeFile, detectLanguage, assessFileImportance, assessChangeComplexity, analyzeSemanticChanges, analyzeFunctionalImpact } from '../../shared/utils/consolidated-utils.js';
+import { categorizeFile, detectLanguage, assessFileImportance, assessChangeComplexity, analyzeSemanticChanges, analyzeFunctionalImpact } from '../../shared/utils/utils.js';
 import colors from '../../shared/constants/colors.js';
 import { GitError } from '../../shared/utils/error-classes.js';
 
@@ -49,7 +49,7 @@ export class GitService {
         files: validFiles.map(f => ({ path: f.filePath })),
         stats: diffStats
       };
-      
+
       const taggingAnalysis = this.tagger.analyzeCommit(commitForTagging);
 
       const analysis = {
@@ -81,9 +81,9 @@ export class GitService {
       // Get file diff with context
       const diffCommand = `git show ${commitHash} --pretty=format: -U5 -- "${filePath}"`;
       let diff = '';
-      
+
       diff = this.gitManager.execGitShow(diffCommand);
-      
+
       if (diff === null) {
         if (status === 'D') {
           diff = 'File deleted in this commit';
@@ -108,12 +108,12 @@ export class GitService {
       // Get file content context
       let beforeContent = '';
       let afterContent = '';
-      
+
       if (status !== 'A' && !diff.includes('not available')) {
         const beforeResult = this.gitManager.execGitShow(`git show ${commitHash}~1:"${filePath}"`);
         beforeContent = beforeResult ? beforeResult.slice(0, 1000) : '';
       }
-      
+
       if (status !== 'D' && !diff.includes('not available')) {
         const afterResult = this.gitManager.execGitShow(`git show ${commitHash}:"${filePath}"`);
         afterContent = afterResult ? afterResult.slice(0, 1000) : '';
@@ -141,7 +141,7 @@ export class GitService {
   async analyzeWorkingDirectoryFileChange(status, filePath) {
     try {
       let diff = '';
-      
+
       // Get working directory diff based on status
       if (status === 'A' || status === '??') {
         // New/untracked file - show entire content (first 50 lines)
@@ -194,7 +194,7 @@ export class GitService {
       // Get file content context
       let beforeContent = '';
       let afterContent = '';
-      
+
       if (status === 'D') {
         // For deleted files, get the content that was removed
         try {
@@ -213,7 +213,7 @@ export class GitService {
         } catch {
           beforeContent = '';
         }
-        
+
         try {
           // Get current working directory version
           const currentResult = this.gitManager.execGitSafe(`cat "${filePath}"`);
@@ -260,7 +260,7 @@ export class GitService {
       const output = this.gitManager.execGitSafe(command);
       const lines = output.split('\n').filter(Boolean);
       const summary = lines[lines.length - 1];
-      
+
       if (summary && summary.includes('changed')) {
         const match = summary.match(/(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?/);
         if (match) {
@@ -271,7 +271,7 @@ export class GitService {
           };
         }
       }
-      
+
       return { files: 0, insertions: 0, deletions: 0 };
     } catch {
       return { files: 0, insertions: 0, deletions: 0 };
@@ -280,10 +280,10 @@ export class GitService {
 
   async getCommitsSince(since) {
     try {
-      const command = since 
-        ? `git log --oneline --since="${since}"` 
+      const command = since
+        ? `git log --oneline --since="${since}"`
         : 'git log --oneline -10';
-      
+
       const output = this.gitManager.execGitSafe(command);
       return output.split('\n')
         .filter(Boolean)
