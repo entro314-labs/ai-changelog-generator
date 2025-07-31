@@ -1,0 +1,22 @@
+node_modules/
+.env.local
+.env
+*.log
+.DS_Store
+AI_CHANGELOG.md
+test-enhanced-features.js
+test-mcp-server.js
+test-mcp-tools.js
+test-model-selection.js
+test-ai-provider.js
+test-ai-provider.js
+OpenAI API Models (platform.openai.md
+PUBLISHING.md
+scripts/pre-publish.sh
+.github/README_PREVIEW.md
+claude-desktop-config-updated.json
+validate-mcp.js
+pnpm-lock.yaml
+pnpm-lock.yaml
+pnpm-lock.yaml
+AI_PROMPTS_EXPORT.md

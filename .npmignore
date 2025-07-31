@@ -1,0 +1,41 @@
+# Development files
+.env*
+!examples/.env.example
+*.log
+node_modules/
+coverage/
+.nyc_output/
+
+# Development scripts and configs
+demo-*.js
+test-*.js
+validate-*.js
+setup-*.js
+cli.js
+ai-changelog-generator.js
+generate-ai-changelog.js
+
+# Documentation (keep only main README)
+PROMPT_TEMPLATES.md
+MCP_SETUP_GUIDE.md
+AI_CHANGELOG.md
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Temporary files
+*.tmp
+*.temp
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Example config (but keep in examples/)
+claude_desktop_config.json

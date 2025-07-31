@@ -1,0 +1,74 @@
+# AI Changelog Generator Configuration
+# Enhanced with conventional commits support and link generation
+
+convention:
+  # Supported commit types (extend the defaults)
+  commitTypes:
+    - feat      # New features
+    - fix       # Bug fixes
+    - docs      # Documentation changes
+    - style     # Code style (formatting, etc.)
+    - refactor  # Code refactoring
+    - perf      # Performance improvements
+    - test      # Tests
+    - build     # Build system changes
+    - ci        # CI/CD changes
+    - chore     # Maintenance tasks
+    - revert    # Reverts
+    - merge     # Merge commits
+  
+  # Optional: define valid scopes for your project
+  commitScopes:
+    - api
+    - ui
+    - core
+    - config
+    - docs
+  
+  # Git tag pattern for releases
+  releaseTagGlobPattern: "v[0-9]*.[0-9]*.[0-9]*"
+
+changelog:
+  # Which commit types to include in changelogs
+  commitTypes:
+    - feat
+    - fix
+    - perf
+    - refactor
+    - docs
+    - build
+    - chore
+  
+  # Include commits that don't follow conventional format
+  includeInvalidCommits: true
+  
+  # Ignore commits matching this regex
+  commitIgnoreRegexPattern: "^WIP |^wip:"
+  
+  # Customize section headers (with emojis!)
+  headlines:
+    feat: "🚀 Features"
+    fix: "🐛 Bug Fixes"
+    perf: "⚡ Performance Improvements"
+    refactor: "♻️ Refactoring"
+    docs: "📚 Documentation"
+    test: "🧪 Tests"
+    build: "🔧 Build System"
+    ci: "⚙️ CI/CD"
+    chore: "🔧 Maintenance"
+    style: "💄 Code Style"
+    revert: "⏪ Reverts"
+    merge: "🔀 Merges"
+    breakingChange: "🚨 BREAKING CHANGES"
+  
+  # Link generation (customize for your repository)
+  commitUrl: "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/commit/%commit%"
+  commitRangeUrl: "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/compare/%from%...%to%"
+  
+  # Issue linking
+  issueUrl: "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/issues/%issue%"
+  issueRegexPattern: "#[0-9]+"
+  
+  # Alternative: Jira issue linking
+  # issueUrl: "https://yourcompany.atlassian.net/browse/%issue%"
+  # issueRegexPattern: "[A-Z]{2,}-[0-9]+"
