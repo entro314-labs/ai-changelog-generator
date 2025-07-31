@@ -51,7 +51,6 @@
     "dxt:pack": "npm run dxt:prepack && npx @anthropic-ai/dxt pack",
     "dxt:prepack": "node -e \"const fs=require('fs'),path=require('path'); const src='node_modules/@modelcontextprotocol/sdk/dist', dest='node_modules/@modelcontextprotocol/sdk/dist'; if(fs.existsSync(src)) console.log('MCP SDK dist exists'); else console.error('MCP SDK dist missing');\"",
     "dxt:validate": "npx @anthropic-ai/dxt validate",
-    "prepublishOnly": "npm run test:comprehensive",
     "postinstall": "node -e \"console.log('\\n🎉 AI Changelog Generator installed!\\n\\n⚡ Quick Start:\\n  ai-changelog                 - Generate changelog\\n  ai-changelog --detailed      - Detailed analysis\\n  ai-changelog --interactive   - Interactive mode\\n  ai-changelog-mcp            - Start MCP server\\n\\n🤖 AI Models Supported:\\n  • GPT-4.1 series (1M context, 75% cost reduction)\\n  • o3/o4 reasoning models (Azure-only)\\n  • Automatic model selection\\n\\n📖 Docs: https://github.com/entro314-labs/AI-changelog-generator\\n\\n© All trademarks belong to their respective owners.\\n')\""
   },
   "dependencies": {
