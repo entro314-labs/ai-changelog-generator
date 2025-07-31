@@ -21,9 +21,11 @@ logs/
 .env.local*
 .env.backup
 
-# Build artifacts
-dist/
-build/
+# Build artifacts - exclude only our own build artifacts, not dependencies
+/dist/
+/build/
+# But preserve node_modules build artifacts (like MCP SDK dist/)
+!/node_modules/**/dist/
 
 # Documentation that's not needed in the extension
 docs/

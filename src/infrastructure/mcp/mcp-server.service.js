@@ -67,9 +67,20 @@ class AIChangelogMCPServer {
       this.gitAnalyzer = new GitRepositoryAnalyzer();
       this.analysisEngine = new AnalysisEngine();
       this.providerService = new ProviderManagementService();
+      
+      // Log available configuration
+      const hasProvider = process.env.AI_PROVIDER;
+      const hasApiKey = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GOOGLE_API_KEY;
+      
+      if (!hasProvider || !hasApiKey) {
+        console.error('[MCP] Warning: No AI provider or API key configured. Tools will provide configuration guidance.');
+      } else {
+        console.error(`[MCP] Configured with provider: ${process.env.AI_PROVIDER}`);
+      }
+      
     } catch (error) {
-      console.error('Failed to initialize services:', error.message);
-      throw error;
+      console.error('[MCP] Failed to initialize services:', error.message);
+      console.error('[MCP] Server will start but tools may require configuration');
     }
   }
 
@@ -474,21 +485,44 @@ class AIChangelogMCPServer {
       const transport = new StdioServerTransport();
       await this.server.connect(transport);
 
-      // Minimal heartbeat - no console output for MCP protocol
-      const keepAlive = setInterval(() => {}, 30000);
-
-      const gracefulShutdown = (signal) => {
-        clearInterval(keepAlive);
-        process.exit(0);
+      // Setup graceful shutdown
+      let isShuttingDown = false;
+      const gracefulShutdown = async (signal) => {
+        if (isShuttingDown) return;
+        isShuttingDown = true;
+        
+        try {
+          console.error(`[MCP] Received ${signal}, shutting down gracefully...`);
+          await this.server.close();
+          process.exit(0);
+        } catch (error) {
+          console.error('[MCP] Error during shutdown:', error);
+          process.exit(1);
+        }
       };
 
-      process.on('SIGINT', gracefulShutdown);
-      process.on('SIGTERM', gracefulShutdown);
+      process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+      process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+      process.on('SIGQUIT', () => gracefulShutdown('SIGQUIT'));
 
-      return new Promise(() => {}); // Never resolves, keeps server alive
+      // Handle uncaught exceptions
+      process.on('uncaughtException', (error) => {
+        console.error('[MCP] Uncaught exception:', error);
+        gracefulShutdown('uncaughtException');
+      });
+
+      process.on('unhandledRejection', (reason, promise) => {
+        console.error('[MCP] Unhandled rejection at:', promise, 'reason:', reason);
+        gracefulShutdown('unhandledRejection');
+      });
+
+      console.error('[MCP] AI Changelog Generator server running...');
+      
+      // Keep process alive
+      return new Promise(() => {});
 
     } catch (error) {
-      console.error('MCP server failed:', error.message);
+      console.error('[MCP] Server failed to start:', error.message);
       throw error;
     }
   }

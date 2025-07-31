@@ -53,7 +53,7 @@
     "dxt:prepack": "node -e \"const fs=require('fs'),path=require('path'); const src='node_modules/@modelcontextprotocol/sdk/dist', dest='node_modules/@modelcontextprotocol/sdk/dist'; if(fs.existsSync(src)) console.log('MCP SDK dist exists'); else console.error('MCP SDK dist missing');\"",
     "dxt:validate": "npx @anthropic-ai/dxt validate",
     "prepublishOnly": "npm run validate:mcp && npm run test:comprehensive",
-    "postinstall": "node -e \"console.log('\\n🎉 AI Changelog Generator installed!\\n\\n⚡ Quick Start:\\n  ai-changelog                 - Generate changelog\\n  ai-changelog --detailed      - Detailed analysis\\n  ai-changelog --interactive   - Interactive mode\\n  ai-changelog-mcp            - Start MCP server\\n\\n🤖 AI Models Supported:\\n  • GPT-4.1 series (1M context, 75% cost reduction)\\n  • o3/o4 reasoning models (Azure-only)\\n  • Automatic model selection\\n\\n📖 Docs: https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp\\n\\n© All trademarks belong to their respective owners.\\n')\""
+    "postinstall": "node -e \"console.log('\\n🎉 AI Changelog Generator installed!\\n\\n⚡ Quick Start:\\n  ai-changelog                 - Generate changelog\\n  ai-changelog --detailed      - Detailed analysis\\n  ai-changelog --interactive   - Interactive mode\\n  ai-changelog-mcp            - Start MCP server\\n\\n🤖 AI Models Supported:\\n  • GPT-4.1 series (1M context, 75% cost reduction)\\n  • o3/o4 reasoning models (Azure-only)\\n  • Automatic model selection\\n\\n📖 Docs: https://github.com/entro314-labs/AI-changelog-generator\\n\\n© All trademarks belong to their respective owners.\\n')\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.57.0",
@@ -66,6 +66,7 @@
     "@huggingface/inference": "^4.6.1",
     "@lmstudio/sdk": "^1.4.0",
     "@modelcontextprotocol/sdk": "^1.17.0",
+    "@modelcontextprotocol/server-filesystem": "2025.7.1",
     "chalk": "^5.4.1",
     "dotenv": "^17.2.1",
     "google-auth-library": "^10.2.0",
@@ -76,7 +77,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/dxt": "^0.2.6",
-    "@types/node": "24.1.0"
+    "@types/node": "22.15.30"
   },
   "keywords": [
     "changelog",
@@ -107,15 +108,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp.git"
+    "url": "git+https://github.com/entro314-labs/AI-changelog-generator.git"
   },
   "bugs": {
-    "url": "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/issues"
+    "url": "https://github.com/entro314-labs/AI-changelog-generator/issues"
   },
-  "homepage": "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp#readme",
+  "homepage": "https://github.com/entro314-labs/AI-changelog-generatorp#readme",
   "license": "MIT",
   "engines": {
-    "node": ">=22.0.0"
+    "node": "22.15.30"
   },
   "funding": {
     "type": "github",

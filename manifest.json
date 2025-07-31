@@ -9,9 +9,9 @@
     "name": "entro314-labs",
     "url": "https://github.com/entro314-labs"
   },
-  "homepage": "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp",
-  "documentation": "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp#readme",
-  "support": "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/issues",
+  "homepage": "https://github.com/entro314-labs/AI-changelog-generator",
+  "documentation": "https://github.com/entro314-labs/AI-changelog-generator#readme",
+  "support": "https://github.com/entro314-labs/AI-changelog-generator/issues",
   "icon": "icon.png",
   "server": {
     "type": "node",
@@ -40,19 +40,15 @@
   "tools": [
     {
       "name": "generate_changelog",
-      "description": "Generate AI-powered changelog from git commits or working directory changes with smart source detection"
+      "description": "Generate changelog from git commits with basic categorization and formatting"
     },
     {
       "name": "analyze_repository",
-      "description": "Comprehensive repository analysis including health, commits, branches, and changes with configurable scope"
+      "description": "Analyze git repository structure, branch info, and current status"
     },
     {
-      "name": "get_repository_status",
-      "description": "Get current repository status, branch info, and basic statistics quickly"
-    },
-    {
-      "name": "manage_ai_providers",
-      "description": "List, switch, test, or configure AI providers for changelog generation"
+      "name": "get_working_directory_changes",
+      "description": "Get current working directory changes including staged, unstaged, and untracked files"
     }
   ],
   "user_config": {
@@ -60,7 +56,7 @@
       "type": "string",
       "title": "AI Provider",
       "description": "Choose your preferred AI provider, choose from: azure, openai, google, huggingface, ollama, lmstudio",
-      "required": true,
+      "required": false,
       "sensitive": false,
       "default": "openai"
     },
@@ -159,7 +155,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp.git"
+    "url": "git+https://github.com/entro314-labs/AI-changelog-generator.git"
   },
   "compatibility": {
     "claude_desktop": ">=0.10.0",

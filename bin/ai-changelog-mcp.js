@@ -21,7 +21,7 @@ process.on('unhandledRejection', (reason, promise) => {
 // Start the MCP server with new architecture
 if (import.meta.url === `file://${process.argv[1]}`) {
   try {
-    console.error('🚀 Starting AI Changelog Generator MCP Server (Refactored)...');
+    console.error('🚀 Starting AI Changelog Generator MCP Server )...');
     const server = new AIChangelogMCPServer();
     server.run();
   } catch (error) {
