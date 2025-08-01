@@ -38,6 +38,7 @@ export class CLIController {
     this.commands.set('working-dir', new WorkingDirCommand());
     this.commands.set('from-commits', new FromCommitsCommand());
     this.commands.set('commit-message', new CommitMessageCommand());
+    this.commands.set('commit', new CommitCommand());
     this.commands.set('providers', new ProvidersCommand());
   }
 
@@ -125,6 +126,15 @@ export class CLIController {
 
       // Utility commands
       .command('commit-message', 'Generate a commit message for current changes.')
+      .command('commit', 'Interactive commit workflow with AI-generated messages.', (yargs) => {
+        yargs
+          .option('interactive', { alias: 'i', type: 'boolean', default: true, description: 'Use interactive staging (default).' })
+          .option('all', { alias: 'a', type: 'boolean', description: 'Automatically stage all changes.' })
+          .option('message', { alias: 'm', type: 'string', description: 'Use provided commit message (skip AI generation).' })
+          .option('dry-run', { type: 'boolean', description: 'Preview commit message without committing.' })
+          .option('editor', { alias: 'e', type: 'boolean', description: 'Open editor to review/edit commit message.' })
+          .option('model', { type: 'string', description: 'Override the default AI model.' });
+      })
       .command('providers', 'Manage AI providers.', (yargs) => {
         yargs
           .command('list', 'List available providers.')
@@ -336,6 +346,48 @@ class CommitMessageCommand extends BaseCommand {
       }
     } catch (error) {
       console.error(colors.errorMessage(`Error generating commit message: ${error.message}`));
+    }
+  }
+}
+
+class CommitCommand extends BaseCommand {
+  async execute(argv, appService) {
+    console.log(colors.processingMessage('🚀 Starting interactive commit workflow...'));
+
+    try {
+      // Process flags and model override
+      if (argv.model) appService.setModelOverride(argv.model);
+
+      // Execute the commit workflow
+      const result = await appService.executeCommitWorkflow({
+        interactive: argv.interactive !== false, // Default to true unless explicitly false
+        stageAll: argv.all || false,
+        customMessage: argv.message,
+        dryRun: argv.dryRun || false,
+        useEditor: argv.editor || false
+      });
+
+      if (result && result.success) {
+        if (argv.dryRun) {
+          console.log(colors.successMessage('✅ Commit workflow completed (dry-run mode)'));
+          console.log(colors.highlight(`Proposed commit message:\n${result.commitMessage}`));
+        } else {
+          console.log(colors.successMessage('✅ Changes committed successfully!'));
+          console.log(colors.highlight(`Commit: ${result.commitHash}`));
+          console.log(colors.dim(`Message: ${result.commitMessage}`));
+        }
+      } else {
+        console.log(colors.warningMessage('Commit workflow cancelled or no changes to commit.'));
+      }
+    } catch (error) {
+      console.error(colors.errorMessage(`Commit workflow failed: ${error.message}`));
+      
+      // Provide helpful suggestions based on error type
+      if (error.message.includes('No changes')) {
+        console.log(colors.infoMessage('💡 Try making some changes first, then run the commit command.'));
+      } else if (error.message.includes('git')) {
+        console.log(colors.infoMessage('💡 Make sure you are in a git repository and git is properly configured.'));
+      }
     }
   }
 }

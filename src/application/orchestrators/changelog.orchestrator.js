@@ -4,6 +4,8 @@ import { ChangelogService } from '../../domains/changelog/changelog.service.js';
 import { AnalysisEngine } from '../../domains/analysis/analysis.engine.js';
 import { ProviderManagerService } from '../../infrastructure/providers/provider-manager.service.js';
 import { InteractiveWorkflowService } from '../../infrastructure/interactive/interactive-workflow.service.js';
+import { InteractiveStagingService } from '../../infrastructure/interactive/interactive-staging.service.js';
+import { CommitMessageValidationService } from '../../infrastructure/validation/commit-message-validation.service.js';
 import colors from '../../shared/constants/colors.js';
 
 export class ChangelogOrchestrator {
@@ -54,6 +56,8 @@ export class ChangelogOrchestrator {
       this.analysisEngine = new AnalysisEngine(this.gitService, this.aiAnalysisService);
       this.changelogService = new ChangelogService(this.gitService, this.aiAnalysisService, this.analysisEngine, this.configManager);
       this.interactiveService = new InteractiveWorkflowService(this.gitService, this.aiAnalysisService, this.changelogService);
+      this.stagingService = new InteractiveStagingService(this.gitManager);
+      this.validationService = new CommitMessageValidationService(this.configManager);
 
       // Only log if not in MCP server mode
       if (!process.env.MCP_SERVER_MODE) {
@@ -726,5 +730,470 @@ export class ChangelogOrchestrator {
     if (this.aiAnalysisService) {
       this.aiAnalysisService.resetMetrics();
     }
+  }
+
+  // Interactive commit workflow
+  async executeCommitWorkflow(options = {}) {
+    await this.ensureInitialized();
+
+    console.log(colors.header('🚀 Interactive Commit Workflow'));
+
+    try {
+      // Step 1: Show current git status
+      const statusResult = await this.stagingService.showGitStatus();
+      
+      // Check if we have any changes at all
+      const totalChanges = statusResult.staged.length + statusResult.unstaged.length + statusResult.untracked.length;
+      if (totalChanges === 0) {
+        console.log(colors.infoMessage('✨ Working directory clean - no changes to commit.'));
+        return { success: false, message: 'No changes to commit' };
+      }
+
+      // Step 2: Handle staging based on options
+      let stagedFiles = [];
+      
+      if (options.stageAll) {
+        // Auto-stage all changes
+        console.log(colors.processingMessage('📦 Staging all changes...'));
+        await this.stagingService.stageAllChanges();
+        stagedFiles = [...statusResult.unstaged, ...statusResult.untracked];
+      } else if (options.interactive && (statusResult.unstaged.length > 0 || statusResult.untracked.length > 0)) {
+        // Interactive staging
+        console.log(colors.infoMessage('\n🎯 Interactive staging mode'));
+        stagedFiles = await this.stagingService.selectFilesToStage();
+        
+        if (stagedFiles.length === 0 && statusResult.staged.length === 0) {
+          console.log(colors.warningMessage('No files staged for commit.'));
+          return { success: false, message: 'No files staged' };
+        }
+      }
+
+      // Step 3: Verify we have staged changes
+      if (!this.stagingService.hasStagedChanges()) {
+        console.log(colors.warningMessage('No staged changes found for commit.'));
+        
+        if (statusResult.unstaged.length > 0 || statusResult.untracked.length > 0) {
+          console.log(colors.infoMessage('💡 Use --all flag to stage all changes, or run interactively to select files.'));
+        }
+        
+        return { success: false, message: 'No staged changes' };
+      }
+
+      // Step 4: Get final staged changes for analysis
+      const finalStatus = this.stagingService.getDetailedStatus();
+      console.log(colors.successMessage(`\n✅ Ready to commit ${finalStatus.staged.length} staged file(s)`));
+
+      // Step 5: Branch Intelligence Analysis
+      const { analyzeBranchIntelligence, getSuggestedCommitType, generateCommitContextFromBranch } = await import('../../shared/utils/utils.js');
+      
+      const branchAnalysis = analyzeBranchIntelligence();
+      const suggestedType = getSuggestedCommitType(branchAnalysis, finalStatus.staged);
+      const branchContext = generateCommitContextFromBranch(branchAnalysis, finalStatus.staged);
+
+      // Display branch intelligence findings
+      if (branchAnalysis.confidence > 20) {
+        console.log(colors.infoMessage('\n🧠 Branch Intelligence:'));
+        console.log(colors.secondary(`  Branch: ${branchAnalysis.branch}`));
+        
+        if (branchAnalysis.type) {
+          console.log(colors.success(`  🏷️  Detected type: ${branchAnalysis.type} (${branchAnalysis.confidence}% confidence)`));
+        }
+        
+        if (branchAnalysis.ticket) {
+          console.log(colors.highlight(`  🎫 Related ticket: ${branchAnalysis.ticket}`));
+        }
+        
+        if (branchAnalysis.description) {
+          console.log(colors.dim(`  📝 Description: ${branchAnalysis.description}`));
+        }
+        
+        console.log(colors.dim(`  🔍 Patterns: ${branchAnalysis.patterns.join(', ')}`));
+      }
+
+      // Display suggested commit type
+      console.log(colors.infoMessage(`\n💡 Suggested commit type: ${colors.highlight(suggestedType.type)} (from ${suggestedType.source}, ${suggestedType.confidence}% confidence)`));
+
+      // Step 6: Generate enhanced commit message
+      let commitMessage;
+      
+      if (options.customMessage) {
+        commitMessage = options.customMessage;
+      } else {
+        // Generate AI-enhanced commit message with branch context
+        commitMessage = this.generateBranchAwareCommitMessage(branchAnalysis, suggestedType, finalStatus.staged);
+      }
+
+      // Step 7: Validate commit message
+      console.log(colors.processingMessage('\n🔍 Validating commit message...'));
+      
+      const validationContext = {
+        branchAnalysis,
+        stagedFiles: finalStatus.staged,
+        suggestedType
+      };
+      
+      const validationResult = await this.validationService.validateCommitMessage(commitMessage, validationContext);
+      
+      // Display validation results
+      const isValid = this.validationService.displayValidationResults(validationResult);
+      
+      // Step 8: Interactive improvement if needed
+      if (!isValid || validationResult.warnings.length > 0) {
+        const { confirm } = await import('@clack/prompts');
+        
+        const shouldImprove = await confirm({
+          message: 'Would you like to improve the commit message?',
+          initialValue: !isValid
+        });
+        
+        if (shouldImprove) {
+          commitMessage = await this.handleCommitMessageImprovement(commitMessage, validationResult, validationContext);
+        }
+      }
+
+      if (options.dryRun) {
+        console.log(colors.infoMessage('\n📋 Dry-run mode - showing what would be committed:'));
+        console.log(colors.highlight(`Commit message:\n${commitMessage}`));
+        return {
+          success: true,
+          commitMessage,
+          stagedFiles: finalStatus.staged.length,
+          dryRun: true
+        };
+      }
+
+      // Step 6: Development phase notice
+      console.log(colors.warningMessage('\n⚠️  Commit execution is in development phase.'));
+      console.log(colors.infoMessage('Current capabilities:'));
+      console.log(colors.success('  • Git status analysis ✅'));
+      console.log(colors.success('  • Interactive staging ✅'));  
+      console.log(colors.dim('  • AI commit message generation (coming soon) ⏳'));
+      console.log(colors.dim('  • Git commit execution (coming soon) ⏳'));
+
+      console.log(colors.infoMessage('\n💡 Files are staged and ready for commit!'));
+      console.log(colors.infoMessage('💡 Use "git commit" manually or wait for the next phase.'));
+
+      return {
+        success: true,
+        commitMessage,
+        stagedFiles: finalStatus.staged.length,
+        phase: 'staging-complete'
+      };
+
+    } catch (error) {
+      console.error(colors.errorMessage(`Commit workflow error: ${error.message}`));
+      throw error;
+    }
+  }
+
+  /**
+   * Generate branch-aware commit message using AI and branch intelligence
+   */
+  generateBranchAwareCommitMessage(branchAnalysis, suggestedType, stagedFiles) {
+    const type = suggestedType.type;
+    
+    // Build description based on branch intelligence
+    let description = 'implement changes';
+    
+    if (branchAnalysis.description && branchAnalysis.confidence > 40) {
+      description = branchAnalysis.description;
+    } else {
+      // Generate description from file changes
+      const fileTypes = new Set();
+      stagedFiles.forEach(file => {
+        const path = file.path;
+        if (path.includes('service')) fileTypes.add('services');
+        if (path.includes('component')) fileTypes.add('components');
+        if (path.includes('utils')) fileTypes.add('utilities');
+        if (path.includes('config')) fileTypes.add('configuration');
+        if (path.includes('test')) fileTypes.add('tests');
+        if (path.includes('doc')) fileTypes.add('documentation');
+      });
+      
+      if (fileTypes.size > 0) {
+        description = `update ${Array.from(fileTypes).join(', ')}`;
+      }
+    }
+
+    // Build commit message
+    let commitMessage = `${type}: ${description}`;
+    
+    // Add body with details
+    const bodyLines = [];
+    
+    if (branchAnalysis.ticket) {
+      bodyLines.push(`Related to: ${branchAnalysis.ticket}`);
+    }
+    
+    // Add file summary
+    const addedFiles = stagedFiles.filter(f => f.status === 'A').length;
+    const modifiedFiles = stagedFiles.filter(f => f.status === 'M').length;
+    const deletedFiles = stagedFiles.filter(f => f.status === 'D').length;
+    
+    const changes = [];
+    if (addedFiles > 0) changes.push(`${addedFiles} added`);
+    if (modifiedFiles > 0) changes.push(`${modifiedFiles} modified`);
+    if (deletedFiles > 0) changes.push(`${deletedFiles} deleted`);
+    
+    if (changes.length > 0) {
+      bodyLines.push(`Files: ${changes.join(', ')}`);
+    }
+    
+    // Add branch context
+    if (branchAnalysis.confidence > 60) {
+      bodyLines.push(`Branch: ${branchAnalysis.branch} (${branchAnalysis.confidence}% confidence)`);
+    }
+
+    if (bodyLines.length > 0) {
+      commitMessage += '\n\n' + bodyLines.join('\n');
+    }
+
+    return commitMessage;
+  }
+
+  /**
+   * Handle interactive commit message improvement
+   */
+  async handleCommitMessageImprovement(originalMessage, validationResult, context) {
+    const { select, text, confirm } = await import('@clack/prompts');
+
+    console.log(colors.infoMessage('\n🔧 Commit Message Improvement'));
+
+    // Try automatic improvement first
+    const improvementResult = await this.validationService.improveCommitMessage(originalMessage, context);
+    
+    const options = [
+      {
+        value: 'auto',
+        label: '🤖 Use automatically improved version',
+        hint: improvementResult.improved ? 'AI-suggested improvements applied' : 'Minor fixes applied'
+      },
+      {
+        value: 'manual',
+        label: '✏️  Edit manually',
+        hint: 'Customize the commit message yourself'
+      }
+    ];
+
+    // Add AI suggestions if available
+    if (this.aiAnalysisService.hasAI) {
+      options.unshift({
+        value: 'ai',
+        label: '🧠 Generate AI suggestions',
+        hint: 'Get AI-powered commit message alternatives'
+      });
+    }
+
+    const choice = await select({
+      message: 'How would you like to improve the commit message?',
+      options
+    });
+
+    switch (choice) {
+      case 'ai':
+        return await this.generateAICommitSuggestions(originalMessage, context, validationResult);
+      
+      case 'auto':
+        console.log(colors.successMessage(`\n✅ Using improved message:`));
+        console.log(colors.highlight(improvementResult.message));
+        return improvementResult.message;
+      
+      case 'manual':
+        return await this.handleManualCommitEdit(originalMessage, validationResult);
+      
+      default:
+        return originalMessage;
+    }
+  }
+
+  /**
+   * Generate AI-powered commit message suggestions
+   */
+  async generateAICommitSuggestions(originalMessage, context, validationResult) {
+    const { select } = await import('@clack/prompts');
+
+    console.log(colors.processingMessage('🤖 Generating AI suggestions...'));
+
+    try {
+      // Build comprehensive context for AI
+      const branchInfo = context.branchAnalysis?.confidence > 30 
+        ? `Branch: ${context.branchAnalysis.branch} (${context.branchAnalysis.type || 'unknown'} type)`
+        : '';
+      
+      const fileChanges = context.stagedFiles.map(f => `${f.status} ${f.path}`).join('\n');
+      
+      const validationIssues = [
+        ...validationResult.errors,
+        ...validationResult.warnings
+      ].join('\n');
+
+      const prompt = `Improve this commit message based on the validation feedback and context:
+
+Original message: "${originalMessage}"
+
+Validation issues:
+${validationIssues}
+
+File changes:
+${fileChanges}
+
+${branchInfo}
+
+Requirements:
+- Follow conventional commit format
+- Address all validation issues
+- Keep subject under 72 characters
+- Use imperative mood
+- Be specific and descriptive
+
+Provide 3 improved alternatives.`;
+
+      const response = await this.aiAnalysisService.aiProvider.generateCompletion([{
+        role: 'user',
+        content: prompt
+      }], { max_tokens: 300 });
+
+      const suggestions = this.parseAICommitSuggestions(response.content);
+      
+      if (suggestions.length === 0) {
+        console.log(colors.warningMessage('No AI suggestions generated, falling back to manual edit.'));
+        return await this.handleManualCommitEdit(originalMessage, validationResult);
+      }
+
+      // Present suggestions to user
+      const choices = suggestions.map((suggestion, index) => ({
+        value: suggestion,
+        label: `${index + 1}. ${suggestion.split('\n')[0]}`, // First line only
+        hint: suggestion.includes('\n') ? 'Has body content' : 'Subject only'
+      }));
+
+      choices.push({
+        value: 'MANUAL',
+        label: '✏️  Edit manually instead',
+        hint: 'Write your own commit message'
+      });
+
+      const selectedMessage = await select({
+        message: 'Choose an AI-generated commit message:',
+        options: choices
+      });
+
+      if (selectedMessage === 'MANUAL') {
+        return await this.handleManualCommitEdit(originalMessage, validationResult);
+      }
+
+      console.log(colors.successMessage('\n✅ Selected AI suggestion:'));
+      console.log(colors.highlight(selectedMessage));
+      return selectedMessage;
+
+    } catch (error) {
+      console.error(colors.errorMessage(`AI suggestion failed: ${error.message}`));
+      return await this.handleManualCommitEdit(originalMessage, validationResult);
+    }
+  }
+
+  /**
+   * Handle manual commit message editing
+   */
+  async handleManualCommitEdit(originalMessage, validationResult) {
+    const { text, confirm } = await import('@clack/prompts');
+
+    console.log(colors.infoMessage('\n✏️  Manual Edit Mode'));
+    console.log(colors.dim('Validation issues to address:'));
+    
+    validationResult.errors.forEach(error => {
+      console.log(colors.error(`  • ${error}`));
+    });
+    
+    validationResult.warnings.forEach(warning => {
+      console.log(colors.warning(`  • ${warning}`));
+    });
+
+    if (validationResult.suggestions.length > 0) {
+      console.log(colors.dim('\nSuggestions:'));
+      validationResult.suggestions.forEach(suggestion => {
+        console.log(colors.dim(`  • ${suggestion}`));
+      });
+    }
+
+    let improvedMessage;
+    let isValid = false;
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (!isValid && attempts < maxAttempts) {
+      improvedMessage = await text({
+        message: 'Enter improved commit message:',
+        placeholder: originalMessage,
+        defaultValue: attempts === 0 ? originalMessage : undefined,
+        validate: (input) => {
+          if (!input || input.trim().length === 0) {
+            return 'Commit message cannot be empty';
+          }
+        }
+      });
+
+      // Validate the improved message
+      const newValidation = await this.validationService.validateCommitMessage(improvedMessage, {
+        branchAnalysis: validationResult.parsed?.branchAnalysis
+      });
+
+      if (newValidation.valid) {
+        isValid = true;
+        console.log(colors.successMessage('✅ Validation passed!'));
+      } else {
+        attempts++;
+        console.log(colors.warningMessage(`\n⚠️  Validation failed (attempt ${attempts}/${maxAttempts}):`));
+        this.validationService.displayValidationResults(newValidation);
+
+        if (attempts < maxAttempts) {
+          const tryAgain = await confirm({
+            message: 'Try again with improvements?',
+            initialValue: true
+          });
+
+          if (!tryAgain) {
+            break;
+          }
+        }
+      }
+    }
+
+    return improvedMessage || originalMessage;
+  }
+
+  /**
+   * Parse AI-generated commit suggestions
+   */
+  parseAICommitSuggestions(content) {
+    const suggestions = [];
+    const lines = content.split('\n').filter(line => line.trim());
+
+    let currentSuggestion = '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // Check if it's a new suggestion (starts with number, bullet, or looks like commit format)
+      if (trimmed.match(/^(\d+[\.\)]|\*|-|•)|^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.*?\))?:/)) {
+        if (currentSuggestion) {
+          suggestions.push(currentSuggestion.trim());
+        }
+        // Clean up the line (remove numbering/bullets)
+        currentSuggestion = trimmed.replace(/^(\d+[\.\)]|\*|-|•)\s*/, '');
+      } else if (currentSuggestion && trimmed.length > 0) {
+        // Add to current suggestion (body content)
+        currentSuggestion += '\n' + trimmed;
+      }
+    }
+
+    // Add the last suggestion
+    if (currentSuggestion) {
+      suggestions.push(currentSuggestion.trim());
+    }
+
+    // Filter valid suggestions
+    return suggestions
+      .filter(s => s.length > 10 && s.includes(':'))
+      .slice(0, 3); // Limit to 3 suggestions
   }
 }

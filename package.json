@@ -57,7 +57,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.57.0",
-    "@aws-sdk/client-bedrock-runtime": "^3.857.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.858.0",
     "@azure/identity": "^4.10.2",
     "@clack/prompts": "^0.11.0",
     "@google/genai": "^1.12.0",
@@ -65,7 +65,7 @@
     "@huggingface/hub": "^2.4.0",
     "@huggingface/inference": "^4.6.1",
     "@lmstudio/sdk": "^1.4.0",
-    "@modelcontextprotocol/sdk": "^1.17.0",
+    "@modelcontextprotocol/sdk": "^1.17.1",
     "@modelcontextprotocol/server-filesystem": "2025.7.1",
     "chalk": "^5.4.1",
     "dotenv": "^17.2.1",
@@ -118,8 +118,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "engines": {
-  },
+  "engines": {},
   "funding": {
     "type": "github",
     "url": "https://github.com/sponsors/entro314-labs"

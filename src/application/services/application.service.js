@@ -298,4 +298,17 @@ export class ApplicationService {
       throw error;
     }
   }
+
+  // Interactive commit workflow
+  async executeCommitWorkflow(options = {}) {
+    try {
+      await this.ensureInitialized();
+      
+      // Delegate to orchestrator for the commit workflow
+      return await this.orchestrator.executeCommitWorkflow(options);
+    } catch (error) {
+      console.error(colors.errorMessage('Commit workflow error:'), error.message);
+      throw error;
+    }
+  }
 }

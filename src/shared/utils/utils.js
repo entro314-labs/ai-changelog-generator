@@ -1991,6 +1991,358 @@ export function assessChangeComplexity(diff) {
 }
 
 // ========================================
+// BRANCH INTELLIGENCE UTILITIES
+// ========================================
+
+/**
+ * Get current git branch name
+ */
+export function getCurrentBranch() {
+  try {
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+    return branch !== 'HEAD' ? branch : null;
+  } catch (error) {
+    console.warn(colors.warning('Could not determine current branch'));
+    return null;
+  }
+}
+
+/**
+ * Extract branch context and intelligence from branch name
+ * Based on better-commits patterns: type/ticket-description, feat/ABC-123-add-feature
+ */
+export function analyzeBranchIntelligence(branchName = null) {
+  const branch = branchName || getCurrentBranch();
+  
+  if (!branch) {
+    return {
+      branch: null,
+      type: null,
+      ticket: null,
+      description: null,
+      confidence: 0,
+      patterns: []
+    };
+  }
+
+  const analysis = {
+    branch,
+    type: null,
+    ticket: null,
+    description: null,
+    confidence: 0,
+    patterns: []
+  };
+
+  // Pattern 1: type/ticket-description (e.g., feat/ABC-123-add-feature)
+  const typeTicketDescPattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)\/([A-Z]{2,}-\d+)-(.+)$/i;
+  let match = branch.match(typeTicketDescPattern);
+  if (match) {
+    analysis.type = match[1].toLowerCase();
+    analysis.ticket = match[2].toUpperCase();
+    analysis.description = match[3].replace(/[-_]/g, ' ');
+    analysis.confidence = 95;
+    analysis.patterns.push('type/ticket-description');
+    return analysis;
+  }
+
+  // Pattern 2: type/description (e.g., feat/add-new-feature)
+  const typeDescPattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)\/(.+)$/i;
+  match = branch.match(typeDescPattern);
+  if (match) {
+    analysis.type = match[1].toLowerCase();
+    analysis.description = match[2].replace(/[-_]/g, ' ');
+    analysis.confidence = 85;
+    analysis.patterns.push('type/description');
+    
+    // Look for ticket in description
+    const ticketInDesc = match[2].match(/([A-Z]{2,}-\d+)/);
+    if (ticketInDesc) {
+      analysis.ticket = ticketInDesc[1];
+      analysis.confidence = 90;
+      analysis.patterns.push('ticket-in-description');
+    }
+    return analysis;
+  }
+
+  // Pattern 3: ticket-description (e.g., ABC-123-fix-bug)
+  const ticketDescPattern = /^([A-Z]{2,}-\d+)-(.+)$/;
+  match = branch.match(ticketDescPattern);
+  if (match) {
+    analysis.ticket = match[1];
+    analysis.description = match[2].replace(/[-_]/g, ' ');
+    analysis.confidence = 70;
+    analysis.patterns.push('ticket-description');
+    
+    // Infer type from description
+    const inferredType = inferTypeFromDescription(match[2]);
+    if (inferredType) {
+      analysis.type = inferredType;
+      analysis.confidence = 75;
+      analysis.patterns.push('inferred-type');
+    }
+    return analysis;
+  }
+
+  // Pattern 4: just type at start (e.g., feat-add-feature)
+  const typeStartPattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)[-_](.+)$/i;
+  match = branch.match(typeStartPattern);
+  if (match) {
+    analysis.type = match[1].toLowerCase();
+    analysis.description = match[2].replace(/[-_]/g, ' ');
+    analysis.confidence = 60;
+    analysis.patterns.push('type-start');
+    return analysis;
+  }
+
+  // Pattern 5: ticket at start (e.g., ABC-123_add_feature)
+  const ticketStartPattern = /^([A-Z]{2,}-\d+)[-_](.+)$/;
+  match = branch.match(ticketStartPattern);
+  if (match) {
+    analysis.ticket = match[1];
+    analysis.description = match[2].replace(/[-_]/g, ' ');
+    analysis.confidence = 60;
+    analysis.patterns.push('ticket-start');
+    
+    // Infer type from description
+    const inferredType = inferTypeFromDescription(match[2]);
+    if (inferredType) {
+      analysis.type = inferredType;
+      analysis.confidence = 65;
+      analysis.patterns.push('inferred-type');
+    }
+    return analysis;
+  }
+
+  // Pattern 6: just ticket anywhere (e.g., add-feature-ABC-123)
+  const ticketAnywherePattern = /([A-Z]{2,}-\d+)/;
+  match = branch.match(ticketAnywherePattern);
+  if (match) {
+    analysis.ticket = match[1];
+    analysis.confidence = 40;
+    analysis.patterns.push('ticket-anywhere');
+    
+    // Use the whole branch as description, removing ticket
+    analysis.description = branch.replace(match[1], '').replace(/[-_]/g, ' ').trim();
+    return analysis;
+  }
+
+  // Pattern 7: conventional type anywhere in branch
+  const typeAnywherePattern = /(feat|fix|docs|style|refactor|perf|test|build|ci|chore)/i;
+  match = branch.match(typeAnywherePattern);
+  if (match) {
+    analysis.type = match[1].toLowerCase();
+    analysis.confidence = 30;
+    analysis.patterns.push('type-anywhere');
+    analysis.description = branch.replace(/[-_]/g, ' ');
+    return analysis;
+  }
+
+  // Fallback: use branch as description and try to infer type
+  analysis.description = branch.replace(/[-_]/g, ' ');
+  const inferredType = inferTypeFromDescription(branch);
+  if (inferredType) {
+    analysis.type = inferredType;
+    analysis.confidence = 25;
+    analysis.patterns.push('inferred-type');
+  } else {
+    analysis.confidence = 10;
+    analysis.patterns.push('no-pattern');
+  }
+
+  return analysis;
+}
+
+/**
+ * Infer commit type from description text
+ */
+function inferTypeFromDescription(description) {
+  const text = description.toLowerCase();
+  
+  // Feature indicators
+  if (text.match(/add|new|create|implement|introduce|feature/)) return 'feat';
+  
+  // Fix indicators
+  if (text.match(/fix|bug|error|issue|resolve|correct|patch/)) return 'fix';
+  
+  // Documentation indicators
+  if (text.match(/doc|readme|comment|guide|tutorial/)) return 'docs';
+  
+  // Style indicators
+  if (text.match(/style|format|lint|prettier|eslint/)) return 'style';
+  
+  // Refactor indicators
+  if (text.match(/refactor|restructure|reorganize|cleanup|clean/)) return 'refactor';
+  
+  // Performance indicators
+  if (text.match(/perf|performance|optimize|speed|fast/)) return 'perf';
+  
+  // Test indicators
+  if (text.match(/test|spec|unit|integration/)) return 'test';
+  
+  // Build indicators
+  if (text.match(/build|deploy|package|bundle|webpack|vite/)) return 'build';
+  
+  // CI indicators
+  if (text.match(/ci|pipeline|action|workflow|github/)) return 'ci';
+  
+  // Chore indicators
+  if (text.match(/chore|update|upgrade|dependency|deps|config/)) return 'chore';
+  
+  return null;
+}
+
+/**
+ * Generate enhanced commit message context from branch intelligence
+ */
+export function generateCommitContextFromBranch(branchAnalysis, changes = []) {
+  if (!branchAnalysis || branchAnalysis.confidence < 20) {
+    return '';
+  }
+
+  let context = '\n**Branch Context:**';
+  
+  if (branchAnalysis.type) {
+    context += `\n- Inferred type: ${branchAnalysis.type}`;
+  }
+  
+  if (branchAnalysis.ticket) {
+    context += `\n- Related ticket: ${branchAnalysis.ticket}`;
+  }
+  
+  if (branchAnalysis.description) {
+    context += `\n- Branch description: ${branchAnalysis.description}`;
+  }
+  
+  context += `\n- Confidence: ${branchAnalysis.confidence}%`;
+  context += `\n- Detection patterns: ${branchAnalysis.patterns.join(', ')}`;
+  
+  return context;
+}
+
+/**
+ * Get suggested commit type based on branch analysis and file changes
+ */
+export function getSuggestedCommitType(branchAnalysis, changes = []) {
+  // High confidence branch type takes precedence
+  if (branchAnalysis && branchAnalysis.type && branchAnalysis.confidence >= 70) {
+    return {
+      type: branchAnalysis.type,
+      source: 'branch',
+      confidence: branchAnalysis.confidence
+    };
+  }
+
+  // Analyze file changes to infer type
+  const changeAnalysis = analyzeChangesForType(changes);
+  
+  // Medium confidence branch type combined with file analysis
+  if (branchAnalysis && branchAnalysis.type && branchAnalysis.confidence >= 40) {
+    if (changeAnalysis.type === branchAnalysis.type) {
+      return {
+        type: branchAnalysis.type,
+        source: 'branch+files',
+        confidence: Math.min(95, branchAnalysis.confidence + 20)
+      };
+    }
+  }
+
+  // Use file-based analysis
+  if (changeAnalysis.confidence >= 60) {
+    return changeAnalysis;
+  }
+
+  // Low confidence branch type as fallback
+  if (branchAnalysis && branchAnalysis.type) {
+    return {
+      type: branchAnalysis.type,
+      source: 'branch-fallback',
+      confidence: branchAnalysis.confidence
+    };
+  }
+
+  // Default fallback
+  return {
+    type: 'feat',
+    source: 'default',
+    confidence: 20
+  };
+}
+
+/**
+ * Analyze file changes to suggest commit type
+ */
+function analyzeChangesForType(changes) {
+  if (!changes || changes.length === 0) {
+    return { type: 'feat', source: 'default', confidence: 20 };
+  }
+
+  const categories = {
+    docs: 0,
+    test: 0,
+    config: 0,
+    source: 0,
+    style: 0
+  };
+
+  // Categorize files
+  changes.forEach(change => {
+    const path = change.path || change.filePath || '';
+    const ext = path.split('.').pop()?.toLowerCase() || '';
+    
+    if (path.match(/readme|doc|\.md$|guide|tutorial/i)) {
+      categories.docs++;
+    } else if (path.match(/test|spec|\.test\.|\.spec\./i)) {
+      categories.test++;
+    } else if (path.match(/config|\.json$|\.yaml$|\.yml$|\.toml$|\.ini$/i)) {
+      categories.config++;
+    } else if (path.match(/\.css$|\.scss$|\.less$|\.styl$/i)) {
+      categories.style++;
+    } else if (['js', 'ts', 'jsx', 'tsx', 'py', 'go', 'rs', 'java', 'c', 'cpp'].includes(ext)) {
+      categories.source++;
+    }
+  });
+
+  const total = Object.values(categories).reduce((a, b) => a + b, 0);
+  
+  if (total === 0) {
+    return { type: 'feat', source: 'files-default', confidence: 30 };
+  }
+
+  // Determine primary type
+  if (categories.docs / total > 0.6) {
+    return { type: 'docs', source: 'files', confidence: 80 };
+  }
+  
+  if (categories.test / total > 0.6) {
+    return { type: 'test', source: 'files', confidence: 80 };
+  }
+  
+  if (categories.config / total > 0.6) {
+    return { type: 'chore', source: 'files', confidence: 70 };
+  }
+  
+  if (categories.style / total > 0.6) {
+    return { type: 'style', source: 'files', confidence: 75 };
+  }
+
+  // Mixed or source-heavy changes - look at modification patterns
+  const hasNewFiles = changes.some(c => c.status === 'A' || c.status === '??');
+  const hasDeletedFiles = changes.some(c => c.status === 'D');
+  
+  if (hasNewFiles && !hasDeletedFiles) {
+    return { type: 'feat', source: 'files-new', confidence: 65 };
+  }
+  
+  if (hasDeletedFiles) {
+    return { type: 'refactor', source: 'files-deleted', confidence: 60 };
+  }
+
+  // Default to feat for source changes
+  return { type: 'feat', source: 'files-mixed', confidence: 50 };
+}
+
+// ========================================
 // CHANGELOG UTILITIES (EXTENDED)
 // ========================================
 
