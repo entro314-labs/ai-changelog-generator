@@ -77,7 +77,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/dxt": "^0.2.6",
-    "@types/node": "24.2.0"
+    "@types/node": "22.17.1"
   },
   "keywords": [
     "changelog",
