@@ -148,6 +148,27 @@ ai-changelog --help
 
 That's it! Your AI-powered changelog is ready to generate.
 
+## Demo
+
+### Interactive Mode
+See the tool in action with our interactive mode demo:
+
+![Interactive Demo](docs/media/demo-interactive-optimized.gif)
+
+*Interactive mode with guided setup and provider selection*
+
+### Quick Generation
+Watch how fast you can generate professional changelogs:
+
+![Quick Demo](docs/media/demo-quick-real.gif)
+
+*Generate changelogs from recent commits in seconds*
+
+### Video Walkthrough
+For a complete walkthrough of features and capabilities:
+
+[📺 Watch Full Demo Video](docs/media/demo-interactive.mp4)
+
 ## How It Works
 
 1. **Code Analysis**: Analyzes actual git diffs and file changes using advanced AI models
@@ -326,6 +347,7 @@ ai-changelog health --detailed
 - **[Configuration Reference](./docs/configuration.md)** - All YAML and environment options
 - **[MCP Integration](./docs/mcp-integration.md)** - Claude Desktop and MCP server setup
 - **[API Reference](./docs/api-reference.md)** - All commands, options, and programmatic usage
+- **[Demo Media](./docs/media/)** - Interactive demos, GIFs, and video walkthroughs
 
 ## Contributing
 

@@ -5,6 +5,98 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2025-08-01 ([480d3bc...a55fbc9](https://github.com/entro314-labs/AI-changelog-generator/compare/480d3bc9ac50fb983ddcf856aa99f9cc05cfc601...a55fbc98c36bd95d44d1582ed290b432e696058a))
+
+### 📋 Release Summary
+Release 3.1.1 includes 10 commits (3 chore, 2 feature, 2 fix, 2 refactor, 1 docs). Complexity: low. Affected areas: configuration, documentation, source, other, assets.
+
+**Business Impact**: minor
+**Complexity**: low
+
+## Changes
+
+### 🔧 Maintenance
+
+- **Update package.json**: The package version was incremented from 3.0.4 to 3.0.5 in package.json. No functional or dependency changes were made. ([641ad94](https://github.com/entro314-labs/AI-changelog-generator/commit/641ad94a5907d587f4427d1bfab195f7590a20a6))
+- **Update package.json**: The version field in package.json was incremented from 3.0.3 to 3.0.4. No functionality, dependencies, or APIs were changed. ([787425e](https://github.com/entro314-labs/AI-changelog-generator/commit/787425e6f9b8524a3a2ee894ee201fcf29fc2e44))
+
+### 📚 Documentation
+
+- **minor updates**: A comprehensive new setup guide was added, while several older, more detailed documentation files were removed for clarity and maintainability. Minor updates were made to documentation references and copyright information. ([28c0949](https://github.com/entro314-labs/AI-changelog-generator/commit/28c0949bcf455be78efae9162a4463bfc54afe3e))
+
+### 🐛 Bug Fixes
+
+- **fix: add publishConfig for public access**: Added a publishConfig section to package.json to specify public access for npm publishing. No application logic or user-facing functionality was changed. ([0f78591](https://github.com/entro314-labs/AI-changelog-generator/commit/0f7859165c80f29383afe6d02f88999664c29459))
+- **fix: remove prepublishOnly hook with missing test-runner**: The 'prepublishOnly' npm script, which referenced a non-existent test runner, was removed from package.json. This prevents publishing errors caused by the missing script. ([0e7d691](https://github.com/entro314-labs/AI-changelog-generator/commit/0e7d691da1da409e57cabf77baf55f92b2d47d41))
+- **fix: remove missing validate:mcp script from prepublishOnly**: Removed the call to the non-existent 'validate:mcp' script from the 'prepublishOnly' lifecycle step in package.json. Only 'test:comprehensive' now runs before publishing. ([215c644](https://github.com/entro314-labs/AI-changelog-generator/commit/215c6440005607ed56684e8d7906be5fe252e6fc))
+
+### ♻️ Refactoring
+
+- **minor naming changes**: Internal code references to utility functions were updated to use a new file naming convention, changing imports from 'consolidated-utils.js' to 'utils.js' across multiple modules. No new features, APIs, or behavioral changes were introduced. ([3b99ef2](https://github.com/entro314-labs/AI-changelog-generator/commit/3b99ef20c6c3d39c5c1d7c0ea0ed8a84da07de34))
+- **minor naming updates**: This update removes sample DXT extension files and documentation, and restructures the MCP server entry point for clarity and maintainability. Internal naming and initialization logic were adjusted, but no APIs or user commands were added or removed. ([480d3bc](https://github.com/entro314-labs/AI-changelog-generator/commit/480d3bc9ac50fb983ddcf856aa99f9cc05cfc601))
+
+### 🔧 Working Directory Changes
+
+- (feature) Expanded color constants in colors.js - Added new color entries including 'dracula', 'draculaDark', 'draculaLight', 'draculaYellow', 'draculaCyan', 'draculaOrange', 'draculaPink', 'draculaPurple', 'draculaRed', 'draculaGreen', and 'draculaBackground' to the exported COLORS object.
+
+- (docs) Added changelog for version 3.1.0 - Created CHANGELOG-3.1.0.md with 50 lines detailing changes for version 3.1.0 dated 2025-08-01.
+
+- (other) Added demo tape and video files - Created demo-basic.tape, demo-features.tape, demo-interactive.tape, demo-quick-real.tape, demo-quick.tape, demo-simple.tape, and demo.tape with various demo scripts; added demo.mp4 and demo-interactive.mp4 video files.
+
+- (assets) Added demo GIF assets - Created demo-interactive-optimized.gif and demo-quick-real.gif with image data; added empty demo-interactive.gif, demo-optimized.gif, and demo-simple.gif files.
+
+---
+
+*Generated using [ai-changelog-generator](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*
+
+## [3.1.0] - 2025-08-01 ([480d3bc...a55fbc9](https://github.com/entro314-labs/AI-changelog-generator/compare/480d3bc9ac50fb983ddcf856aa99f9cc05cfc601...a55fbc98c36bd95d44d1582ed290b432e696058a))
+
+### 📋 Release Summary
+Release 3.1.0 includes 10 commits (3 chore, 2 feature, 2 fix, 2 refactor, 1 docs). Complexity: low. Affected areas: configuration, documentation, source, other, assets.
+
+**Business Impact**: minor
+**Complexity**: low
+
+## Changes
+
+### 🔧 Maintenance
+
+- **Update package.json**: The package.json file version was updated from 3.0.4 to 3.0.5. No functionality, dependencies, or configuration were changed. ([641ad94](https://github.com/entro314-labs/AI-changelog-generator/commit/641ad94a5907d587f4427d1bfab195f7590a20a6))
+- **Update package.json**: The package version was updated from 3.0.3 to 3.0.4 in package.json. No code, features, or dependencies were changed. ([787425e](https://github.com/entro314-labs/AI-changelog-generator/commit/787425e6f9b8524a3a2ee894ee201fcf29fc2e44))
+
+### 📚 Documentation
+
+- **minor updates**: A new comprehensive 'AI Provider Setup Guide' was added, consolidating and simplifying provider configuration instructions; several outdated or redundant documentation files were removed, and the .gitignore was updated to exclude these files. No application code or user-facing features were changed. ([28c0949](https://github.com/entro314-labs/AI-changelog-generator/commit/28c0949bcf455be78efae9162a4463bfc54afe3e))
+
+### 🐛 Bug Fixes
+
+- **fix: add publishConfig for public access**: Added a publishConfig section with 'access: public' to package.json, ensuring the package is published with public visibility. No application code or runtime behavior was changed. ([0f78591](https://github.com/entro314-labs/AI-changelog-generator/commit/0f7859165c80f29383afe6d02f88999664c29459))
+- **fix: remove prepublishOnly hook with missing test-runner**: The 'prepublishOnly' npm script, which referenced a non-existent 'test:comprehensive' command, was removed from package.json. This prevents npm publish operations from being blocked by missing scripts. ([0e7d691](https://github.com/entro314-labs/AI-changelog-generator/commit/0e7d691da1da409e57cabf77baf55f92b2d47d41))
+- **fix: remove missing validate:mcp script from prepublishOnly**: The prepublishOnly script no longer tries to run the removed validate:mcp command, which previously caused errors if the script was absent. Only the comprehensive test suite is now run before publishing. ([215c644](https://github.com/entro314-labs/AI-changelog-generator/commit/215c6440005607ed56684e8d7906be5fe252e6fc))
+
+### ♻️ Refactoring
+
+- **minor naming changes**: The update consolidates utility imports by renaming and redirecting them from 'consolidated-utils.js' to 'utils.js' across core modules and provider integrations. No APIs, commands, or outputs were changed; only internal code references were updated for consistency. ([3b99ef2](https://github.com/entro314-labs/AI-changelog-generator/commit/3b99ef20c6c3d39c5c1d7c0ea0ed8a84da07de34))
+- 🔥 **minor naming updates**: This update removes all sample DXT extension packages, documentation, and related files, and restructures the MCP server entry point and supporting utilities for improved clarity and maintainability. No new tools or APIs were introduced, and no user-facing commands or behaviors were modified. ([480d3bc](https://github.com/entro314-labs/AI-changelog-generator/commit/480d3bc9ac50fb983ddcf856aa99f9cc05cfc601))
+
+### 🔧 Working Directory Changes
+
+- (feature) Added demo-optimized.gif asset - Created new empty file demo-optimized.gif in assets.
+
+- (feature) Added demo-simple.gif asset - Created new empty file demo-simple.gif in assets.
+
+- (feature) Added demo-quick.tape script - Created new file demo-quick.tape with 70 lines, including commands for outputting demo-quick.gif, setting font size, width, height, theme, typing speed, and various typing and enter actions.
+
+- (feature) Added demo-simple.tape script - Created new file demo-simple.tape with 24 lines, including commands for outputting demo-simple.gif, setting font size, width, height, theme, typing speed, and typing a demo title.
+
+- (feature) Added demo.mp4 media file - Created new file demo.mp4 with 3243 lines of binary content.
+
+- (feature) Added demo.tape script - Created new file demo.tape with 129 lines, including documentation comments and commands for outputting GIF and MP4 files, setting font size, width, height, theme, typing speed, and various typing and enter actions.
+
+---
+
+*Generated using [ai-changelog-generator](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*
+
 ## [3.0.3]
 
 ### 🔧 **Maintenance & Bug Fixes**

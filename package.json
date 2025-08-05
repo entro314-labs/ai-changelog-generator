@@ -56,9 +56,9 @@
     "postinstall": "node -e \"console.log('\\n🎉 AI Changelog Generator installed!\\n\\n⚡ Quick Start:\\n  ai-changelog                 - Generate changelog\\n  ai-changelog --detailed      - Detailed analysis\\n  ai-changelog --interactive   - Interactive mode\\n  ai-changelog-mcp            - Start MCP server\\n\\n🤖 AI Models Supported:\\n  • GPT-4.1 series (1M context, 75% cost reduction)\\n  • o3/o4 reasoning models (Azure-only)\\n  • Automatic model selection\\n\\n📖 Docs: https://github.com/entro314-labs/AI-changelog-generator\\n\\n© All trademarks belong to their respective owners.\\n')\""
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.57.0",
-    "@aws-sdk/client-bedrock-runtime": "^3.858.0",
-    "@azure/identity": "^4.10.2",
+    "@anthropic-ai/sdk": "^0.58.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.861.0",
+    "@azure/identity": "^4.11.1",
     "@clack/prompts": "^0.11.0",
     "@google/genai": "^1.12.0",
     "@google/generative-ai": "^0.24.1",
@@ -66,18 +66,18 @@
     "@huggingface/inference": "^4.6.1",
     "@lmstudio/sdk": "^1.4.0",
     "@modelcontextprotocol/sdk": "^1.17.1",
-    "@modelcontextprotocol/server-filesystem": "2025.7.1",
-    "chalk": "^5.4.1",
+    "@modelcontextprotocol/server-filesystem": "2025.7.29",
+    "chalk": "^5.5.0",
     "dotenv": "^17.2.1",
-    "google-auth-library": "^10.2.0",
+    "google-auth-library": "^10.2.1",
     "js-yaml": "^4.1.0",
     "ollama": "^0.5.16",
-    "openai": "^5.11.0",
+    "openai": "^5.12.0",
     "yargs": "^18.0.0"
   },
   "devDependencies": {
     "@anthropic-ai/dxt": "^0.2.6",
-    "@types/node": "22.15.30"
+    "@types/node": "24.2.0"
   },
   "keywords": [
     "changelog",

@@ -271,15 +271,37 @@ class Colors {
     return `${this.info(`[${bar}]`)} ${this.percentage(`${percentage}%`)} ${label}`;
   }
 
-  // Box drawing for sections
-  box(title, content, width = 80) {
+  // Helper to get actual visible length of string (without ANSI codes)
+  getVisibleLength(str) {
+    // Remove ANSI escape sequences to get actual visible length
+    return str.replace(/\x1b\[[0-9;]*m/g, '').length;
+  }
+
+  // Box drawing for sections with dynamic width calculation
+  box(title, content, minWidth = 60) {
+    const lines = content.split('\n');
+    const titleVisibleLength = this.getVisibleLength(title);
+    
+    // Calculate required width based on content
+    const maxContentLength = Math.max(
+      titleVisibleLength + 4, // title + padding
+      ...lines.map(line => this.getVisibleLength(line) + 4), // content + padding
+      minWidth
+    );
+    
+    const width = Math.min(maxContentLength, 80); // Cap at 80 chars for readability
+    
     const topBorder = '┌' + '─'.repeat(width - 2) + '┐';
     const bottomBorder = '└' + '─'.repeat(width - 2) + '┘';
-    const titleLine = `│ ${this.header(title)}${' '.repeat(Math.max(0, width - title.length - 3))}│`;
     
-    const contentLines = content.split('\n').map(line => {
-      const paddedLine = line.padEnd(width - 4);
-      return `│ ${paddedLine} │`;
+    // Title line with proper padding accounting for ANSI codes
+    const titlePadding = width - titleVisibleLength - 3;
+    const titleLine = `│ ${this.header(title)}${' '.repeat(Math.max(0, titlePadding))}│`;
+    
+    const contentLines = lines.map(line => {
+      const visibleLength = this.getVisibleLength(line);
+      const padding = width - visibleLength - 4;
+      return `│ ${line}${' '.repeat(Math.max(0, padding))} │`;
     });
 
     return [
