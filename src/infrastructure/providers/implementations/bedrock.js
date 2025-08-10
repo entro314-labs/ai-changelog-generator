@@ -4,18 +4,24 @@
  * Supports Claude, Llama, and other Bedrock models
  */
 
-import { BedrockRuntimeClient, InvokeModelCommand, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
-import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
-import { applyMixins, ProviderResponseHandler } from '../utils/base-provider-helpers.js';
-import { buildClientOptions } from '../utils/provider-utils.js';
+import process from 'node:process'
+
+import {
+  BedrockRuntimeClient,
+  ConverseCommand,
+  InvokeModelCommand,
+} from '@aws-sdk/client-bedrock-runtime'
+
+import { BaseProvider } from '../core/base-provider.js'
+import { applyMixins, ProviderResponseHandler } from '../utils/base-provider-helpers.js'
+import { buildClientOptions } from '../utils/provider-utils.js'
 
 export class BedrockProvider extends BaseProvider {
   constructor(config) {
-    super(config);
-    this.bedrockClient = null;
+    super(config)
+    this.bedrockClient = null
     if (this.isAvailable()) {
-      this.initializeClient();
+      this.initializeClient()
     }
   }
 
@@ -23,44 +29,48 @@ export class BedrockProvider extends BaseProvider {
     const clientOptions = buildClientOptions(this.getProviderConfig(), {
       region: 'us-east-1',
       timeout: 60000,
-      maxRetries: 2
-    });
-    
+      maxRetries: 2,
+    })
+
     this.bedrockClient = new BedrockRuntimeClient({
       region: clientOptions.region || this.config.AWS_REGION || 'us-east-1',
-      credentials: this.config.AWS_ACCESS_KEY_ID ? {
-        accessKeyId: this.config.AWS_ACCESS_KEY_ID,
-        secretAccessKey: this.config.AWS_SECRET_ACCESS_KEY,
-        sessionToken: this.config.AWS_SESSION_TOKEN
-      } : undefined, // Use default credential chain if not provided
+      credentials: this.config.AWS_ACCESS_KEY_ID
+        ? {
+            accessKeyId: this.config.AWS_ACCESS_KEY_ID,
+            secretAccessKey: this.config.AWS_SECRET_ACCESS_KEY,
+            sessionToken: this.config.AWS_SESSION_TOKEN,
+          }
+        : undefined, // Use default credential chain if not provided
       maxAttempts: clientOptions.maxRetries,
-      requestTimeout: clientOptions.timeout
-    });
+      requestTimeout: clientOptions.timeout,
+    })
   }
 
   getName() {
-    return 'bedrock';
+    return 'bedrock'
   }
 
   isAvailable() {
     // Can use default AWS credential chain or explicit credentials
     return !!(
       // Explicit credentials
-      (this.config.AWS_ACCESS_KEY_ID && this.config.AWS_SECRET_ACCESS_KEY) ||
-      // Or AWS profile/role-based auth (detected at runtime)
-      this.config.AWS_REGION ||
-      // Or default region
-      process.env.AWS_REGION ||
-      process.env.AWS_DEFAULT_REGION
-    );
+      (
+        (this.config.AWS_ACCESS_KEY_ID && this.config.AWS_SECRET_ACCESS_KEY) ||
+        // Or AWS profile/role-based auth (detected at runtime)
+        this.config.AWS_REGION ||
+        // Or default region
+        process.env.AWS_REGION ||
+        process.env.AWS_DEFAULT_REGION
+      )
+    )
   }
 
   getRequiredEnvVars() {
-    return []; // Can work with default AWS credential chain
+    return [] // Can work with default AWS credential chain
   }
 
   getDefaultModel() {
-    return 'anthropic.claude-sonnet-4-20250514-v1:0';
+    return 'anthropic.claude-sonnet-4-20250514-v1:0'
   }
 
   async generateCompletion(messages, options = {}) {
@@ -68,33 +78,32 @@ export class BedrockProvider extends BaseProvider {
       this,
       'generate_completion',
       async () => {
-        const modelConfig = this.getProviderModelConfig();
-        const modelId = options.model || modelConfig.standardModel || this.getDefaultModel();
-        
+        const modelConfig = this.getProviderModelConfig()
+        const modelId = options.model || modelConfig.standardModel || this.getDefaultModel()
+
         // Use Converse API for modern interface
         if (this.supportsConverseAPI(modelId)) {
-          return await this.generateWithConverseAPI(messages, options, modelId);
-        } else {
-          return await this.generateWithInvokeModel(messages, options, modelId);
+          return await this.generateWithConverseAPI(messages, options, modelId)
         }
+        return await this.generateWithInvokeModel(messages, options, modelId)
       },
       { model: options.model }
-    );
+    )
   }
 
   supportsConverseAPI(modelId) {
     // Converse API supports Claude, Llama, and other modern models
-    return modelId.includes('claude') || modelId.includes('llama') || modelId.includes('titan');
+    return modelId.includes('claude') || modelId.includes('llama') || modelId.includes('titan')
   }
 
   async generateWithConverseAPI(messages, options, modelId) {
-    const systemMessage = messages.find(m => m.role === 'system');
+    const systemMessage = messages.find((m) => m.role === 'system')
     const conversationMessages = messages
-      .filter(m => m.role !== 'system')
-      .map(m => ({
+      .filter((m) => m.role !== 'system')
+      .map((m) => ({
         role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: [{ text: m.content }]
-      }));
+        content: [{ text: m.content }],
+      }))
 
     const converseParams = {
       modelId,
@@ -102,30 +111,30 @@ export class BedrockProvider extends BaseProvider {
       inferenceConfig: {
         maxTokens: options.max_tokens || 2000,
         temperature: options.temperature || 0.3,
-        topP: options.top_p || 0.9
-      }
-    };
+        topP: options.top_p || 0.9,
+      },
+    }
 
     if (systemMessage) {
-      converseParams.system = [{ text: systemMessage.content }];
+      converseParams.system = [{ text: systemMessage.content }]
     }
 
     if (options.tools && options.tools.length > 0) {
       converseParams.toolConfig = {
-        tools: options.tools.map(tool => ({
+        tools: options.tools.map((tool) => ({
           toolSpec: {
             name: tool.function.name,
             description: tool.function.description,
             inputSchema: {
-              json: tool.function.parameters
-            }
-          }
-        }))
-      };
+              json: tool.function.parameters,
+            },
+          },
+        })),
+      }
     }
 
-    const command = new ConverseCommand(converseParams);
-    const response = await this.bedrockClient.send(command);
+    const command = new ConverseCommand(converseParams)
+    const response = await this.bedrockClient.send(command)
 
     return {
       content: response.output.message.content[0].text,
@@ -133,65 +142,65 @@ export class BedrockProvider extends BaseProvider {
       usage: {
         prompt_tokens: response.usage.inputTokens,
         completion_tokens: response.usage.outputTokens,
-        total_tokens: response.usage.inputTokens + response.usage.outputTokens
+        total_tokens: response.usage.inputTokens + response.usage.outputTokens,
       },
       finish_reason: response.stopReason,
       tool_calls: response.output.message.content
-        .filter(c => c.toolUse)
-        .map(c => ({
+        .filter((c) => c.toolUse)
+        .map((c) => ({
           id: c.toolUse.toolUseId,
           type: 'function',
           function: {
             name: c.toolUse.name,
-            arguments: JSON.stringify(c.toolUse.input)
-          }
-        }))
-    };
+            arguments: JSON.stringify(c.toolUse.input),
+          },
+        })),
+    }
   }
 
   async generateWithInvokeModel(messages, options, modelId) {
     // Format for specific model types
-    let body;
-    
+    let body
+
     if (modelId.includes('claude')) {
       // Anthropic Claude format
-      const systemMessage = messages.find(m => m.role === 'system')?.content;
+      const systemMessage = messages.find((m) => m.role === 'system')?.content
       const conversationMessages = messages
-        .filter(m => m.role !== 'system')
-        .map(m => ({
+        .filter((m) => m.role !== 'system')
+        .map((m) => ({
           role: m.role,
-          content: m.content
-        }));
+          content: m.content,
+        }))
 
       body = JSON.stringify({
-        anthropic_version: "bedrock-2023-05-31",
+        anthropic_version: 'bedrock-2023-05-31',
         max_tokens: options.max_tokens || 2000,
         temperature: options.temperature || 0.3,
         system: systemMessage,
-        messages: conversationMessages
-      });
+        messages: conversationMessages,
+      })
     } else if (modelId.includes('llama')) {
       // Meta Llama format
-      const prompt = messages.map(m => `${m.role}: ${m.content}`).join('\n');
+      const prompt = messages.map((m) => `${m.role}: ${m.content}`).join('\n')
       body = JSON.stringify({
         prompt,
         max_gen_len: options.max_tokens || 2000,
         temperature: options.temperature || 0.3,
-        top_p: options.top_p || 0.9
-      });
+        top_p: options.top_p || 0.9,
+      })
     } else {
-      throw new Error(`Unsupported model format: ${modelId}`);
+      throw new Error(`Unsupported model format: ${modelId}`)
     }
 
     const command = new InvokeModelCommand({
       modelId,
       contentType: 'application/json',
       accept: 'application/json',
-      body
-    });
+      body,
+    })
 
-    const response = await this.bedrockClient.send(command);
-    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+    const response = await this.bedrockClient.send(command)
+    const responseBody = JSON.parse(new TextDecoder().decode(response.body))
 
     if (modelId.includes('claude')) {
       return {
@@ -200,21 +209,22 @@ export class BedrockProvider extends BaseProvider {
         usage: {
           prompt_tokens: responseBody.usage.input_tokens,
           completion_tokens: responseBody.usage.output_tokens,
-          total_tokens: responseBody.usage.input_tokens + responseBody.usage.output_tokens
+          total_tokens: responseBody.usage.input_tokens + responseBody.usage.output_tokens,
         },
-        finish_reason: responseBody.stop_reason
-      };
-    } else if (modelId.includes('llama')) {
+        finish_reason: responseBody.stop_reason,
+      }
+    }
+    if (modelId.includes('llama')) {
       return {
         content: responseBody.generation,
         model: modelId,
         usage: {
           prompt_tokens: responseBody.prompt_token_count,
           completion_tokens: responseBody.generation_token_count,
-          total_tokens: responseBody.prompt_token_count + responseBody.generation_token_count
+          total_tokens: responseBody.prompt_token_count + responseBody.generation_token_count,
         },
-        finish_reason: responseBody.stop_reason
-      };
+        finish_reason: responseBody.stop_reason,
+      }
     }
   }
 
@@ -231,8 +241,8 @@ export class BedrockProvider extends BaseProvider {
           function_calling: true,
           json_mode: true,
           multimodal: true,
-          advancedReasoning: true
-        }
+          advancedReasoning: true,
+        },
       },
       {
         name: 'anthropic.claude-sonnet-4-20250514-v1:0',
@@ -243,8 +253,8 @@ export class BedrockProvider extends BaseProvider {
           reasoning: true,
           function_calling: true,
           json_mode: true,
-          multimodal: true
-        }
+          multimodal: true,
+        },
       },
       {
         name: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -255,8 +265,8 @@ export class BedrockProvider extends BaseProvider {
           reasoning: true,
           function_calling: true,
           json_mode: true,
-          multimodal: true
-        }
+          multimodal: true,
+        },
       },
       // Meta Llama models
       {
@@ -268,8 +278,8 @@ export class BedrockProvider extends BaseProvider {
           reasoning: true,
           function_calling: false,
           json_mode: true,
-          multimodal: false
-        }
+          multimodal: false,
+        },
       },
       {
         name: 'meta.llama3-2-90b-instruct-v1:0',
@@ -280,8 +290,8 @@ export class BedrockProvider extends BaseProvider {
           reasoning: true,
           function_calling: false,
           json_mode: true,
-          multimodal: true
-        }
+          multimodal: true,
+        },
       },
       // Amazon Titan models
       {
@@ -293,10 +303,10 @@ export class BedrockProvider extends BaseProvider {
           reasoning: true,
           function_calling: false,
           json_mode: true,
-          multimodal: false
-        }
-      }
-    ];
+          multimodal: false,
+        },
+      },
+    ]
   }
 
   getProviderModelConfig() {
@@ -308,41 +318,41 @@ export class BedrockProvider extends BaseProvider {
       reasoningModel: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
       default: 'anthropic.claude-sonnet-4-20250514-v1:0',
       temperature: 0.3,
-      maxTokens: 2000
-    };
+      maxTokens: 2000,
+    }
   }
 
   getModelCapabilities(modelName) {
     return {
-      reasoning: modelName.includes('claude') || modelName.includes('llama') || modelName.includes('titan'),
+      reasoning:
+        modelName.includes('claude') || modelName.includes('llama') || modelName.includes('titan'),
       function_calling: modelName.includes('claude'),
       json_mode: true,
       multimodal: modelName.includes('claude') || modelName.includes('llama3-2'),
       largeContext: modelName.includes('claude') || modelName.includes('llama'),
       advancedReasoning: modelName.includes('opus-4') || modelName.includes('3-7-sonnet'),
-      awsManaged: true
-    };
+      awsManaged: true,
+    }
   }
 
   async validateModelAvailability(modelName) {
     try {
-      const models = await this.getAvailableModels();
-      const model = models.find(m => m.name === modelName);
-      
+      const models = await this.getAvailableModels()
+      const model = models.find((m) => m.name === modelName)
+
       if (model) {
         return {
           available: true,
           model: modelName,
           capabilities: model.capabilities,
-          contextWindow: model.contextWindow
-        };
-      } else {
-        const availableModels = models.map(m => m.name);
-        return {
-          available: false,
-          error: `Model '${modelName}' not available in Bedrock`,
-          alternatives: availableModels.slice(0, 5)
-        };
+          contextWindow: model.contextWindow,
+        }
+      }
+      const availableModels = models.map((m) => m.name)
+      return {
+        available: false,
+        error: `Model '${modelName}' not available in Bedrock`,
+        alternatives: availableModels.slice(0, 5),
       }
     } catch (error) {
       return {
@@ -351,28 +361,28 @@ export class BedrockProvider extends BaseProvider {
         alternatives: [
           'anthropic.claude-sonnet-4-20250514-v1:0',
           'anthropic.claude-opus-4-20250514-v1:0',
-          'us.anthropic.claude-3-7-sonnet-20250219-v1:0'
-        ]
-      };
+          'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
+        ],
+      }
     }
   }
 
   async testConnection() {
     try {
-      const response = await this.generateCompletion([
-        { role: 'user', content: 'Hello' }
-      ], { max_tokens: 5 });
-      
+      const response = await this.generateCompletion([{ role: 'user', content: 'Hello' }], {
+        max_tokens: 5,
+      })
+
       return {
         success: true,
         model: response.model,
-        message: 'Bedrock connection successful'
-      };
+        message: 'Bedrock connection successful',
+      }
     } catch (error) {
       return {
         success: false,
-        error: error.message
-      };
+        error: error.message,
+      }
     }
   }
 
@@ -383,11 +393,11 @@ export class BedrockProvider extends BaseProvider {
       function_calling: modelName ? modelName.includes('claude') : true,
       json_mode: true,
       reasoning: true,
-      multimodal: modelName ? (modelName.includes('claude') || modelName.includes('llama3-2')) : true,
-      awsManaged: true
-    };
+      multimodal: modelName ? modelName.includes('claude') || modelName.includes('llama3-2') : true,
+      awsManaged: true,
+    }
   }
 }
 
 // Apply mixins to add standard provider functionality
-export default applyMixins ? applyMixins(BedrockProvider, 'bedrock') : BedrockProvider;
+export default applyMixins ? applyMixins(BedrockProvider, 'bedrock') : BedrockProvider

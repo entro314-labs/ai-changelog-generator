@@ -16,7 +16,7 @@ convention:
     - chore     # Maintenance tasks
     - revert    # Reverts
     - merge     # Merge commits
-  
+
   # Optional: define valid scopes for your project
   commitScopes:
     - api
@@ -24,7 +24,7 @@ convention:
     - core
     - config
     - docs
-  
+
   # Git tag pattern for releases
   releaseTagGlobPattern: "v[0-9]*.[0-9]*.[0-9]*"
 
@@ -38,13 +38,13 @@ changelog:
     - docs
     - build
     - chore
-  
+
   # Include commits that don't follow conventional format
   includeInvalidCommits: true
-  
+
   # Ignore commits matching this regex
   commitIgnoreRegexPattern: "^WIP |^wip:"
-  
+
   # Customize section headers (with emojis!)
   headlines:
     feat: "🚀 Features"
@@ -60,15 +60,15 @@ changelog:
     revert: "⏪ Reverts"
     merge: "🔀 Merges"
     breakingChange: "🚨 BREAKING CHANGES"
-  
+
   # Link generation (customize for your repository)
-  commitUrl: "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/commit/%commit%"
-  commitRangeUrl: "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/compare/%from%...%to%"
-  
+  commitUrl: "https://github.com/entro314-labs/AI-changelog-generator/commit/%commit%"
+  commitRangeUrl: "https://github.com/entro314-labs/AI-changelog-generator/compare/%from%...%to%"
+
   # Issue linking
-  issueUrl: "https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/issues/%issue%"
+  issueUrl: "https://github.com/entro314-labs/AI-changelog-generator/issues/%issue%"
   issueRegexPattern: "#[0-9]+"
-  
+
   # Alternative: Jira issue linking
   # issueUrl: "https://yourcompany.atlassian.net/browse/%issue%"
   # issueRegexPattern: "[A-Z]{2,}-[0-9]+"

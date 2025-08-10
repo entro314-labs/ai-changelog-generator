@@ -3,13 +3,13 @@
  * Fallback provider when no other providers are available
  */
 
-import { BaseProvider } from '../core/base-provider.js';
-import { ProviderError } from '../../../shared/utils/consolidated-utils.js';
+import { ProviderError } from '../../../shared/utils/utils.js'
+import { BaseProvider } from '../core/base-provider.js'
 
 class DummyProvider extends BaseProvider {
   constructor(config = {}) {
-    super(config);
-    this.name = 'dummy';
+    super(config)
+    this.name = 'dummy'
   }
 
   /**
@@ -17,7 +17,7 @@ class DummyProvider extends BaseProvider {
    * @returns {string} Provider name
    */
   getName() {
-    return this.name;
+    return this.name
   }
 
   /**
@@ -25,7 +25,7 @@ class DummyProvider extends BaseProvider {
    * @returns {boolean} Always true for dummy provider
    */
   isAvailable() {
-    return true;
+    return true
   }
 
   /**
@@ -34,13 +34,13 @@ class DummyProvider extends BaseProvider {
    * @param {Object} options - Generation options
    * @returns {Promise} - Promise that rejects with error
    */
-  async generateCompletion(messages, options = {}) {
+  async generateCompletion(_messages, _options = {}) {
     throw new ProviderError(
       'No AI provider is available. Please configure at least one provider in your .env.local file. ' +
-      'Run "node config-wizard.js" to set up your providers.',
+        'Run "node config-wizard.js" to set up your providers.',
       'dummy',
       'generateCompletion'
-    );
+    )
   }
 
   /**
@@ -48,11 +48,11 @@ class DummyProvider extends BaseProvider {
    * @param {Object} commitInfo - Commit information
    * @returns {Object} Model recommendation
    */
-  getModelRecommendation(commitInfo = {}) {
+  getModelRecommendation(_commitInfo = {}) {
     return {
       model: 'rule-based',
-      reason: 'No AI provider configured, using rule-based fallback.'
-    };
+      reason: 'No AI provider configured, using rule-based fallback.',
+    }
   }
 
   /**
@@ -60,12 +60,12 @@ class DummyProvider extends BaseProvider {
    * @param {string} model - Model name
    * @returns {Promise} - Promise that resolves with validation result
    */
-  async validateModelAvailability(model) {
+  async validateModelAvailability(_model) {
     return {
       available: false,
       error: 'No AI provider configured',
-      alternatives: []
-    };
+      alternatives: [],
+    }
   }
 
   /**
@@ -76,8 +76,8 @@ class DummyProvider extends BaseProvider {
     return {
       success: false,
       error: 'No AI provider configured',
-      provider: this.getName()
-    };
+      provider: this.getName(),
+    }
   }
 
   /**
@@ -89,8 +89,8 @@ class DummyProvider extends BaseProvider {
       streaming: false,
       tool_use: false,
       vision: false,
-      json_mode: false
-    };
+      json_mode: false,
+    }
   }
 
   getAvailableModels() {
@@ -103,10 +103,10 @@ class DummyProvider extends BaseProvider {
         inputCost: 0,
         outputCost: 0,
         features: [],
-        description: 'No AI model available - configure a provider'
-      }
-    ];
+        description: 'No AI model available - configure a provider',
+      },
+    ]
   }
 }
 
-export default DummyProvider;
+export default DummyProvider

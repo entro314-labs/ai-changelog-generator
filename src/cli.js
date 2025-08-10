@@ -5,10 +5,14 @@
  * Provides command-line interface for changelog generation functionality
  */
 
-import yargs from 'yargs/yargs';
-import { hideBin } from 'yargs/helpers';
-import { AIChangelogGenerator } from './ai-changelog-generator.js';
-import colors from './shared/constants/colors.js';
+import process from 'node:process'
+
+import { hideBin } from 'yargs/helpers'
+import yargs from 'yargs/yargs'
+
+import { AIChangelogGenerator } from './ai-changelog-generator.js'
+import colors from './shared/constants/colors.js'
+import { EnhancedConsole, SimpleSpinner } from './shared/utils/cli-ui.js'
 
 async function runCLI() {
   const argv = await yargs(hideBin(process.argv))
@@ -17,141 +21,156 @@ async function runCLI() {
     .option('tag', {
       alias: ['v', 'version'],
       type: 'string',
-      description: 'Version tag for changelog'
+      description: 'Version tag for changelog',
     })
     .option('since', {
       alias: 's',
       type: 'string',
-      description: 'Generate changelog since commit/tag'
+      description: 'Generate changelog since commit/tag',
     })
     .option('detailed', {
       type: 'boolean',
-      description: 'Generate detailed technical analysis'
+      description: 'Generate detailed technical analysis',
     })
     .option('enterprise', {
       type: 'boolean',
-      description: 'Generate enterprise-ready documentation'
+      description: 'Generate enterprise-ready documentation',
     })
     .option('interactive', {
       alias: 'i',
       type: 'boolean',
-      description: 'Run in interactive mode'
+      description: 'Run in interactive mode',
     })
     .option('analyze', {
       type: 'boolean',
-      description: 'Analyze current working directory changes'
+      description: 'Analyze current working directory changes',
     })
     .option('health', {
       type: 'boolean',
-      description: 'Assess repository health'
+      description: 'Assess repository health',
     })
     .option('branches', {
       type: 'boolean',
-      description: 'Analyze all branches'
+      description: 'Analyze all branches',
     })
     .option('comprehensive', {
       type: 'boolean',
-      description: 'Comprehensive repository analysis'
+      description: 'Comprehensive repository analysis',
     })
     .option('model', {
       type: 'string',
-      description: 'Override AI model selection'
+      description: 'Override AI model selection',
     })
     .option('no-attribution', {
       type: 'boolean',
-      description: 'Disable attribution footer'
+      description: 'Disable attribution footer',
     })
     .option('validate', {
       type: 'boolean',
-      description: 'Validate configuration'
+      description: 'Validate configuration',
     })
     .help()
     .alias('help', 'h')
-    .parse();
+    .parse()
 
   try {
     const generator = new AIChangelogGenerator({
       analysisMode: argv.detailed ? 'detailed' : argv.enterprise ? 'enterprise' : 'standard',
       modelOverride: argv.model,
-      includeAttribution: !argv.noAttribution
-    });
+      includeAttribution: !argv.noAttribution,
+    })
 
     if (argv.model) {
-      generator.setModelOverride(argv.model);
+      generator.setModelOverride(argv.model)
     }
 
     if (argv.detailed) {
-      generator.setAnalysisMode('detailed');
+      generator.setAnalysisMode('detailed')
     } else if (argv.enterprise) {
-      generator.setAnalysisMode('enterprise');
+      generator.setAnalysisMode('enterprise')
     }
 
     if (argv.validate) {
-      console.log(colors.infoMessage('🔧 Validating configuration...'));
-      await generator.validateConfiguration();
-      console.log(colors.successMessage('✅ Configuration is valid'));
-      return;
+      console.log(colors.infoMessage('🔧 Validating configuration...'))
+      await generator.validateConfiguration()
+      console.log(colors.successMessage('✅ Configuration is valid'))
+      return
     }
 
     if (argv.interactive) {
-      console.log(colors.infoMessage('🎮 Starting interactive mode...'));
-      await generator.runInteractive();
-      return;
+      console.log(colors.infoMessage('🎮 Starting interactive mode...'))
+      await generator.runInteractive()
+      return
     }
 
     if (argv.health) {
-      console.log(colors.infoMessage('🏥 Assessing repository health...'));
-      await generator.assessRepositoryHealth();
-      return;
+      const healthSpinner = new SimpleSpinner('Assessing repository health...')
+      healthSpinner.start()
+      await generator.assessRepositoryHealth()
+      healthSpinner.succeed('Repository health assessment complete')
+      return
     }
 
     if (argv.analyze) {
-      console.log(colors.infoMessage('🔍 Analyzing current changes...'));
-      await generator.analyzeCurrentChanges();
-      return;
+      const analyzeSpinner = new SimpleSpinner('Analyzing current changes...')
+      analyzeSpinner.start()
+      await generator.analyzeCurrentChanges()
+      analyzeSpinner.succeed('Current changes analysis complete')
+      return
     }
 
     if (argv.branches) {
-      console.log(colors.infoMessage('🌿 Analyzing branches...'));
-      await generator.analyzeRepository({ type: 'branches' });
-      return;
+      const branchSpinner = new SimpleSpinner('Analyzing branches...')
+      branchSpinner.start()
+      await generator.analyzeRepository({ type: 'branches' })
+      branchSpinner.succeed('Branch analysis complete')
+      return
     }
 
     if (argv.comprehensive) {
-      console.log(colors.infoMessage('📊 Running comprehensive analysis...'));
-      await generator.analyzeRepository({ type: 'comprehensive' });
-      return;
+      const compSpinner = new SimpleSpinner('Running comprehensive analysis...')
+      compSpinner.start()
+      await generator.analyzeRepository({ type: 'comprehensive' })
+      compSpinner.succeed('Comprehensive analysis complete')
+      return
     }
 
     // Default: Generate changelog
-    console.log(colors.infoMessage('📝 Generating changelog...'));
-    const result = await generator.generateChangelog(argv.tag || argv.version, argv.since);
-    
-    if (result) {
-      console.log(colors.successMessage('✅ Changelog generated successfully!'));
-      
-      // Show metrics
-      const metrics = generator.getMetrics();
-      console.log(colors.infoMessage(`📊 Processed ${metrics.commitsProcessed} commits in ${formatDuration(Date.now() - metrics.startTime)}`));
-    }
+    const changelogSpinner = new SimpleSpinner('Generating changelog...')
+    changelogSpinner.start()
+    const result = await generator.generateChangelog(argv.tag || argv.version, argv.since)
 
-  } catch (error) {
-    console.error(colors.errorMessage('❌ Error:'), error.message);
-    if (process.env.DEBUG) {
-      console.error(error.stack);
+    if (result) {
+      changelogSpinner.succeed('Changelog generated successfully!')
+
+      // Show metrics
+      const metrics = generator.getMetrics()
+      EnhancedConsole.metrics(
+        `Processed ${metrics.commitsProcessed} commits in ${formatDuration(Date.now() - metrics.startTime)}`
+      )
+    } else {
+      changelogSpinner.fail('Failed to generate changelog')
     }
-    process.exit(1);
+  } catch (error) {
+    EnhancedConsole.error(`Error: ${error.message}`)
+    if (process.env.DEBUG) {
+      EnhancedConsole.error(error.stack)
+    }
+    process.exit(1)
   }
 }
 
 function formatDuration(ms) {
-  const seconds = Math.round(ms / 1000);
-  return seconds > 0 ? `${seconds}s` : `${ms}ms`;
+  const seconds = Math.round(ms / 1000)
+  return seconds > 0 ? `${seconds}s` : `${ms}ms`
 }
 
-export { runCLI };
+export { runCLI }
 
 // If this file is run directly, execute CLI
 if (import.meta.url === `file://${process.argv[1]}`) {
-  runCLI();
+  runCLI().catch((error) => {
+    console.error('CLI Error:', error.message)
+    process.exit(1)
+  })
 }

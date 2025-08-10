@@ -80,7 +80,6 @@ yarn.lock
 package-lock.json
 
 # Generated files
-AI_CHANGELOG.md
 AI_PROMPTS_EXPORT.md
 PUBLISHING.md
 
@@ -102,6 +101,3 @@ validate-*.js
 platform.*.md
 OpenAI API Models (*
 
-# GitHub preview files
-.github/README_PREVIEW.md
-docs/development-notes.md

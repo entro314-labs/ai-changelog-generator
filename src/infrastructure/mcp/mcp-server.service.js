@@ -5,41 +5,41 @@
  * Provides Model Context Protocol interface for changelog generation
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import fs from 'node:fs'
+import path, { dirname } from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+
+import { ChangelogOrchestrator } from '../../application/orchestrators/changelog.orchestrator.js'
 // Import application services
-import { ApplicationService } from '../../application/services/application.service.js';
-import { ChangelogOrchestrator } from '../../application/orchestrators/changelog.orchestrator.js';
-import { GitRepositoryAnalyzer } from '../../domains/git/git-repository.analyzer.js';
-import { AnalysisEngine } from '../../domains/analysis/analysis.engine.js';
-import { ProviderManagementService } from '../providers/provider-management.service.js';
-import { ConfigurationManager } from '../config/configuration.manager.js';
+import { ApplicationService } from '../../application/services/application.service.js'
+import { AnalysisEngine } from '../../domains/analysis/analysis.engine.js'
+import { GitRepositoryAnalyzer } from '../../domains/git/git-repository.analyzer.js'
+import { ConfigurationManager } from '../config/configuration.manager.js'
+import { ProviderManagementService } from '../providers/provider-management.service.js'
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 class AIChangelogMCPServer {
   constructor() {
-    this.initializeServer();
-    this.initializeServices();
-    this.setupHandlers();
+    this.initializeServer()
+    this.initializeServices()
+    this.setupHandlers()
   }
 
   initializeServer() {
-    let packageJson;
+    let packageJson
     try {
-      const packagePath = path.join(__dirname, '../../../package.json');
-      const packageContent = fs.readFileSync(packagePath, 'utf8');
-      packageJson = JSON.parse(packageContent);
-    } catch (error) {
-      packageJson = { version: '1.0.0' };
+      const packagePath = path.join(__dirname, '../../../package.json')
+      const packageContent = fs.readFileSync(packagePath, 'utf8')
+      packageJson = JSON.parse(packageContent)
+    } catch (_error) {
+      packageJson = { version: '1.0.0' }
     }
 
     this.server = new Server(
@@ -53,29 +53,42 @@ class AIChangelogMCPServer {
           resources: {},
         },
       }
-    );
+    )
   }
 
   initializeServices() {
     try {
       // Set MCP server mode to suppress verbose logging
-      process.env.MCP_SERVER_MODE = 'true';
-      
-      this.configManager = new ConfigurationManager();
-      this.applicationService = new ApplicationService();
-      this.changelogOrchestrator = new ChangelogOrchestrator(this.configManager);
-      this.gitAnalyzer = new GitRepositoryAnalyzer();
-      this.analysisEngine = new AnalysisEngine();
-      this.providerService = new ProviderManagementService();
+      process.env.MCP_SERVER_MODE = 'true'
+
+      this.configManager = new ConfigurationManager()
+      this.applicationService = new ApplicationService()
+      this.changelogOrchestrator = new ChangelogOrchestrator(this.configManager)
+      this.gitAnalyzer = new GitRepositoryAnalyzer()
+      this.analysisEngine = new AnalysisEngine()
+      this.providerService = new ProviderManagementService()
+
+      // Log available configuration
+      const hasProvider = process.env.AI_PROVIDER
+      const hasApiKey =
+        process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GOOGLE_API_KEY
+
+      if (!(hasProvider && hasApiKey)) {
+        console.error(
+          '[MCP] Warning: No AI provider or API key configured. Tools will provide configuration guidance.'
+        )
+      } else {
+        console.error(`[MCP] Configured with provider: ${process.env.AI_PROVIDER}`)
+      }
     } catch (error) {
-      console.error('Failed to initialize services:', error.message);
-      throw error;
+      console.error('[MCP] Failed to initialize services:', error.message)
+      console.error('[MCP] Server will start but tools may require configuration')
     }
   }
 
   setupHandlers() {
-    this.server.setRequestHandler(ListToolsRequestSchema, this.handleListTools.bind(this));
-    this.server.setRequestHandler(CallToolRequestSchema, this.handleCallTool.bind(this));
+    this.server.setRequestHandler(ListToolsRequestSchema, this.handleListTools.bind(this))
+    this.server.setRequestHandler(CallToolRequestSchema, this.handleCallTool.bind(this))
   }
 
   handleListTools() {
@@ -99,7 +112,8 @@ class AIChangelogMCPServer {
               },
               since: {
                 type: 'string',
-                description: 'For commit analysis: since tag/commit/date (e.g., "v1.0.0", "HEAD~10")',
+                description:
+                  'For commit analysis: since tag/commit/date (e.g., "v1.0.0", "HEAD~10")',
               },
               version: {
                 type: 'string',
@@ -208,67 +222,66 @@ class AIChangelogMCPServer {
           },
         },
       ],
-    };
+    }
   }
 
   async handleCallTool(request) {
-    const { name, arguments: args } = request.params;
-    console.log(`[MCP] Tool call: ${name}`);
+    const { name, arguments: args } = request.params
+    console.log(`[MCP] Tool call: ${name}`)
 
     try {
-      console.time(`[MCP-TIMER] ${name}`);
+      console.time(`[MCP-TIMER] ${name}`)
 
       const timeouts = {
-        'generate_changelog': 120000,
-        'analyze_repository': 90000,
-        'analyze_current_changes': 60000,
-        'configure_providers': 30000,
-      };
+        generate_changelog: 120000,
+        analyze_repository: 90000,
+        analyze_current_changes: 60000,
+        configure_providers: 30000,
+      }
 
-      const timeout = timeouts[name] || 60000;
+      const timeout = timeouts[name] || 60000
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error(`Tool '${name}' timed out after ${timeout}ms`)), timeout);
-      });
+        setTimeout(() => reject(new Error(`Tool '${name}' timed out after ${timeout}ms`)), timeout)
+      })
 
-      const operationPromise = this.executeOperation(name, args);
-      const result = await Promise.race([operationPromise, timeoutPromise]);
+      const operationPromise = this.executeOperation(name, args)
+      const result = await Promise.race([operationPromise, timeoutPromise])
 
-      console.timeEnd(`[MCP-TIMER] ${name}`);
-      return result;
-
+      console.timeEnd(`[MCP-TIMER] ${name}`)
+      return result
     } catch (error) {
-      console.error(`[MCP] Tool Error [${name}]:`, error.message);
-      console.timeEnd(`[MCP-TIMER] ${name}`);
-      return this.formatError(error, name);
+      console.error(`[MCP] Tool Error [${name}]:`, error.message)
+      console.timeEnd(`[MCP-TIMER] ${name}`)
+      return this.formatError(error, name)
     }
   }
 
   async executeOperation(name, args) {
-    const originalCwd = process.cwd();
-    
+    const originalCwd = process.cwd()
+
     try {
       // Change to repository path if specified
       if (args.repositoryPath && args.repositoryPath !== process.cwd()) {
         if (!fs.existsSync(args.repositoryPath)) {
-          throw new Error(`Repository path does not exist: ${args.repositoryPath}`);
+          throw new Error(`Repository path does not exist: ${args.repositoryPath}`)
         }
-        process.chdir(args.repositoryPath);
+        process.chdir(args.repositoryPath)
       }
 
       switch (name) {
         case 'generate_changelog':
-          return await this.generateChangelog(args);
+          return await this.generateChangelog(args)
         case 'analyze_repository':
-          return await this.analyzeRepository(args);
+          return await this.analyzeRepository(args)
         case 'analyze_current_changes':
-          return await this.analyzeCurrentChanges(args);
+          return await this.analyzeCurrentChanges(args)
         case 'configure_providers':
-          return await this.configureProviders(args);
+          return await this.configureProviders(args)
         default:
-          throw new Error(`Unknown tool: ${name}`);
+          throw new Error(`Unknown tool: ${name}`)
       }
     } finally {
-      process.chdir(originalCwd);
+      process.chdir(originalCwd)
     }
   }
 
@@ -279,228 +292,250 @@ class AIChangelogMCPServer {
       version,
       analysisMode = 'detailed',
       includeAttribution = true,
-      writeFile = true
-    } = args;
+      writeFile = true,
+    } = args
 
     try {
-      let result;
+      let result
 
       if (source === 'working-dir' || (source === 'auto' && this.hasWorkingDirectoryChanges())) {
         // Generate from working directory changes
         result = await this.changelogOrchestrator.generateWorkspaceChangelog({
           version,
           analysisMode,
-          includeAttribution
-        });
+          includeAttribution,
+        })
       } else {
         // Generate from commits
         result = await this.changelogOrchestrator.generateChangelog({
           version,
           since,
           analysisMode,
-          includeAttribution
-        });
+          includeAttribution,
+        })
       }
 
       // Write file if requested
       if (writeFile && result.content) {
-        const changelogPath = path.join(process.cwd(), 'AI_CHANGELOG.md');
+        const changelogPath = path.join(process.cwd(), 'AI_CHANGELOG.md')
         try {
-          fs.writeFileSync(changelogPath, result.content, 'utf8');
-          console.log(`[MCP] Changelog written to: ${changelogPath}`);
+          fs.writeFileSync(changelogPath, result.content, 'utf8')
+          console.log(`[MCP] Changelog written to: ${changelogPath}`)
         } catch (writeError) {
-          console.warn(`[MCP] Could not write file: ${writeError.message}`);
+          console.warn(`[MCP] Could not write file: ${writeError.message}`)
         }
       }
 
       return {
-        content: [{
-          type: 'text',
-          text: result.content || 'No changelog content generated'
-        }],
-        metadata: result.metadata
-      };
-
+        content: [
+          {
+            type: 'text',
+            text: result.content || 'No changelog content generated',
+          },
+        ],
+        metadata: result.metadata,
+      }
     } catch (error) {
-      throw new Error(`Changelog generation failed: ${error.message}`);
+      throw new Error(`Changelog generation failed: ${error.message}`)
     }
   }
 
   async analyzeRepository(args) {
-    const {
-      analysisType = 'comprehensive',
-      includeRecommendations = true,
-      commitLimit = 50
-    } = args;
+    const { analysisType = 'comprehensive', includeRecommendations = true, commitLimit = 50 } = args
 
     try {
-      let result;
+      let result
 
       switch (analysisType) {
         case 'health':
-          result = await this.gitAnalyzer.assessRepositoryHealth(includeRecommendations);
-          break;
+          result = await this.gitAnalyzer.assessRepositoryHealth(includeRecommendations)
+          break
         case 'commits':
-          result = await this.analysisEngine.analyzeRecentCommits(commitLimit);
-          break;
+          result = await this.analysisEngine.analyzeRecentCommits(commitLimit)
+          break
         case 'branches':
-          result = await this.gitAnalyzer.analyzeBranches();
-          break;
+          result = await this.gitAnalyzer.analyzeBranches()
+          break
         case 'working-dir':
-          result = await this.analysisEngine.analyzeCurrentChanges();
-          break;
-        case 'comprehensive':
+          result = await this.analysisEngine.analyzeCurrentChanges()
+          break
         default:
-          result = await this.gitAnalyzer.analyzeComprehensive(includeRecommendations);
-          break;
+          result = await this.gitAnalyzer.analyzeComprehensive(includeRecommendations)
+          break
       }
 
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
-
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      }
     } catch (error) {
-      throw new Error(`Repository analysis failed: ${error.message}`);
+      throw new Error(`Repository analysis failed: ${error.message}`)
     }
   }
 
   async analyzeCurrentChanges(args) {
-    const {
-      includeAIAnalysis = true,
-      includeAttribution = true
-    } = args;
+    const { includeAIAnalysis = true, includeAttribution = true } = args
 
     try {
       const result = await this.analysisEngine.analyzeCurrentChanges({
         includeAIAnalysis,
-        includeAttribution
-      });
+        includeAttribution,
+      })
 
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(result, null, 2)
-        }]
-      };
-
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      }
     } catch (error) {
-      throw new Error(`Current changes analysis failed: ${error.message}`);
+      throw new Error(`Current changes analysis failed: ${error.message}`)
     }
   }
 
   async configureProviders(args) {
-    const {
-      action = 'list',
-      provider,
-      testConnection = false
-    } = args;
+    const { action = 'list', provider, testConnection = false } = args
 
     try {
-      let result;
+      let result
 
       switch (action) {
         case 'list':
-          result = await this.providerService.listProviders();
-          break;
+          result = await this.providerService.listProviders()
+          break
         case 'switch':
-          if (!provider) throw new Error('Provider required for switch action');
-          result = await this.providerService.switchProvider(provider);
-          if (testConnection) {
-            const testResult = await this.providerService.testProvider(provider);
-            result += `\n${testResult}`;
+          if (!provider) {
+            throw new Error('Provider required for switch action')
           }
-          break;
+          result = await this.providerService.switchProvider(provider)
+          if (testConnection) {
+            const testResult = await this.providerService.testProvider(provider)
+            result += `\n${testResult}`
+          }
+          break
         case 'test':
-          result = await this.providerService.testCurrentProvider();
-          break;
+          result = await this.providerService.testCurrentProvider()
+          break
         case 'configure':
-          result = await this.providerService.configureProvider(provider);
-          break;
+          result = await this.providerService.configureProvider(provider)
+          break
         case 'validate':
-          result = await this.providerService.validateModels(provider);
-          break;
+          result = await this.providerService.validateModels(provider)
+          break
         default:
-          throw new Error(`Unknown action: ${action}`);
+          throw new Error(`Unknown action: ${action}`)
       }
 
       return {
-        content: [{
-          type: 'text',
-          text: result
-        }]
-      };
-
+        content: [
+          {
+            type: 'text',
+            text: result,
+          },
+        ],
+      }
     } catch (error) {
-      throw new Error(`Provider management failed: ${error.message}`);
+      throw new Error(`Provider management failed: ${error.message}`)
     }
   }
 
   hasWorkingDirectoryChanges() {
     try {
       // Simple check for working directory changes
-      const { execSync } = require('child_process');
-      const result = execSync('git status --porcelain', { encoding: 'utf8' });
-      return result.trim().length > 0;
-    } catch (error) {
-      return false;
+      const { execSync } = require('node:child_process')
+      const result = execSync('git status --porcelain', { encoding: 'utf8' })
+      return result.trim().length > 0
+    } catch (_error) {
+      return false
     }
   }
 
   formatError(error, toolName) {
     if (error.message.includes('timed out')) {
       return {
-        content: [{
-          type: 'text',
-          text: `⏱️ Timeout: '${toolName}' exceeded time limit. Try with smaller scope or check connectivity.`,
-        }],
+        content: [
+          {
+            type: 'text',
+            text: `⏱️ Timeout: '${toolName}' exceeded time limit. Try with smaller scope or check connectivity.`,
+          },
+        ],
         isError: true,
-      };
+      }
     }
 
     return {
-      content: [{
-        type: 'text',
-        text: `❌ Error in '${toolName}': ${error.message}`,
-      }],
+      content: [
+        {
+          type: 'text',
+          text: `❌ Error in '${toolName}': ${error.message}`,
+        },
+      ],
       isError: true,
-    };
+    }
   }
 
   async run() {
     try {
-      const transport = new StdioServerTransport();
-      await this.server.connect(transport);
+      const transport = new StdioServerTransport()
+      await this.server.connect(transport)
 
-      // Minimal heartbeat - no console output for MCP protocol
-      const keepAlive = setInterval(() => {}, 30000);
+      // Setup graceful shutdown
+      let isShuttingDown = false
+      const gracefulShutdown = async (signal) => {
+        if (isShuttingDown) {
+          return
+        }
+        isShuttingDown = true
 
-      const gracefulShutdown = (signal) => {
-        clearInterval(keepAlive);
-        process.exit(0);
-      };
+        try {
+          console.error(`[MCP] Received ${signal}, shutting down gracefully...`)
+          await this.server.close()
+          process.exit(0)
+        } catch (error) {
+          console.error('[MCP] Error during shutdown:', error)
+          process.exit(1)
+        }
+      }
 
-      process.on('SIGINT', gracefulShutdown);
-      process.on('SIGTERM', gracefulShutdown);
+      process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+      process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+      process.on('SIGQUIT', () => gracefulShutdown('SIGQUIT'))
 
-      return new Promise(() => {}); // Never resolves, keeps server alive
+      // Handle uncaught exceptions
+      process.on('uncaughtException', (error) => {
+        console.error('[MCP] Uncaught exception:', error)
+        gracefulShutdown('uncaughtException')
+      })
 
+      process.on('unhandledRejection', (reason, promise) => {
+        console.error('[MCP] Unhandled rejection at:', promise, 'reason:', reason)
+        gracefulShutdown('unhandledRejection')
+      })
+
+      console.error('[MCP] AI Changelog Generator server running...')
+
+      // Keep process alive
+      return new Promise(() => {})
     } catch (error) {
-      console.error('MCP server failed:', error.message);
-      throw error;
+      console.error('[MCP] Server failed to start:', error.message)
+      throw error
     }
   }
 }
 
 // Start server if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const server = new AIChangelogMCPServer();
+  const server = new AIChangelogMCPServer()
   server.run().catch((error) => {
-    console.error('MCP Server startup failed:', error);
-    process.exit(1);
-  });
+    console.error('MCP Server startup failed:', error)
+    process.exit(1)
+  })
 }
 
-export default AIChangelogMCPServer;
+export default AIChangelogMCPServer

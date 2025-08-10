@@ -2,8 +2,8 @@
 
 <div align="center">
 
-[![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/@entro314labs/ai-github-changelog-generator-cli-mcp)
-[![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp)
+[![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/@entro314labs/ai-changelog-generator)
+[![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/entro314-labs/AI-changelog-generator)
 [![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
@@ -13,7 +13,7 @@
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/bedrock/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/npm/v/@entro314labs/ai-github-changelog-generator-cli-mcp?style=for-the-badge&color=brightgreen)](https://www.npmjs.com/package/@entro314labs/ai-github-changelog-generator-cli-mcp)
+[![Version](https://img.shields.io/npm/v/@entro314labs/ai-changelog-generator?style=for-the-badge&color=brightgreen)](https://www.npmjs.com/package/@entro314labs/ai-changelog-generator)
 
 </div>
 
@@ -44,7 +44,7 @@ This tool revolutionizes changelog generation by analyzing actual code changes, 
 <path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z" fill="#6366F1"/>
 </svg>
 
-**AI Code Analysis**  
+**AI Code Analysis**
 Analyzes actual diffs and code changes, not just commit messages, for intelligent categorization
 
 </td>
@@ -54,7 +54,7 @@ Analyzes actual diffs and code changes, not just commit messages, for intelligen
 <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="#10B981"/>
 </svg>
 
-**Multi-Provider Support**  
+**Multi-Provider Support**
 Works with OpenAI, Claude, Google, Azure, Bedrock, and local models like Ollama
 
 </td>
@@ -67,7 +67,7 @@ Works with OpenAI, Claude, Google, Azure, Bedrock, and local models like Ollama
 <path d="M14 2v6h6" fill="none" stroke="white" stroke-width="2"/>
 </svg>
 
-**Multiple Output Formats**  
+**Multiple Output Formats**
 Markdown, JSON, and customizable templates with conventional commits and emoji support
 
 </td>
@@ -78,7 +78,7 @@ Markdown, JSON, and customizable templates with conventional commits and emoji s
 <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" stroke="#F59E0B" stroke-width="2"/>
 </svg>
 
-**MCP Integration**  
+**MCP Integration**
 Model Context Protocol server for Claude Desktop and other MCP-compatible tools
 
 </td>
@@ -95,13 +95,20 @@ Model Context Protocol server for Claude Desktop and other MCP-compatible tools
 
 ```bash
 # Install globally
-npm install -g @entro314labs/ai-github-changelog-generator-cli-mcp
+npm install -g @entro314labs/ai-changelog-generator
 
 # Or use directly with npx
-npx @entro314labs/ai-github-changelog-generator-cli-mcp init
+npx @entro314labs/ai-changelog-generator init
+
+# Or clone and run from source
+git clone https://github.com/entro314-labs/AI-changelog-generator.git
+cd AI-changelog-generator
+npm install
 ```
 
 ### Basic Usage
+
+#### Using installed package
 
 ```bash
 # Generate changelog from recent commits
@@ -113,11 +120,59 @@ ai-changelog --interactive
 # Analyze working directory changes
 ai-changelog working-dir
 
+# Start MCP server
+ai-changelog-mcp
+
 # Get help
 ai-changelog --help
 ```
 
+#### Using bash wrappers (from source)
+
+```bash
+# Generate changelog from recent commits
+./ai-changelog.sh
+
+# Interactive mode with guided setup  
+./ai-changelog.sh --interactive
+
+# Analyze working directory changes
+./ai-changelog.sh working-dir
+
+# Start MCP server
+./ai-changelog-mcp.sh
+
+# Get help
+./ai-changelog.sh --help
+```
+
+> **💡 Bash Wrappers**: The `.sh` scripts automatically validate your Node.js environment, install dependencies if needed, and provide helpful error messages. Perfect for development, CI/CD, and direct execution from source.
+
 That's it! Your AI-powered changelog is ready to generate.
+
+## Demo
+
+### Interactive Mode
+
+See the tool in action with our interactive mode demo:
+
+![Interactive Demo](docs/media/demo-interactive-optimized.gif)
+
+*Interactive mode with guided setup and provider selection*
+
+### Quick Generation
+
+Watch how fast you can generate professional changelogs:
+
+![Quick Demo](docs/media/demo-quick-real.gif)
+
+*Generate changelogs from recent commits in seconds*
+
+### Video Walkthrough
+
+For a complete walkthrough of features and capabilities:
+
+[📺 Watch Full Demo Video](docs/media/demo-interactive.mp4)
 
 ## How It Works
 
@@ -138,8 +193,8 @@ That's it! Your AI-powered changelog is ready to generate.
 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#FF6B6B"/>
 </svg>
 
-**AI Providers**  
-![OpenAI](https://img.shields.io/badge/OpenAI-74aa9c?style=flat&logo=openai&logoColor=white) ![Claude](https://img.shields.io/badge/Claude-CC9A66?style=flat) ![Google AI](https://img.shields.io/badge/Google%20AI-4285F4?style=flat&logo=google&logoColor=white)  
+**AI Providers**
+![OpenAI](https://img.shields.io/badge/OpenAI-74aa9c?style=flat&logo=openai&logoColor=white) ![Claude](https://img.shields.io/badge/Claude-CC9A66?style=flat) ![Google AI](https://img.shields.io/badge/Google%20AI-4285F4?style=flat&logo=google&logoColor=white)
 ![Azure](https://img.shields.io/badge/azure-%230072C6.svg?style=flat&logo=microsoftazure&logoColor=white) ![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=flat&logo=amazon-aws&logoColor=white) ![Ollama](https://img.shields.io/badge/Ollama-000000?style=flat)
 
 </td>
@@ -149,8 +204,8 @@ That's it! Your AI-powered changelog is ready to generate.
 <path d="M12 1.85c-.27 0-.55.07-.78.2l-7.44 4.3c-.48.28-.78.8-.78 1.36v8.58c0 .56.3 1.08.78 1.36l7.44 4.3c.46.26 1.04.26 1.5 0l7.44-4.3c.48-.28.78-.8.78-1.36V7.71c0-.56-.3-1.08-.78-1.36l-7.44-4.3c-.23-.13-.51-.2-.78-.2zm0 2.03c.13 0 .27.04.39.11l6.9 4v.81L12 12.6 4.71 8.8v-.81l6.9-4c.12-.07.26-.11.39-.11zM5.05 9.85l6.95 4.01v7.79c-.13 0-.27-.04-.39-.11l-6.9-4c-.23-.13-.39-.39-.39-.68v-6.68c0-.11.02-.22.05-.33zm13.9 0c.03.11.05.22.05.33v6.68c0 .29-.16.55-.39.68l-6.9 4c-.12.07-.26.11-.39.11v-7.79l6.95-4.01z"/>
 </svg>
 
-**Runtime**  
-![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=flat&logo=node.js&logoColor=white) ![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=flat&logo=npm&logoColor=white) ![Yarn](https://img.shields.io/badge/yarn-%232C8EBB.svg?style=flat&logo=yarn&logoColor=white)  
+**Runtime**
+![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=flat&logo=node.js&logoColor=white) ![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=flat&logo=npm&logoColor=white) ![Yarn](https://img.shields.io/badge/yarn-%232C8EBB.svg?style=flat&logo=yarn&logoColor=white)
 ![PNPM](https://img.shields.io/badge/pnpm-%234a4a4a.svg?style=flat&logo=pnpm&logoColor=f69220)
 
 </td>
@@ -162,8 +217,8 @@ That's it! Your AI-powered changelog is ready to generate.
 <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
 </svg>
 
-**Git Integration**  
-![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=flat&logo=github&logoColor=white) ![GitLab](https://img.shields.io/badge/gitlab-%23181717.svg?style=flat&logo=gitlab&logoColor=white) ![Bitbucket](https://img.shields.io/badge/bitbucket-%230047B3.svg?style=flat&logo=bitbucket&logoColor=white)  
+**Git Integration**
+![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=flat&logo=github&logoColor=white) ![GitLab](https://img.shields.io/badge/gitlab-%23181717.svg?style=flat&logo=gitlab&logoColor=white) ![Bitbucket](https://img.shields.io/badge/bitbucket-%230047B3.svg?style=flat&logo=bitbucket&logoColor=white)
 ![Git](https://img.shields.io/badge/git-%23F05033.svg?style=flat&logo=git&logoColor=white)
 
 </td>
@@ -173,8 +228,8 @@ That's it! Your AI-powered changelog is ready to generate.
 <path d="M12.001 4.8c-3.2 0-5.2 1.6-6 4.8 1.2-1.6 2.6-2.2 4.2-1.8.913.228 1.565.89 2.288 1.624C13.666 10.618 15.027 12 18.001 12c3.2 0 5.2-1.6 6-4.8-1.2 1.6-2.6 2.2-4.2 1.8-.913-.228-1.565-.89-2.288-1.624C16.337 6.182 14.976 4.8 12.001 4.8zm-6 7.2c-3.2 0-5.2 1.6-6 4.8 1.2-1.6 2.6-2.2 4.2-1.8.913.228 1.565.89 2.288 1.624 1.177 1.194 2.538 2.576 5.512 2.576 3.2 0 5.2-1.6 6-4.8-1.2 1.6-2.6 2.2-4.2 1.8-.913-.228-1.565-.89-2.288-1.624C10.337 13.382 8.976 12 6.001 12z"/>
 </svg>
 
-**Output Formats**  
-![Markdown](https://img.shields.io/badge/markdown-%23000000.svg?style=flat&logo=markdown&logoColor=white) ![JSON](https://img.shields.io/badge/JSON-000000?style=flat&logo=json&logoColor=white) ![YAML](https://img.shields.io/badge/yaml-%23ffffff.svg?style=flat&logo=yaml&logoColor=151515)  
+**Output Formats**
+![Markdown](https://img.shields.io/badge/markdown-%23000000.svg?style=flat&logo=markdown&logoColor=white) ![JSON](https://img.shields.io/badge/JSON-000000?style=flat&logo=json&logoColor=white) ![YAML](https://img.shields.io/badge/yaml-%23ffffff.svg?style=flat&logo=yaml&logoColor=151515)
 ![Shell Script](https://img.shields.io/badge/shell_script-%23121011.svg?style=flat&logo=gnu-bash&logoColor=white)
 
 </td>
@@ -237,14 +292,14 @@ changelog:
     - docs
     - build
     - chore
-  
+
   headlines:
     feat: "🚀 Features"
-    fix: "🐛 Bug Fixes" 
+    fix: "🐛 Bug Fixes"
     perf: "⚡ Performance"
     refactor: "♻️ Refactoring"
     docs: "📚 Documentation"
-    
+
   commitUrl: "https://github.com/user/repo/commit/%commit%"
   issueUrl: "https://github.com/user/repo/issues/%issue%"
 ```
@@ -293,10 +348,11 @@ ai-changelog health --detailed
 ## Documentation
 
 - **[Getting Started Guide](./docs/getting-started.md)** - Complete setup and first changelog
-- **[AI Provider Setup](./docs/providers.md)** - Configure OpenAI, Claude, and other providers  
+- **[AI Provider Setup](./docs/providers.md)** - Configure OpenAI, Claude, and other providers
 - **[Configuration Reference](./docs/configuration.md)** - All YAML and environment options
 - **[MCP Integration](./docs/mcp-integration.md)** - Claude Desktop and MCP server setup
 - **[API Reference](./docs/api-reference.md)** - All commands, options, and programmatic usage
+- **[Demo Media](./docs/media/)** - Interactive demos, GIFs, and video walkthroughs
 
 ## Contributing
 
@@ -306,10 +362,10 @@ ai-changelog health --detailed
 
 We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details.
 
-- [Report bugs](https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/issues)
-- [Request features](https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/issues)
+- [Report bugs](https://github.com/entro314-labs/AI-changelog-generator/issues)
+- [Request features](https://github.com/entro314-labs/AI-changelog-generator/issues)
 - [Improve documentation](./docs/)
-- [Submit pull requests](https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/pulls)
+- [Submit pull requests](https://github.com/entro314-labs/AI-changelog-generator/pulls)
 
 ## Roadmap
 
@@ -348,9 +404,9 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="#059669"/>
 </svg>
 
-- **GitHub Issues**: [Report bugs and request features](https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/issues)
-- **Discussions**: [Community discussions and Q&A](https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/discussions)
-- **Documentation**: [Complete guides and API reference](https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp#readme)
+- **GitHub Issues**: [Report bugs and request features](https://github.com/entro314-labs/AI-changelog-generator/issues)
+- **Discussions**: [Community discussions and Q&A](https://github.com/entro314-labs/AI-changelog-generator/discussions)
+- **Documentation**: [Complete guides and API reference](https://github.com/entro314-labs/AI-changelog-generator#readme)
 - **Examples**: [Real-world usage examples](./examples/)
 
 ---
@@ -359,6 +415,6 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 **Made with ❤️ by entro314labs**
 
-[GitHub](https://github.com/entro314-labs) • [NPM Package](https://www.npmjs.com/package/@entro314labs/ai-github-changelog-generator-cli-mcp) • [Issues](https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/issues) • [Discussions](https://github.com/entro314-labs/AI-github-changelog-generator-cli-mcp/discussions)
+[GitHub](https://github.com/entro314-labs) • [NPM Package](https://www.npmjs.com/package/@entro314labs/ai-changelog-generator) • [Issues](https://github.com/entro314-labs/AI-changelog-generator/issues) • [Discussions](https://github.com/entro314-labs/AI-changelog-generator/discussions)
 
 </div>

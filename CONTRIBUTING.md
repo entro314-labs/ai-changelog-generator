@@ -2,6 +2,40 @@
 
 First off, thank you for considering contributing! Your help is invaluable in making this tool better for everyone. This document provides guidelines for contributing, with a special focus on adding new AI providers to our modular architecture.
 
+## Getting Started for Development
+
+### Clone and Setup
+
+```bash
+git clone https://github.com/entro314-labs/AI-changelog-generator.git
+cd AI-changelog-generator
+npm install
+```
+
+### Development Workflow
+
+We provide bash wrappers for convenient development:
+
+```bash
+# Test the CLI directly from source
+./ai-changelog.sh --help
+
+# Test different modes
+./ai-changelog.sh --interactive
+./ai-changelog.sh working-dir
+./ai-changelog.sh --dry-run
+
+# Test the MCP server
+./ai-changelog-mcp.sh
+```
+
+The bash wrappers automatically:
+
+- Validate Node.js environment
+- Install dependencies if missing
+- Provide helpful error messages
+- Pass all arguments to the Node.js CLI
+
 ## How to Contribute
 
 We welcome contributions in many forms, including:
@@ -63,6 +97,7 @@ You must implement all the methods defined in `BaseProvider`. Here's a detailed 
 #### Core Methods
 
 **`getName()`**
+
 ```javascript
 getName() {
   return 'myprovider'; // Lowercase, unique name
@@ -70,6 +105,7 @@ getName() {
 ```
 
 **`isAvailable()`**
+
 ```javascript
 isAvailable() {
   // Check if necessary configuration is present
@@ -78,6 +114,7 @@ isAvailable() {
 ```
 
 **`generateCompletion(messages, options)`**
+
 ```javascript
 async generateCompletion(messages, options) {
   if (!this.isAvailable()) {
@@ -130,6 +167,7 @@ async generateCompletion(messages, options) {
 #### Model Selection and Validation Methods
 
 **`getModelRecommendation(commitDetails)`**
+
 ```javascript
 getModelRecommendation(commitDetails) {
   // Recommend models based on commit complexity
@@ -153,6 +191,7 @@ getModelRecommendation(commitDetails) {
 ```
 
 **`validateModelAvailability(modelName)`**
+
 ```javascript
 async validateModelAvailability(modelName) {
   if (!this.isAvailable()) {
@@ -193,6 +232,7 @@ getSuggestedModels(modelName) {
 ```
 
 **`testConnection()`**
+
 ```javascript
 async testConnection() {
   if (!this.isAvailable()) {
@@ -222,6 +262,7 @@ async testConnection() {
 ```
 
 **`getCapabilities(modelName)`**
+
 ```javascript
 getCapabilities(modelName) {
   const model = modelName || this.config.MY_PROVIDER_DEFAULT_MODEL;
@@ -432,6 +473,7 @@ Once you have fully implemented and tested your new provider, please submit a pu
 5. Create a new Pull Request
 
 Include in your PR description:
+
 - A brief overview of the provider you're adding
 - Any special configuration requirements
 - Examples of how to use it
