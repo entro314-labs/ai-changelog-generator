@@ -80,7 +80,6 @@ yarn.lock
 package-lock.json
 
 # Generated files
-AI_CHANGELOG.md
 AI_PROMPTS_EXPORT.md
 PUBLISHING.md
 

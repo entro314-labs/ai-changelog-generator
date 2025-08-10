@@ -5,6 +5,7 @@ First off, thank you for considering contributing! Your help is invaluable in ma
 ## Getting Started for Development
 
 ### Clone and Setup
+
 ```bash
 git clone https://github.com/entro314-labs/AI-changelog-generator.git
 cd AI-changelog-generator
@@ -12,6 +13,7 @@ npm install
 ```
 
 ### Development Workflow
+
 We provide bash wrappers for convenient development:
 
 ```bash
@@ -28,6 +30,7 @@ We provide bash wrappers for convenient development:
 ```
 
 The bash wrappers automatically:
+
 - Validate Node.js environment
 - Install dependencies if missing
 - Provide helpful error messages
@@ -94,6 +97,7 @@ You must implement all the methods defined in `BaseProvider`. Here's a detailed 
 #### Core Methods
 
 **`getName()`**
+
 ```javascript
 getName() {
   return 'myprovider'; // Lowercase, unique name
@@ -101,6 +105,7 @@ getName() {
 ```
 
 **`isAvailable()`**
+
 ```javascript
 isAvailable() {
   // Check if necessary configuration is present
@@ -109,6 +114,7 @@ isAvailable() {
 ```
 
 **`generateCompletion(messages, options)`**
+
 ```javascript
 async generateCompletion(messages, options) {
   if (!this.isAvailable()) {
@@ -161,6 +167,7 @@ async generateCompletion(messages, options) {
 #### Model Selection and Validation Methods
 
 **`getModelRecommendation(commitDetails)`**
+
 ```javascript
 getModelRecommendation(commitDetails) {
   // Recommend models based on commit complexity
@@ -184,6 +191,7 @@ getModelRecommendation(commitDetails) {
 ```
 
 **`validateModelAvailability(modelName)`**
+
 ```javascript
 async validateModelAvailability(modelName) {
   if (!this.isAvailable()) {
@@ -224,6 +232,7 @@ getSuggestedModels(modelName) {
 ```
 
 **`testConnection()`**
+
 ```javascript
 async testConnection() {
   if (!this.isAvailable()) {
@@ -253,6 +262,7 @@ async testConnection() {
 ```
 
 **`getCapabilities(modelName)`**
+
 ```javascript
 getCapabilities(modelName) {
   const model = modelName || this.config.MY_PROVIDER_DEFAULT_MODEL;
@@ -463,6 +473,7 @@ Once you have fully implemented and tested your new provider, please submit a pu
 5. Create a new Pull Request
 
 Include in your PR description:
+
 - A brief overview of the provider you're adding
 - Any special configuration requirements
 - Examples of how to use it

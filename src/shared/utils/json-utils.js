@@ -12,7 +12,7 @@ export class JsonUtils {
    * @returns {string} JSON string
    */
   static stringify(data, pretty = true) {
-    return JSON.stringify(data, null, pretty ? 2 : 0);
+    return JSON.stringify(data, null, pretty ? 2 : 0)
   }
 
   /**
@@ -23,10 +23,10 @@ export class JsonUtils {
    */
   static safeParse(jsonString, fallback = null) {
     try {
-      return JSON.parse(jsonString);
+      return JSON.parse(jsonString)
     } catch (error) {
-      console.warn(`JSON parse error: ${error.message}`);
-      return fallback;
+      console.warn(`JSON parse error: ${error.message}`)
+      return fallback
     }
   }
 
@@ -36,7 +36,7 @@ export class JsonUtils {
    * @returns {string} Pretty-printed JSON string
    */
   static stringifyForResponse(data) {
-    return JSON.stringify(data, null, 2);
+    return JSON.stringify(data, null, 2)
   }
 
   /**
@@ -45,7 +45,7 @@ export class JsonUtils {
    * @returns {string} Compact JSON string
    */
   static stringifyCompact(data) {
-    return JSON.stringify(data, null, 0);
+    return JSON.stringify(data, null, 0)
   }
 
   /**
@@ -55,20 +55,20 @@ export class JsonUtils {
    * @returns {string} JSON string with circular references handled
    */
   static safeStringify(data, pretty = true) {
-    const seen = new WeakSet();
+    const seen = new WeakSet()
     return JSON.stringify(
       data,
       (_, value) => {
         if (typeof value === 'object' && value !== null) {
           if (seen.has(value)) {
-            return '[Circular]';
+            return '[Circular]'
           }
-          seen.add(value);
+          seen.add(value)
         }
-        return value;
+        return value
       },
       pretty ? 2 : 0
-    );
+    )
   }
 
   /**
@@ -79,19 +79,19 @@ export class JsonUtils {
    */
   static parseWithErrorDetails(jsonString, context = '') {
     try {
-      const data = JSON.parse(jsonString);
-      return { success: true, data, error: null };
+      const data = JSON.parse(jsonString)
+      return { success: true, data, error: null }
     } catch (error) {
-      const errorMsg = context 
+      const errorMsg = context
         ? `JSON parse error in ${context}: ${error.message}`
-        : `JSON parse error: ${error.message}`;
-      
-      return { 
-        success: false, 
-        data: null, 
+        : `JSON parse error: ${error.message}`
+
+      return {
+        success: false,
+        data: null,
         error: errorMsg,
-        position: this.getErrorPosition(error, jsonString)
-      };
+        position: JsonUtils.getErrorPosition(error, jsonString),
+      }
     }
   }
 
@@ -103,30 +103,34 @@ export class JsonUtils {
    */
   static getErrorPosition(error, jsonString) {
     // Try to extract position from error message
-    const positionMatch = error.message.match(/position (\d+)/);
-    const lineMatch = error.message.match(/line (\d+)/);
-    const columnMatch = error.message.match(/column (\d+)/);
-    
+    const positionMatch = error.message.match(/position (\d+)/)
+    const lineMatch = error.message.match(/line (\d+)/)
+    const columnMatch = error.message.match(/column (\d+)/)
+
     if (positionMatch) {
-      const position = parseInt(positionMatch[1]);
-      const lines = jsonString.substring(0, position).split('\n');
+      const position = Number.parseInt(positionMatch[1], 10)
+      const lines = jsonString.substring(0, position).split('\n')
       return {
         position,
         line: lines.length,
-        column: lines[lines.length - 1].length + 1,
-        context: this.getErrorContext(jsonString, position)
-      };
+        column: lines.at(-1).length + 1,
+        context: JsonUtils.getErrorContext(jsonString, position),
+      }
     }
-    
+
     if (lineMatch && columnMatch) {
       return {
-        line: parseInt(lineMatch[1]),
-        column: parseInt(columnMatch[1]),
-        context: this.getErrorContextByLine(jsonString, parseInt(lineMatch[1]), parseInt(columnMatch[1]))
-      };
+        line: Number.parseInt(lineMatch[1], 10),
+        column: Number.parseInt(columnMatch[1], 10),
+        context: JsonUtils.getErrorContextByLine(
+          jsonString,
+          Number.parseInt(lineMatch[1], 10),
+          Number.parseInt(columnMatch[1], 10)
+        ),
+      }
     }
-    
-    return null;
+
+    return null
   }
 
   /**
@@ -136,16 +140,16 @@ export class JsonUtils {
    * @returns {Object} Context information
    */
   static getErrorContext(jsonString, position) {
-    const start = Math.max(0, position - 50);
-    const end = Math.min(jsonString.length, position + 50);
-    const before = jsonString.substring(start, position);
-    const after = jsonString.substring(position, end);
-    
+    const start = Math.max(0, position - 50)
+    const end = Math.min(jsonString.length, position + 50)
+    const before = jsonString.substring(start, position)
+    const after = jsonString.substring(position, end)
+
     return {
       before,
       after,
-      marker: '>>> ERROR HERE <<<'
-    };
+      marker: '>>> ERROR HERE <<<',
+    }
   }
 
   /**
@@ -156,28 +160,28 @@ export class JsonUtils {
    * @returns {Object} Context information
    */
   static getErrorContextByLine(jsonString, line, column) {
-    const lines = jsonString.split('\n');
-    const errorLine = lines[line - 1] || '';
-    const contextLines = [];
-    
+    const lines = jsonString.split('\n')
+    const errorLine = lines[line - 1] || ''
+    const contextLines = []
+
     // Add surrounding lines for context
     for (let i = Math.max(0, line - 3); i < Math.min(lines.length, line + 2); i++) {
-      const lineNum = i + 1;
-      const isErrorLine = lineNum === line;
+      const lineNum = i + 1
+      const isErrorLine = lineNum === line
       contextLines.push({
         number: lineNum,
         content: lines[i],
-        isError: isErrorLine
-      });
+        isError: isErrorLine,
+      })
     }
-    
+
     return {
       line,
       column,
       errorLine,
-      marker: ' '.repeat(column - 1) + '^',
-      contextLines
-    };
+      marker: `${' '.repeat(column - 1)}^`,
+      contextLines,
+    }
   }
 
   /**
@@ -187,10 +191,10 @@ export class JsonUtils {
    */
   static isValidJson(jsonString) {
     try {
-      JSON.parse(jsonString);
-      return true;
+      JSON.parse(jsonString)
+      return true
     } catch {
-      return false;
+      return false
     }
   }
 
@@ -201,10 +205,10 @@ export class JsonUtils {
    */
   static deepClone(obj) {
     try {
-      return JSON.parse(JSON.stringify(obj));
+      return JSON.parse(JSON.stringify(obj))
     } catch (error) {
-      console.warn('Deep clone failed, returning original object:', error.message);
-      return obj;
+      console.warn('Deep clone failed, returning original object:', error.message)
+      return obj
     }
   }
 
@@ -215,19 +219,19 @@ export class JsonUtils {
    * @returns {string} Formatted JSON string
    */
   static formatForConsole(data, colorize = true) {
-    const jsonString = this.stringifyForResponse(data);
-    
+    const jsonString = JsonUtils.stringifyForResponse(data)
+
     if (!colorize) {
-      return jsonString;
+      return jsonString
     }
-    
+
     // Simple syntax highlighting for console
     return jsonString
-      .replace(/"([^"]+)":/g, '\x1b[36m"$1"\x1b[0m:')  // Cyan for keys
+      .replace(/"([^"]+)":/g, '\x1b[36m"$1"\x1b[0m:') // Cyan for keys
       .replace(/: "([^"]+)"/g, ': \x1b[32m"$1"\x1b[0m') // Green for string values
-      .replace(/: (\d+)/g, ': \x1b[33m$1\x1b[0m')      // Yellow for numbers
+      .replace(/: (\d+)/g, ': \x1b[33m$1\x1b[0m') // Yellow for numbers
       .replace(/: (true|false)/g, ': \x1b[35m$1\x1b[0m') // Magenta for booleans
-      .replace(/: null/g, ': \x1b[90mnull\x1b[0m');     // Gray for null
+      .replace(/: null/g, ': \x1b[90mnull\x1b[0m') // Gray for null
   }
 
   /**
@@ -237,10 +241,10 @@ export class JsonUtils {
    */
   static minify(jsonString) {
     try {
-      return JSON.stringify(JSON.parse(jsonString));
+      return JSON.stringify(JSON.parse(jsonString))
     } catch (error) {
-      console.warn('JSON minification failed:', error.message);
-      return jsonString;
+      console.warn('JSON minification failed:', error.message)
+      return jsonString
     }
   }
 
@@ -252,10 +256,10 @@ export class JsonUtils {
    */
   static prettify(jsonString, indent = 2) {
     try {
-      return JSON.stringify(JSON.parse(jsonString), null, indent);
+      return JSON.stringify(JSON.parse(jsonString), null, indent)
     } catch (error) {
-      console.warn('JSON prettification failed:', error.message);
-      return jsonString;
+      console.warn('JSON prettification failed:', error.message)
+      return jsonString
     }
   }
 
@@ -267,10 +271,10 @@ export class JsonUtils {
    */
   static areEqual(obj1, obj2) {
     try {
-      return JSON.stringify(obj1) === JSON.stringify(obj2);
+      return JSON.stringify(obj1) === JSON.stringify(obj2)
     } catch (error) {
-      console.warn('JSON comparison failed:', error.message);
-      return false;
+      console.warn('JSON comparison failed:', error.message)
+      return false
     }
   }
 
@@ -282,13 +286,13 @@ export class JsonUtils {
    */
   static extractStrings(obj, strings = []) {
     if (typeof obj === 'string') {
-      strings.push(obj);
+      strings.push(obj)
     } else if (Array.isArray(obj)) {
-      obj.forEach(item => this.extractStrings(item, strings));
+      obj.forEach((item) => JsonUtils.extractStrings(item, strings))
     } else if (obj && typeof obj === 'object') {
-      Object.values(obj).forEach(value => this.extractStrings(value, strings));
+      Object.values(obj).forEach((value) => JsonUtils.extractStrings(value, strings))
     }
-    return strings;
+    return strings
   }
 
   /**
@@ -297,22 +301,22 @@ export class JsonUtils {
    * @returns {Object} Merged object
    */
   static deepMerge(...objects) {
-    const result = {};
-    
+    const result = {}
+
     for (const obj of objects) {
       if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
         for (const [key, value] of Object.entries(obj)) {
           if (value && typeof value === 'object' && !Array.isArray(value)) {
-            result[key] = this.deepMerge(result[key] || {}, value);
+            result[key] = JsonUtils.deepMerge(result[key] || {}, value)
           } else {
-            result[key] = value;
+            result[key] = value
           }
         }
       }
     }
-    
-    return result;
+
+    return result
   }
 }
 
-export default JsonUtils;
+export default JsonUtils

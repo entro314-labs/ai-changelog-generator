@@ -39,6 +39,7 @@ OPENAI_PROJECT_ID=proj_your-project-id
 ```
 
 **Setup Steps**:
+
 1. Visit [platform.openai.com](https://platform.openai.com/account/api-keys)
 2. Create API key
 3. Add to `.env.local`
@@ -59,6 +60,7 @@ ANTHROPIC_TIMEOUT=60000
 ```
 
 **Setup Steps**:
+
 1. Visit [console.anthropic.com](https://console.anthropic.com/)
 2. Create API key
 3. Add to `.env.local`
@@ -79,6 +81,7 @@ GOOGLE_API_VERSION=v1
 ```
 
 **Setup Steps**:
+
 1. Visit [aistudio.google.com](https://aistudio.google.com/app/apikey)
 2. Create API key
 3. Add to `.env.local`
@@ -102,6 +105,7 @@ AZURE_USER_ID=user-123
 ```
 
 **Setup Steps**:
+
 1. Create Azure OpenAI resource in Azure Portal
 2. Deploy a model (e.g., gpt-4o)
 3. Get endpoint and key from Azure Portal
@@ -124,6 +128,7 @@ HUGGINGFACE_ENDPOINT_URL=https://your-endpoint.endpoints.huggingface.cloud
 ```
 
 **Setup Steps**:
+
 1. Visit [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
 2. Create token
 3. Add to `.env.local`
@@ -145,6 +150,7 @@ OLLAMA_MODEL=llama3.1
 ```
 
 **Setup Steps**:
+
 1. Install Ollama: `curl -fsSL https://ollama.com/install.sh | sh`
 2. Pull a model: `ollama pull llama3.1`
 3. Start server: `ollama serve` (usually auto-starts)
@@ -152,6 +158,7 @@ OLLAMA_MODEL=llama3.1
 5. Test: `ai-changelog validate --provider ollama`
 
 **Popular Models**:
+
 - `llama3.1` - Recommended default (8B params)
 - `llama3.1:70b` - More capable but slower
 - `codellama` - Optimized for code analysis
@@ -172,6 +179,7 @@ LMSTUDIO_MODEL=local-model
 ```
 
 **Setup Steps**:
+
 1. Download [LM Studio](https://lmstudio.ai/)
 2. Download a model in LM Studio
 3. Start local server (Developer > Local Server)
@@ -213,6 +221,7 @@ AI_PROVIDER=auto  # Will automatically select best available
 **Symptoms**: "No AI provider is available" or "Provider [name] not found"
 
 **Solutions**:
+
 1. Run configuration wizard: `ai-changelog providers configure`
 2. Check API key format and validity
 3. Verify network connectivity: `ai-changelog validate`
@@ -221,69 +230,85 @@ AI_PROVIDER=auto  # Will automatically select best available
 ### OpenAI Issues
 
 **API Key Invalid**:
+
 - Error: "Incorrect API key provided"
 - Solution: Verify key at [platform.openai.com](https://platform.openai.com/account/api-keys)
 
 **Rate Limits**:
+
 - Error: "Rate limit exceeded"
 - Solution: Check usage in OpenAI dashboard, upgrade plan, or add delay
 
 **Model Not Available**:
+
 - Error: "The model [model] does not exist"
 - Solution: Check available models in your account
 
 ### Azure OpenAI Issues
 
 **Deployment Not Found**:
+
 - Error: "The API deployment for this resource does not exist"
 - Solution: Verify deployment name in Azure portal matches configuration
 
 **Authentication Failed**:
+
 - Solution: Check API key and endpoint URL are correct
 
 **Region Mismatch**:
+
 - Solution: Ensure endpoint URL matches deployment region
 
 ### Anthropic Issues
 
 **API Key Invalid**:
+
 - Solution: Verify key at [console.anthropic.com](https://console.anthropic.com/)
 
 **Content Policy Violation**:
+
 - Error: "Request rejected by safety system"
 - Solution: Review prompt content for policy compliance
 
 ### Google AI Issues
 
 **API Key Invalid**:
+
 - Solution: Verify key at [aistudio.google.com](https://aistudio.google.com/app/apikey)
 
 **Safety Filters**:
+
 - Error: "Safety settings triggered"
 - Solution: Review prompt content or adjust safety settings
 
 ### Ollama Issues
 
 **Connection Refused**:
+
 - Error: "ECONNREFUSED"
 - Solution: Ensure Ollama is running: `ollama serve`
 
 **Model Not Found**:
+
 - Error: "Model [model] not found"
 - Solution: Pull model: `ollama pull [model]`
 
 **Performance Issues**:
+
 - Solution: Use smaller model or increase system resources
 
 ### Hugging Face Issues
 
 **API Token Invalid**:
+
 - Solution: Verify token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
 
 **Model Not Available**:
+
 - Solution: Check if model exists on Hugging Face Hub
 
 **Rate Limits**:
+
 - Solution: Check usage or upgrade plan
 
 ## Testing and Validation
@@ -330,24 +355,28 @@ ai-changelog validate --verbose
 ## Best Practices
 
 ### Security
+
 - Use environment variables, never hardcode API keys
 - Rotate API keys regularly
 - Use least-privilege access when possible
 - Consider local models for sensitive code
 
 ### Performance
+
 - Use local models for development/testing
 - Configure provider priority based on your needs
 - Monitor API costs and usage
 - Set appropriate timeouts and retries
 
 ### Cost Optimization
+
 - Use Hugging Face or local models for cost savings
 - Set model overrides for different complexity levels
 - Monitor token usage with detailed logging
 - Use caching when available
 
 ### Reliability
+
 - Configure multiple providers for redundancy
 - Set up fallback chains
 - Monitor provider health and status
@@ -356,40 +385,48 @@ ai-changelog validate --verbose
 ## Environment Variables Reference
 
 ### Provider Selection
+
 - `AI_PROVIDER` - Which provider to use (`auto`, `openai`, `anthropic`, etc.)
 - `PROVIDER_PRIORITY` - JSON array of provider preference order
 
 ### OpenAI
+
 - `OPENAI_API_KEY` - API key (required)
 - `OPENAI_ORGANIZATION` - Organization ID (optional)
 - `OPENAI_PROJECT_ID` - Project ID (optional)
 
 ### Anthropic
+
 - `ANTHROPIC_API_KEY` - API key (required)
 - `ANTHROPIC_API_URL` - Custom endpoint (optional)
 
 ### Google AI
+
 - `GOOGLE_API_KEY` - API key (required)
 - `GOOGLE_DEFAULT_MODEL` - Default model (optional)
 
 ### Azure OpenAI
+
 - `AZURE_OPENAI_ENDPOINT` - Resource endpoint (required)
 - `AZURE_OPENAI_KEY` - API key (required)
 - `AZURE_OPENAI_DEPLOYMENT_NAME` - Model deployment name
 - `AZURE_OPENAI_API_VERSION` - API version
 
 ### Hugging Face
+
 - `HUGGINGFACE_API_KEY` - API token (required)
 - `HUGGINGFACE_MODEL` - Default model
 - `HUGGINGFACE_PROVIDER` - Provider routing (`auto`, `replicate`, etc.)
 
 ### Local Providers
+
 - `OLLAMA_HOST` - Ollama server URL
 - `OLLAMA_MODEL` - Default model
 - `LMSTUDIO_API_BASE` - LM Studio server URL
 - `LMSTUDIO_API_KEY` - API key (usually `lm-studio`)
 
 ### Application Settings
+
 - `DEFAULT_ANALYSIS_MODE` - Analysis depth (`standard`, `detailed`, `enterprise`)
 - `OUTPUT_FORMAT` - Output format (`markdown`, `json`)
 - `INCLUDE_ATTRIBUTION` - Include attribution footer (`true`, `false`)

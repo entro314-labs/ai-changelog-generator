@@ -4,17 +4,17 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'lib/providers/**'
-      - 'lib/provider-manager.js'
-      - 'lib/utils/**'
-      - 'test-*.js'
+      - 'src/infrastructure/providers/**'
+      - 'src/infrastructure/providers/provider-manager.service.js'
+      - 'src/shared/utils/**'
+      - 'test/providers.test.js'
   pull_request:
     branches: [ main ]
     paths:
-      - 'lib/providers/**'
-      - 'lib/provider-manager.js'
-      - 'lib/utils/**'
-      - 'test-*.js'
+      - 'src/infrastructure/providers/**'
+      - 'src/infrastructure/providers/provider-manager.service.js'
+      - 'src/shared/utils/**'
+      - 'test/providers.test.js'
   workflow_dispatch:
     inputs:
       test_suite:
@@ -31,43 +31,48 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
-    
+        node-version: [22.x]
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
       - name: Install dependencies
-        run: npm ci
-      
+        run: pnpm install --frozen-lockfile
+
       - name: Create .env.local file
         run: |
           touch .env.local
           echo "# OpenAI" >> .env.local
           echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env.local
           echo "OPENAI_DEFAULT_MODEL=gpt-4.1-nano" >> .env.local
-          
+
           echo "# Azure OpenAI" >> .env.local
           echo "AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}" >> .env.local
           echo "AZURE_OPENAI_KEY=${{ secrets.AZURE_OPENAI_KEY }}" >> .env.local
           echo "AZURE_OPENAI_DEFAULT_DEPLOYMENT=${{ secrets.AZURE_OPENAI_DEFAULT_DEPLOYMENT }}" >> .env.local
-          
+
           echo "# Anthropic" >> .env.local
           echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env.local
           echo "ANTHROPIC_DEFAULT_MODEL=claude-3-opus-20240229" >> .env.local
-          
+
           echo "# Google" >> .env.local
           echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env.local
           echo "GOOGLE_DEFAULT_MODEL=gemini-1.5-pro-latest" >> .env.local
-          
+
           echo "# Vertex AI" >> .env.local
           if [ -n "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" ]; then
             echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" > google-credentials.json
@@ -76,27 +81,27 @@ jobs:
             echo "VERTEX_LOCATION=${{ secrets.VERTEX_LOCATION }}" >> .env.local
             echo "VERTEX_MODEL=gemini-1.5-pro-latest" >> .env.local
           fi
-          
+
           echo "# Hugging Face" >> .env.local
           echo "HUGGINGFACE_API_KEY=${{ secrets.HUGGINGFACE_API_KEY }}" >> .env.local
           echo "HUGGINGFACE_DEFAULT_MODEL=mistralai/Mixtral-8x7B-Instruct-v0.1" >> .env.local
-          
+
           # Local providers are skipped in CI environment
-      
+
       - name: Run provider tests
         if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'providers' || github.event.inputs.test_suite == '' }}
-        run: node test-providers.js
-      
+        run: pnpm test -- test/providers.test.js
+
       - name: Run provider switching tests
         if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'provider-switching' || github.event.inputs.test_suite == '' }}
-        run: node test-provider-switching.js
-      
+        run: pnpm test -- test/providers.test.js
+
       - name: Run new providers tests
         if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'new-providers' || github.event.inputs.test_suite == '' }}
-        run: node test-new-providers.js
-      
+        run: pnpm test -- test/providers.test.js
+
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.node-version }}
           path: test-results/

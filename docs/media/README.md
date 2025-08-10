@@ -5,18 +5,21 @@ This directory contains demo materials showcasing the AI Changelog Generator in 
 ## Available Demos
 
 ### 🎬 Interactive Mode Demo
+
 - **File**: `demo-interactive-optimized.gif`
 - **Description**: Shows the full interactive mode experience with provider selection, commit analysis, and changelog generation
 - **Duration**: ~30 seconds
 - **Showcases**: Interactive CLI, provider setup, guided changelog creation
 
 ### ⚡ Quick Generation Demo  
+
 - **File**: `demo-quick-real.gif`
 - **Description**: Demonstrates rapid changelog generation from recent commits
 - **Duration**: ~15 seconds
 - **Showcases**: Fast CLI execution, automatic analysis, professional output
 
 ### 📺 Complete Video Walkthrough
+
 - **File**: `demo-interactive.mp4`
 - **Description**: Full-featured video demonstration of capabilities and use cases
 - **Duration**: Extended walkthrough
@@ -32,6 +35,7 @@ The `.tape` files are [VHS](https://github.com/charmbracelet/vhs) recording scri
 ## Usage in Documentation
 
 These media files are referenced in:
+
 - Main `README.md` - Demo section with embedded GIFs
 - Documentation guides - Visual examples of tool usage
 - Marketing materials - Showcasing tool capabilities

@@ -1,5 +1,13 @@
-import { getWorkingDirectoryChanges, summarizeFileChanges, categorizeFile, detectLanguage, assessFileImportance } from '../../shared/utils/utils.js';
-import colors from '../../shared/constants/colors.js';
+import colors from '../../shared/constants/colors.js'
+import { EnhancedConsole } from '../../shared/utils/cli-ui.js'
+import { DiffProcessor } from '../../shared/utils/diff-processor.js'
+import {
+  assessFileImportance,
+  categorizeFile,
+  detectLanguage,
+  getWorkingDirectoryChanges,
+  summarizeFileChanges,
+} from '../../shared/utils/utils.js'
 
 /**
  * Workspace Changelog Service
@@ -8,75 +16,106 @@ import colors from '../../shared/constants/colors.js';
  */
 export class WorkspaceChangelogService {
   constructor(aiAnalysisService, gitService = null) {
-    this.aiAnalysisService = aiAnalysisService;
-    this.gitService = gitService;
+    this.aiAnalysisService = aiAnalysisService
+    this.gitService = gitService
   }
 
   async generateComprehensiveWorkspaceChangelog(options = {}) {
     try {
-
       // Get working directory changes as raw array
-      const rawChanges = getWorkingDirectoryChanges();
+      const rawChanges = getWorkingDirectoryChanges()
 
-
-      if (!rawChanges || !Array.isArray(rawChanges) || rawChanges.length === 0) {
-        console.log(colors.infoMessage('No changes detected in working directory.'));
-        return null;
+      if (!(rawChanges && Array.isArray(rawChanges)) || rawChanges.length === 0) {
+        EnhancedConsole.info('No changes detected in working directory.')
+        return null
       }
 
       // Enhanced analysis of changes with diff content for AI analysis
-      const enhancedChanges = await this.enhanceChangesWithDiff(rawChanges);
-      const changesSummary = summarizeFileChanges(enhancedChanges);
+      const enhancedChanges = await this.enhanceChangesWithDiff(rawChanges)
+      const changesSummary = summarizeFileChanges(enhancedChanges)
 
-      // Generate workspace context
-      const workspaceContext = this.generateWorkspaceContext(enhancedChanges, changesSummary);
+      // Use DiffProcessor for intelligent processing
+      const analysisMode = options.analysisMode || 'standard'
+      const diffProcessor = new DiffProcessor({
+        analysisMode,
+        enableFiltering: true,
+        enablePatternDetection: true,
+      })
 
-      // Generate changelog content
+      const processedResult = diffProcessor.processFiles(enhancedChanges)
+
+      // Generate changelog content with processed files
       const changelog = await this.generateChangelogContent(
-        enhancedChanges,
+        processedResult.processedFiles,
         changesSummary,
-        workspaceContext,
-        options.analysisMode || 'standard'
-      );
+        processedResult,
+        analysisMode
+      )
 
       return {
         changelog,
         changes: enhancedChanges,
+        processedFiles: processedResult.processedFiles,
+        patterns: processedResult.patterns,
         summary: changesSummary,
-        context: workspaceContext
-      };
-
+        filesProcessed: processedResult.filesProcessed,
+        filesSkipped: processedResult.filesSkipped,
+      }
     } catch (error) {
-      console.error(colors.errorMessage('Workspace changelog generation failed:'), error.message);
-      throw error;
+      console.error(colors.errorMessage('Workspace changelog generation failed:'), error.message)
+      throw error
     }
   }
 
   async generateAIChangelogContentFromChanges(changes, changesSummary, analysisMode = 'standard') {
     if (!this.aiAnalysisService.hasAI) {
-      console.log(colors.infoMessage('AI not available, using rule-based analysis...'));
-      return this.generateBasicChangelogContentFromChanges(changes, changesSummary);
+      console.log(colors.infoMessage('AI not available, using rule-based analysis...'))
+      return this.generateBasicChangelogContentFromChanges(changes, changesSummary)
     }
 
     try {
-      // Build comprehensive prompt with ALL change details
+      // Use DiffProcessor for intelligent diff processing
+      const diffProcessor = new DiffProcessor({
+        analysisMode,
+        enableFiltering: true,
+        enablePatternDetection: true,
+      })
+
+      const processedResult = diffProcessor.processFiles(changes)
+      const { processedFiles, patterns } = processedResult
+
+      // Build pattern summary if patterns were detected
+      const patternSummary =
+        Object.keys(patterns).length > 0
+          ? `\n\n**BULK PATTERNS DETECTED:**\n${Object.values(patterns)
+              .map((p) => `- ${p.description}`)
+              .join('\n')}`
+          : ''
+
+      // Build files section with processed diffs
+      const filesSection = processedFiles
+        .map((file) => {
+          if (file.isSummary) {
+            return `\n**[REMAINING FILES]:** ${file.diff}`
+          }
+
+          const compressionInfo = file.compressionApplied
+            ? ` [compressed from ${file.originalSize || 'unknown'} chars]`
+            : ''
+          const patternInfo = file.bulkPattern ? ` [${file.bulkPattern}]` : ''
+
+          return `\n**${file.filePath || file.path}** (${file.status})${compressionInfo}${patternInfo}:\n${file.diff}`
+        })
+        .join('\n')
+
+      // Build comprehensive prompt with processed changes
       const prompt = `Generate a comprehensive AI changelog for the following working directory changes:
 
 **Analysis Mode**: ${analysisMode}
-**Total Files**: ${changesSummary.totalFiles}
-**Categories**: ${Object.keys(changesSummary.categories).join(', ')}
+**Total Files**: ${changesSummary.totalFiles} (${processedResult.filesProcessed} analyzed, ${processedResult.filesSkipped} summarized)
+**Categories**: ${Object.keys(changesSummary.categories).join(', ')}${patternSummary}
 
-**Files by category with details**:
-${Object.entries(changesSummary.categories).map(([cat, files]) =>
-  `**${cat}**: ${files.map(f => {
-    // Find the full change object with diff content
-    const fullChange = changes.find(change => (change.path || change.filePath) === (f.path || f.filePath));
-    const diffPreview = fullChange?.diff ?
-      (fullChange.diff.length > 200 ? fullChange.diff.substring(0, 200) + '...' : fullChange.diff) :
-      'No diff available';
-    return `${f.status} ${f.path} (${diffPreview.replace(/\n/g, ' ')})`;
-  }).join('\n   ')}`
-).join('\n')}
+**PROCESSED FILES:**${filesSection}
 
 CRITICAL INSTRUCTIONS FOR ANALYSIS:
 1. **ONLY DESCRIBE CHANGES VISIBLE IN THE DIFF CONTENT** - Do not invent or assume changes
@@ -87,12 +126,14 @@ CRITICAL INSTRUCTIONS FOR ANALYSIS:
 
 STRICT FORMATTING REQUIREMENTS:
 Generate working directory change entries based ONLY on visible diff content:
-- (type) brief factual description - List only the specific changes you can see in the diffs
+- (type) Detailed but focused description - Include key functional changes, method/function names, and important technical details without overwhelming verbosity
 
-EXAMPLES of CORRECT FACTUAL FORMAT:
-✅ (feature) Created new bedrock.js file - Added BedrockProvider class with generateCompletion(), initializeClient(), and getAvailableModels() methods. Imported AWS SDK BedrockRuntimeClient and added support for Claude and Llama models.
+EXAMPLES of CORRECT DETAILED FORMAT:
+✅ (feature) Created new bedrock.js file - Added BedrockProvider class with generateCompletion(), initializeClient(), and getAvailableModels() methods. Imported AWS SDK BedrockRuntimeClient and added support for Claude-3-5-sonnet and Llama-3.1 models with streaming capabilities.
 
-✅ (refactor) Updated model list in anthropic.js - Changed getDefaultModel() return value from 'claude-3-5-sonnet-20241022' to 'claude-sonnet-4-20250514'. Added new model entries with updated capabilities.
+✅ (refactor) Updated model list in anthropic.js - Changed getDefaultModel() return value from 'claude-3-5-sonnet-20241022' to 'claude-sonnet-4-20250514'. Added claude-sonnet-4 model entry with 200k context and updated pricing tier.
+
+✅ (fix) Updated configuration.manager.js - Added null check in getProviderConfig() method to prevent crashes when .env.local file is missing. Modified loadConfig() to gracefully handle missing environment files.
 
 EXAMPLES of FORBIDDEN ASSUMPTIONS:
 ❌ "Updated other providers to recognize bedrock" (not visible in diff)
@@ -100,95 +141,120 @@ EXAMPLES of FORBIDDEN ASSUMPTIONS:
 ❌ "Improved integration across the system" (speculation)
 ❌ "Enhanced error handling throughout" (assumption)
 
-ONLY describe what you can literally see in the diff content. Do not invent connections or integrations.`;
+ONLY describe what you can literally see in the diff content. Do not invent connections or integrations.`
 
       // Make AI call with all the context
       const messages = [
         {
-          role: "system",
-          content: "You are an expert at analyzing code changes and generating factual changelog entries. You MUST only describe changes that are visible in the provided diff content. Never make assumptions, never invent integrations, never speculate about how files work together. Be precise and factual - only describe what you can literally see in the diffs."
+          role: 'system',
+          content:
+            'You are an expert at analyzing code changes and generating detailed but focused changelog entries. You MUST only describe changes that are visible in the provided diff content. Include specific function/method names, key technical details, and the functional purpose of changes. Be precise and factual - only describe what you can literally see in the diffs. Provide enough detail to understand what changed technically, but avoid overwhelming verbosity.',
         },
         {
-          role: "user",
-          content: prompt
-        }
-      ];
+          role: 'user',
+          content: prompt,
+        },
+      ]
 
       const options = {
-        max_tokens: analysisMode === 'enterprise' ? 2000 : analysisMode === 'detailed' ? 1500 : 1000,
-        temperature: 0.3
-      };
+        max_tokens:
+          analysisMode === 'enterprise' ? 2500 : analysisMode === 'detailed' ? 2000 : 1200,
+        temperature: 0.2,
+      }
 
+      const response = await this.aiAnalysisService.aiProvider.generateCompletion(messages, options)
 
-      const response = await this.aiAnalysisService.aiProvider.generateCompletion(messages, options);
+      let changelog = response.content || response.text
 
-      let changelog = response.content || response.text;
+      // Check if changelog content is valid
+      if (!changelog || typeof changelog !== 'string') {
+        console.warn(colors.warningMessage('⚠️  AI response was empty or invalid'))
+        console.warn(colors.infoMessage('💡 Using basic file change detection instead'))
+
+        // Generate basic changelog from file changes
+        const timestamp = new Date().toISOString().split('T')[0]
+        const fallbackChanges = rawChanges || getWorkingDirectoryChanges()
+        const basicEntries = fallbackChanges.map((change) => {
+          const filePath = change.filePath || change.path || 'unknown file'
+          const status = change.status || 'M'
+          const changeType =
+            status === 'M'
+              ? 'Modified'
+              : status === 'A'
+                ? 'Added'
+                : status === 'D'
+                  ? 'Deleted'
+                  : 'Changed'
+          return `- ${changeType} ${filePath}`
+        })
+
+        changelog = `# Working Directory Changelog - ${timestamp}\n\n## Changes\n\n${basicEntries.join('\n')}`
+      }
 
       // Add metadata
-      const timestamp = new Date().toISOString().split('T')[0];
+      const timestamp = new Date().toISOString().split('T')[0]
 
-      // Ensure proper changelog format
+      // Ensure proper changelog format with Keep a Changelog header
       if (!changelog.includes('# ')) {
-        changelog = `# Working Directory Changelog - ${timestamp}\n\n${changelog}`;
+        changelog = `# Changelog\n\nAll notable changes to this project will be documented in this file.\n\nThe format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),\nand this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n\n## [Unreleased] - ${timestamp}\n\n${changelog}`
       }
 
       // Add generation metadata
-      changelog += `\n\n---\n\n*Generated from ${changesSummary.totalFiles} working directory changes*\n`;
+      changelog += `\n\n---\n\n*Generated from ${changesSummary.totalFiles} working directory changes*\n`
 
-      return changelog;
-
+      return changelog
     } catch (error) {
       // Specific error guidance for AI failures
       if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')) {
-        console.warn(colors.warningMessage('⚠️  Cannot connect to AI provider'));
-        console.warn(colors.infoMessage('💡 Check internet connection and provider service status'));
+        console.warn(colors.warningMessage('⚠️  Cannot connect to AI provider'))
+        console.warn(colors.infoMessage('💡 Check internet connection and provider service status'))
       } else if (error.message.includes('API key') || error.message.includes('401')) {
-        console.warn(colors.warningMessage('⚠️  API authentication failed'));
-        console.warn(colors.infoMessage('💡 Run: ai-changelog init'));
+        console.warn(colors.warningMessage('⚠️  API authentication failed'))
+        console.warn(colors.infoMessage('💡 Run: ai-changelog init'))
       } else if (error.message.includes('rate limit')) {
-        console.warn(colors.warningMessage('⚠️  Rate limit exceeded'));
-        console.warn(colors.infoMessage('💡 Wait a moment before retrying'));
+        console.warn(colors.warningMessage('⚠️  Rate limit exceeded'))
+        console.warn(colors.infoMessage('💡 Wait a moment before retrying'))
       } else {
-        console.warn(colors.warningMessage(`⚠️  AI analysis failed: ${error.message}`));
+        console.warn(colors.warningMessage(`⚠️  AI analysis failed: ${error.message}`))
       }
 
-      console.warn(colors.infoMessage('🔄 Falling back to pattern-based analysis'));
-      return this.generateBasicChangelogContentFromChanges(changes, changesSummary);
+      console.warn(colors.infoMessage('🔄 Falling back to pattern-based analysis'))
+      return this.generateBasicChangelogContentFromChanges(changes, changesSummary)
     }
   }
 
   generateBasicChangelogContentFromChanges(changes, changesSummary) {
-    const timestamp = new Date().toISOString().split('T')[0];
+    const timestamp = new Date().toISOString().split('T')[0]
 
-    let changelog = `# Working Directory Changes - ${timestamp}\n\n`;
+    let changelog = `# Working Directory Changes - ${timestamp}\n\n`
 
     // Basic summary
-    changelog += `## Summary\n`;
-    changelog += `${changes.length} files modified across ${Object.keys(changesSummary.categories).length} categories.\n\n`;
+    changelog += '## Summary\n'
+    changelog += `${changes.length} files modified across ${Object.keys(changesSummary.categories).length} categories.\n\n`
 
     // Changes by category
-    changelog += this.buildChangesByCategory(changes, changesSummary);
+    changelog += this.buildChangesByCategory(changes, changesSummary)
 
     // Basic recommendations
-    changelog += `## Recommendations\n`;
-    changelog += `- Review changes before committing\n`;
-    changelog += `- Consider adding tests for new functionality\n`;
-    changelog += `- Update documentation if needed\n\n`;
+    changelog += '## Recommendations\n'
+    changelog += '- Review changes before committing\n'
+    changelog += '- Consider adding tests for new functionality\n'
+    changelog += '- Update documentation if needed\n\n'
 
-    return changelog;
+    return changelog
   }
 
   async enhanceChangesWithDiff(changes) {
-    const enhancedChanges = [];
+    const enhancedChanges = []
 
     for (const change of changes) {
-      let enhancedChange = {
+      const enhancedChange = {
         ...change,
         category: categorizeFile(change.path || change.filePath),
         language: detectLanguage(change.path || change.filePath),
         importance: assessFileImportance(change.path || change.filePath, change.status),
-        enhanced: true
-      };
+        enhanced: true,
+      }
 
       // Get diff content if git service is available
       if (this.gitService) {
@@ -196,27 +262,26 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
           const diffAnalysis = await this.gitService.analyzeWorkingDirectoryFileChange(
             change.status,
             change.path || change.filePath
-          );
+          )
 
           if (diffAnalysis) {
-            enhancedChange.diff = diffAnalysis.diff;
-            enhancedChange.beforeContent = diffAnalysis.beforeContent;
-            enhancedChange.afterContent = diffAnalysis.afterContent;
-            enhancedChange.semanticChanges = diffAnalysis.semanticChanges;
-            enhancedChange.functionalImpact = diffAnalysis.functionalImpact;
-            enhancedChange.complexity = diffAnalysis.complexity;
+            enhancedChange.diff = diffAnalysis.diff
+            enhancedChange.beforeContent = diffAnalysis.beforeContent
+            enhancedChange.afterContent = diffAnalysis.afterContent
+            enhancedChange.semanticChanges = diffAnalysis.semanticChanges
+            enhancedChange.functionalImpact = diffAnalysis.functionalImpact
+            enhancedChange.complexity = diffAnalysis.complexity
           }
         } catch (error) {
-          console.warn(`Failed to get diff for ${change.path || change.filePath}:`, error.message);
+          console.warn(`Failed to get diff for ${change.path || change.filePath}:`, error.message)
         }
       }
 
-      enhancedChanges.push(enhancedChange);
+      enhancedChanges.push(enhancedChange)
     }
 
-    return enhancedChanges;
+    return enhancedChanges
   }
-
 
   generateWorkspaceContext(changes, summary) {
     const context = {
@@ -225,281 +290,387 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
       primaryCategory: this.getPrimaryCategory(summary.categories),
       riskLevel: this.assessWorkspaceRisk(changes),
       complexity: this.assessWorkspaceComplexity(changes),
-      recommendations: this.generateRecommendations(changes)
-    };
+      recommendations: this.generateRecommendations(changes),
+    }
 
-    return context;
+    return context
   }
 
   getPrimaryCategory(categories) {
-    return Object.entries(categories)
-      .sort(([,a], [,b]) => b.length - a.length)[0]?.[0] || 'other';
+    return Object.entries(categories).sort(([, a], [, b]) => b.length - a.length)[0]?.[0] || 'other'
   }
 
   assessWorkspaceRisk(changes) {
-    const highRiskFiles = changes.filter(change =>
-      change.importance === 'critical' ||
-      change.category === 'configuration' ||
-      change.status === 'D'
-    );
+    const highRiskFiles = changes.filter(
+      (change) =>
+        change.importance === 'critical' ||
+        change.category === 'configuration' ||
+        change.status === 'D'
+    )
 
-    if (highRiskFiles.length > changes.length * 0.3) return 'high';
-    if (highRiskFiles.length > 0) return 'medium';
-    return 'low';
+    if (highRiskFiles.length > changes.length * 0.3) {
+      return 'high'
+    }
+    if (highRiskFiles.length > 0) {
+      return 'medium'
+    }
+    return 'low'
   }
 
   assessWorkspaceComplexity(changes) {
-    if (changes.length > 20) return 'high';
-    if (changes.length > 5) return 'medium';
-    return 'low';
+    if (changes.length > 20) {
+      return 'high'
+    }
+    if (changes.length > 5) {
+      return 'medium'
+    }
+    return 'low'
   }
 
   generateRecommendations(changes) {
-    const recommendations = [];
+    const recommendations = []
 
-    const hasTests = changes.some(change => change.category === 'tests');
-    const hasSource = changes.some(change => change.category === 'source');
-    const hasConfig = changes.some(change => change.category === 'configuration');
-    const hasDocs = changes.some(change => change.category === 'documentation');
+    const hasTests = changes.some((change) => change.category === 'tests')
+    const hasSource = changes.some((change) => change.category === 'source')
+    const hasConfig = changes.some((change) => change.category === 'configuration')
+    const hasDocs = changes.some((change) => change.category === 'documentation')
 
     if (hasSource && !hasTests) {
-      recommendations.push('Consider adding tests for source code changes');
+      recommendations.push('Consider adding tests for source code changes')
     }
 
     if (hasConfig) {
-      recommendations.push('Review configuration changes carefully');
+      recommendations.push('Review configuration changes carefully')
     }
 
     if (hasSource && !hasDocs) {
-      recommendations.push('Update documentation for new features');
+      recommendations.push('Update documentation for new features')
     }
 
     if (changes.length > 15) {
-      recommendations.push('Consider breaking this into smaller commits');
+      recommendations.push('Consider breaking this into smaller commits')
     }
 
-    const deletedFiles = changes.filter(change => change.status === 'D');
+    const deletedFiles = changes.filter((change) => change.status === 'D')
     if (deletedFiles.length > 0) {
-      recommendations.push(`Review ${deletedFiles.length} deleted files before committing`);
+      recommendations.push(`Review ${deletedFiles.length} deleted files before committing`)
     }
 
-    return recommendations;
+    return recommendations
   }
 
-  buildChangesByCategory(changes, changesSummary) {
-    let content = `## Changes by Category\n\n`;
+  buildChangesByCategory(_changes, changesSummary) {
+    let content = '## Changes by Category\n\n'
 
     Object.entries(changesSummary.categories).forEach(([category, files]) => {
-      const categoryIcon = this.getCategoryIcon(category);
-      content += `### ${categoryIcon} ${category.charAt(0).toUpperCase() + category.slice(1)} (${files.length} files)\n\n`;
+      const categoryIcon = this.getCategoryIcon(category)
+      content += `### ${categoryIcon} ${category.charAt(0).toUpperCase() + category.slice(1)} (${files.length} files)\n\n`
 
-      files.forEach(file => {
-        const statusIcon = this.getStatusIcon(file.status);
-        content += `- ${statusIcon} ${file.path}\n`;
-      });
+      files.forEach((file) => {
+        const statusIcon = this.getStatusIcon(file.status)
+        content += `- ${statusIcon} ${file.path}\n`
+      })
 
-      content += '\n';
-    });
+      content += '\n'
+    })
 
-    return content;
+    return content
   }
 
   getCategoryIcon(category) {
     const icons = {
-      'source': '💻',
-      'tests': '🧪',
-      'documentation': '📚',
-      'configuration': '⚙️',
-      'frontend': '🎨',
-      'assets': '🖼️',
-      'build': '🔧',
-      'other': '📄'
-    };
-    return icons[category] || '📄';
+      source: '💻',
+      tests: '🧪',
+      documentation: '📚',
+      configuration: '⚙️',
+      frontend: '🎨',
+      assets: '🖼️',
+      build: '🔧',
+      other: '📄',
+    }
+    return icons[category] || '📄'
   }
 
   getStatusIcon(status) {
     const icons = {
-      'A': '➕', // Added
-      'M': '✏️',  // Modified
-      'D': '❌', // Deleted
-      'R': '📝', // Renamed
-      'C': '📋'  // Copied
-    };
-    return icons[status] || '📄';
+      A: '➕', // Added
+      M: '✏️', // Modified
+      D: '❌', // Deleted
+      R: '📝', // Renamed
+      C: '📋', // Copied
+    }
+    return icons[status] || '📄'
   }
 
-  async generateChangelogContent(changes, summary, context, analysisMode) {
+  async generateChangelogContent(changes, summary, _context, analysisMode) {
     if (analysisMode === 'detailed' || analysisMode === 'enterprise') {
-      return await this.generateAIChangelogContentFromChanges(changes, summary, analysisMode);
-    } else {
-      return this.generateBasicChangelogContentFromChanges(changes, summary);
+      return await this.generateAIChangelogContentFromChanges(changes, summary, analysisMode)
     }
+    return this.generateBasicChangelogContentFromChanges(changes, summary)
   }
 
   // Integration with main changelog service
   async generateCommitStyleWorkingDirectoryEntries(options = {}) {
-    try {
-      // Use provided working directory analysis or get current changes
-      let rawChanges;
-      if (options.workingDirAnalysis && options.workingDirAnalysis.changes) {
-        rawChanges = options.workingDirAnalysis.changes;
-      } else {
-        rawChanges = getWorkingDirectoryChanges();
-      }
+    // Use provided working directory analysis or get current changes
+    let rawChanges
+    if (options.workingDirAnalysis?.changes) {
+      rawChanges = options.workingDirAnalysis.changes
+    } else {
+      rawChanges = getWorkingDirectoryChanges()
+    }
 
-      if (!rawChanges || !Array.isArray(rawChanges) || rawChanges.length === 0) {
-        return { entries: [] };
+    try {
+      if (!(rawChanges && Array.isArray(rawChanges)) || rawChanges.length === 0) {
+        return { entries: [] }
       }
 
       // Enhanced analysis of changes with diff content for AI analysis
-      const enhancedChanges = await this.enhanceChangesWithDiff(rawChanges);
-      const changesSummary = summarizeFileChanges(enhancedChanges);
+      const enhancedChanges = await this.enhanceChangesWithDiff(rawChanges)
+      const changesSummary = summarizeFileChanges(enhancedChanges)
+
+      // Use DiffProcessor for intelligent diff processing
+      const analysisMode =
+        this.aiAnalysisService?.analysisMode || options.analysisMode || 'standard'
+      const diffProcessor = new DiffProcessor({
+        analysisMode,
+        enableFiltering: true,
+        enablePatternDetection: true,
+      })
+
+      const processedResult = diffProcessor.processFiles(enhancedChanges)
+      const { processedFiles, patterns } = processedResult
+
+      // Build pattern summary if patterns were detected
+      const patternSummary =
+        Object.keys(patterns).length > 0
+          ? `\n\n**BULK PATTERNS DETECTED:**\n${Object.values(patterns)
+              .map((p) => `- ${p.description}`)
+              .join('\n')}`
+          : ''
+
+      // Build files section with processed diffs
+      const filesSection = processedFiles
+        .map((file) => {
+          if (file.isSummary) {
+            return `\n**[REMAINING FILES]:** ${file.diff}`
+          }
+
+          const compressionInfo = file.compressionApplied
+            ? ` [compressed from ${file.originalSize || 'unknown'} chars]`
+            : ''
+          const patternInfo = file.bulkPattern ? ` [${file.bulkPattern}]` : ''
+
+          return `\n**${file.filePath || file.path}** (${file.status})${compressionInfo}${patternInfo}:\n${file.diff}`
+        })
+        .join('\n')
 
       // Build prompt for commit-style entries
       const prompt = `Generate working directory change entries in the SAME FORMAT as git commits:
 
-**Analysis Mode**: ${options.analysisMode || 'standard'}
-**Total Files**: ${changesSummary.totalFiles}
-**Categories**: ${Object.keys(changesSummary.categories).join(', ')}
+**Analysis Mode**: ${analysisMode}
+**Total Files**: ${changesSummary.totalFiles} (${processedResult.filesProcessed} analyzed, ${processedResult.filesSkipped} summarized)
+**Categories**: ${Object.keys(changesSummary.categories).join(', ')}${patternSummary}
 
-**Files by category with details**:
-${Object.entries(changesSummary.categories).map(([cat, files]) =>
-  `**${cat}**: ${files.map(f => {
-    // Find the full change object with diff content
-    const fullChange = enhancedChanges.find(change => (change.path || change.filePath) === (f.path || f.filePath));
-    const diffPreview = fullChange?.diff ?
-      (fullChange.diff.length > 200 ? fullChange.diff.substring(0, 200) + '...' : fullChange.diff) :
-      'No diff available';
-    return `${f.status} ${f.path} (${diffPreview.replace(/\n/g, ' ')})`;
-  }).join('\n   ')}`
-).join('\n')}
+**PROCESSED FILES:**${filesSection}
 
 STRICT FORMATTING REQUIREMENTS:
 Generate working directory change entries based ONLY on visible diff content:
-- (type) brief factual description - List only the specific changes you can see in the diffs
+- (type) Detailed but focused description - Include key functional changes, method/function names, and important technical details without overwhelming verbosity
 
 Where:
 - type = feature, fix, refactor, docs, chore, etc. based on the actual changes
-- brief description = concise summary of what was actually changed
-- Detailed explanation = specific lines, functions, imports that were added/removed/modified
+- Detailed description = specific functions/methods affected, key technical changes, and functional purpose
+- Include exact method names, variable names, and technical specifics from the diffs
 
-EXAMPLES of CORRECT FACTUAL FORMAT:
-- (feature) Created new bedrock.js file - Added BedrockProvider class with generateCompletion(), initializeClient(), and getAvailableModels() methods. Imported AWS SDK BedrockRuntimeClient and added support for Claude and Llama models.
+EXAMPLES of CORRECT DETAILED FORMAT:
+- (feature) Created new bedrock.js file - Added BedrockProvider class with generateCompletion(), initializeClient(), and getAvailableModels() methods. Imported AWS SDK BedrockRuntimeClient and added support for Claude-3-5-sonnet and Llama-3.1 models with streaming capabilities.
 
-- (refactor) Updated model list in anthropic.js - Changed getDefaultModel() return value from 'claude-3-5-sonnet-20241022' to 'claude-sonnet-4-20250514'. Added new model entries in getAvailableModels() method.
+- (refactor) Updated model list in anthropic.js - Changed getDefaultModel() return value from 'claude-3-5-sonnet-20241022' to 'claude-sonnet-4-20250514'. Added claude-sonnet-4 model entry with 200k context window and updated pricing tier.
+
+- (fix) Updated configuration.manager.js - Added null check in getProviderConfig() method to prevent crashes when .env.local file is missing. Modified loadConfig() to gracefully handle missing environment files.
 
 FORBIDDEN - DO NOT MAKE ASSUMPTIONS:
 ❌ Do not mention "integration" unless you see actual integration code
 ❌ Do not mention "provider selection logic" unless you see that specific code
 ❌ Do not assume files work together unless explicitly shown in diffs
 
-Generate one entry per file or logical change group. Only describe what you can literally see.`;
+Generate one entry per file or logical change group. Only describe what you can literally see.`
 
       // Make AI call
       const messages = [
         {
-          role: "system",
-          content: "You are an expert at analyzing code changes and generating factual commit-style changelog entries. You MUST only describe changes that are visible in the provided diff content. Never make assumptions, never invent integrations, never speculate. Be precise and factual - only describe what you can literally see in the diffs."
+          role: 'system',
+          content:
+            'You are an expert at analyzing code changes and generating detailed but focused commit-style changelog entries. You MUST only describe changes that are visible in the provided diff content. Include specific function/method names, key technical details, and the functional purpose of changes. Be precise and factual - only describe what you can literally see in the diffs. Provide enough detail to understand what changed technically, but avoid overwhelming verbosity.',
         },
         {
-          role: "user",
-          content: prompt
-        }
-      ];
+          role: 'user',
+          content: prompt,
+        },
+      ]
+
+      // Set token limits based on analysis mode and number of changes
+      let maxTokens = 1200 // Default
+      if (analysisMode === 'enterprise') {
+        maxTokens = 3000
+      } else if (analysisMode === 'detailed') {
+        maxTokens = 2500
+      }
+
+      // Increase token limit for large numbers of working directory changes
+      if (enhancedChanges.length > 50) {
+        maxTokens = Math.min(maxTokens + 1500, 6000)
+      }
 
       const options_ai = {
-        max_tokens: 1000,
-        temperature: 0.3
-      };
+        max_tokens: maxTokens,
+        temperature: 0.3,
+      }
 
+      const response = await this.aiAnalysisService.aiProvider.generateCompletion(
+        messages,
+        options_ai
+      )
 
-      const response = await this.aiAnalysisService.aiProvider.generateCompletion(messages, options_ai);
+      const content = response.content || response.text
 
-      let content = response.content || response.text;
+      // Check if content is valid before processing
+      if (!content || typeof content !== 'string') {
+        console.warn(colors.warningMessage('⚠️  AI response was empty or invalid'))
+        console.warn(colors.infoMessage('💡 Using basic file change detection instead'))
+
+        // Fallback to basic entries from the changes we were given
+        const fallbackChanges = rawChanges || getWorkingDirectoryChanges()
+        const basicEntries = fallbackChanges.map((change) => {
+          const filePath = change.filePath || change.path || 'unknown file'
+          const status = change.status || 'M'
+          const changeType =
+            status === 'M'
+              ? 'update'
+              : status === 'A'
+                ? 'feature'
+                : status === 'D'
+                  ? 'remove'
+                  : 'chore'
+          const changeDesc =
+            status === 'M'
+              ? 'updated'
+              : status === 'A'
+                ? 'added'
+                : status === 'D'
+                  ? 'deleted'
+                  : 'changed'
+          return `- (${changeType}) Modified ${filePath} - File ${changeDesc} (pattern-based analysis)`
+        })
+
+        return { entries: basicEntries }
+      }
 
       // Parse entries from response
-      const entries = content.split('\n')
-        .filter(line => line.trim().startsWith('-'))
-        .map(line => line.trim());
-
+      const entries = content
+        .split('\n')
+        .filter((line) => {
+          const trimmed = line.trim()
+          // Accept lines starting with '- (' or directly with '(' for changelog entries
+          return trimmed.startsWith('- (') || trimmed.startsWith('(')
+        })
+        .map((line) => {
+          const trimmed = line.trim()
+          // Ensure all entries start with '- ' for consistent formatting
+          return trimmed.startsWith('- ') ? trimmed : `- ${trimmed}`
+        })
       return {
         entries,
         changes: enhancedChanges,
-        summary: changesSummary
-      };
-
+        summary: changesSummary,
+      }
     } catch (error) {
       // Provide specific guidance based on error type
       if (error.message.includes('fetch failed') || error.message.includes('connection')) {
-        console.warn(colors.warningMessage('⚠️  AI provider connection failed'));
-        console.warn(colors.infoMessage('💡 Check your internet connection and provider configuration'));
+        console.warn(colors.warningMessage('⚠️  AI provider connection failed'))
+        console.warn(
+          colors.infoMessage('💡 Check your internet connection and provider configuration')
+        )
       } else if (error.message.includes('API key') || error.message.includes('401')) {
-        console.warn(colors.warningMessage('⚠️  Authentication failed'));
-        console.warn(colors.infoMessage('💡 Run `ai-changelog init` to configure your API key'));
+        console.warn(colors.warningMessage('⚠️  Authentication failed'))
+        console.warn(colors.infoMessage('💡 Run `ai-changelog init` to configure your API key'))
       } else {
-        console.warn(colors.warningMessage(`⚠️  AI analysis failed: ${error.message}`));
-        console.warn(colors.infoMessage('💡 Using basic file change detection instead'));
+        console.warn(colors.warningMessage(`⚠️  AI analysis failed: ${error.message}`))
+        console.warn(colors.infoMessage('💡 Using basic file change detection instead'))
       }
 
       // Return basic entries from the changes we were given instead of getting fresh ones
-      const fallbackChanges = rawChanges || getWorkingDirectoryChanges();
-      const basicEntries = fallbackChanges.map(change => {
-        const filePath = change.filePath || change.path || 'unknown file';
-        const status = change.status || 'M';
-        const changeType = status === 'M' ? 'update' : status === 'A' ? 'feature' : status === 'D' ? 'remove' : 'chore';
-        const changeDesc = status === 'M' ? 'updated' : status === 'A' ? 'added' : status === 'D' ? 'deleted' : 'changed';
-        return `- (${changeType}) Modified ${filePath} - File ${changeDesc} (pattern-based analysis)`;
-      });
+      const fallbackChanges = rawChanges || getWorkingDirectoryChanges()
+      const basicEntries = fallbackChanges.map((change) => {
+        const filePath = change.filePath || change.path || 'unknown file'
+        const status = change.status || 'M'
+        const changeType =
+          status === 'M'
+            ? 'update'
+            : status === 'A'
+              ? 'feature'
+              : status === 'D'
+                ? 'remove'
+                : 'chore'
+        const changeDesc =
+          status === 'M'
+            ? 'updated'
+            : status === 'A'
+              ? 'added'
+              : status === 'D'
+                ? 'deleted'
+                : 'changed'
+        return `- (${changeType}) Modified ${filePath} - File ${changeDesc} (pattern-based analysis)`
+      })
 
-      return { entries: basicEntries };
+      return { entries: basicEntries }
     }
   }
 
   async generateWorkspaceChangelog(version = null, options = {}) {
-    const result = await this.generateComprehensiveWorkspaceChangelog(options);
+    const result = await this.generateComprehensiveWorkspaceChangelog(options)
 
     if (!result) {
-      return null;
+      return null
     }
 
-    let changelog = result.changelog;
+    let changelog = result.changelog
 
     // Add version information if provided
     if (version) {
       changelog = changelog.replace(
         /# Working Directory Changelog/,
         `# Working Directory Changelog - Version ${version}`
-      );
+      )
     }
 
     // Add context information for detailed modes
     if (options.analysisMode === 'detailed' || options.analysisMode === 'enterprise') {
-      changelog += this.generateContextSection(result.context);
+      changelog += this.generateContextSection(result.context)
     }
 
     return {
       ...result,
       changelog,
-      version
-    };
+      version,
+    }
   }
 
   generateContextSection(context) {
-    let section = `## Context Analysis\n\n`;
-    section += `- **Total Files:** ${context.totalFiles}\n`;
-    section += `- **Primary Category:** ${context.primaryCategory}\n`;
-    section += `- **Risk Level:** ${context.riskLevel}\n`;
-    section += `- **Complexity:** ${context.complexity}\n\n`;
+    let section = '## Context Analysis\n\n'
+    section += `- **Total Files:** ${context.totalFiles}\n`
+    section += `- **Primary Category:** ${context.primaryCategory}\n`
+    section += `- **Risk Level:** ${context.riskLevel}\n`
+    section += `- **Complexity:** ${context.complexity}\n\n`
 
     if (context.recommendations.length > 0) {
-      section += `### Recommendations\n\n`;
-      context.recommendations.forEach(rec => {
-        section += `- ${rec}\n`;
-      });
-      section += '\n';
+      section += '### Recommendations\n\n'
+      context.recommendations.forEach((rec) => {
+        section += `- ${rec}\n`
+      })
+      section += '\n'
     }
 
-    return section;
+    return section
   }
 }

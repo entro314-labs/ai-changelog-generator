@@ -1,0 +1,120 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.3)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Run tests
+        run: pnpm test
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Update version (if workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          pnpm version ${{ github.event.inputs.version }} --no-git-tag-version
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json
+          git commit -m "chore: bump version to ${{ github.event.inputs.version }}"
+          git tag v${{ github.event.inputs.version }}
+          git push origin HEAD --tags
+          
+      - name: Get version and changelog
+        id: get-info
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Generate changelog using the tool itself
+          if [ -f "bin/ai-changelog.js" ]; then
+            echo "Generating changelog with AI..."
+            CHANGELOG_CONTENT=$(pnpm changelog --no-color 2>/dev/null || echo "## Changes\n\nSee commit history for details.")
+          else
+            CHANGELOG_CONTENT="## Changes\n\nSee commit history for details."
+          fi
+          
+          # Save changelog to file for use in release
+          echo "$CHANGELOG_CONTENT" > /tmp/changelog.md
+          
+      - name: Build artifacts (if build script exists)
+        run: |
+          if pnpm run --if-present build; then
+            echo "Build completed"
+            # Create release archive
+            tar -czf ai-changelog-generator-v${{ steps.get-info.outputs.version }}.tar.gz \
+              bin/ src/ types/ *.md *.json *.js *.sh LICENSE
+          else
+            echo "No build script found, creating source archive"
+            tar -czf ai-changelog-generator-v${{ steps.get-info.outputs.version }}.tar.gz \
+              bin/ src/ types/ *.md *.json *.js *.sh LICENSE
+          fi
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get-info.outputs.version }}
+          name: Release v${{ steps.get-info.outputs.version }}
+          body_path: /tmp/changelog.md
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          files: |
+            ai-changelog-generator-v${{ steps.get-info.outputs.version }}.tar.gz

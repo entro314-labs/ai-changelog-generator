@@ -112,12 +112,14 @@ This document lists all environment variables supported by the AI Changelog Gene
 ## Usage Examples
 
 ### Minimal OpenAI Setup
+
 ```bash
 AI_PROVIDER=openai
 OPENAI_API_KEY=sk-your-key-here
 ```
 
 ### Azure OpenAI with o4 Model
+
 ```bash
 AI_PROVIDER=azure
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
@@ -127,6 +129,7 @@ AZURE_OPENAI_API_VERSION=2025-04-01-preview
 ```
 
 ### Local Ollama Setup
+
 ```bash
 AI_PROVIDER=ollama
 OLLAMA_HOST=http://localhost:11434
@@ -134,6 +137,7 @@ OLLAMA_MODEL=llama3
 ```
 
 ### Multiple Providers (Auto-Selection)
+
 ```bash
 AI_PROVIDER=auto
 OPENAI_API_KEY=sk-your-openai-key
@@ -143,6 +147,7 @@ AZURE_OPENAI_KEY=your-azure-key
 ```
 
 ### Development/Debug Mode
+
 ```bash
 DEBUG=true
 VERBOSE=true
@@ -161,17 +166,20 @@ DEFAULT_ANALYSIS_MODE=detailed
 ## Troubleshooting
 
 ### Provider Not Loading
+
 1. Check API key format and validity
 2. Verify endpoint URLs are correct
 3. Run `ai-changelog --validate` to test configuration
 4. Enable debug mode: `DEBUG=true`
 
 ### Rate Limiting Issues
+
 1. Increase `RATE_LIMIT_DELAY` (e.g., `2000`)
 2. Reduce batch sizes in requests
 3. Check provider-specific rate limits
 
 ### Authentication Errors
+
 1. Verify API keys are active and valid
 2. Check account quotas and billing
 3. For Azure: verify endpoint and deployment names match

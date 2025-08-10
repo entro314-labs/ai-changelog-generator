@@ -12,11 +12,12 @@
  * For specialized error handling, use error classes from './error-classes.js'
  */
 
-import fs from 'fs';
-import { execSync } from 'child_process';
-import colors from '../constants/colors.js';
-import JsonUtils from './json-utils.js';
-import { GitError, ValidationError, ConfigError } from './error-classes.js';
+import { execSync } from 'node:child_process'
+import fs from 'node:fs'
+
+import colors from '../constants/colors.js'
+import { DiffProcessor } from './diff-processor.js'
+import JsonUtils from './json-utils.js'
 
 // ========================================
 // ERROR HANDLING UTILITIES
@@ -27,12 +28,12 @@ import { GitError, ValidationError, ConfigError } from './error-classes.js';
  */
 export class AIChangelogError extends Error {
   constructor(message, type, context = {}, originalError = null) {
-    super(message);
-    this.name = this.constructor.name;
-    this.type = type;
-    this.context = context;
-    this.originalError = originalError;
-    this.timestamp = new Date().toISOString();
+    super(message)
+    this.name = this.constructor.name
+    this.type = type
+    this.context = context
+    this.originalError = originalError
+    this.timestamp = new Date().toISOString()
   }
 
   toJSON() {
@@ -42,8 +43,8 @@ export class AIChangelogError extends Error {
       type: this.type,
       context: this.context,
       timestamp: this.timestamp,
-      stack: this.stack
-    };
+      stack: this.stack,
+    }
   }
 }
 
@@ -52,9 +53,9 @@ export class AIChangelogError extends Error {
  */
 export class AbstractMethodError extends AIChangelogError {
   constructor(message, className, methodName, context = {}) {
-    super(message, 'abstract', { className, methodName, ...context });
-    this.className = className;
-    this.methodName = methodName;
+    super(message, 'abstract', { className, methodName, ...context })
+    this.className = className
+    this.methodName = methodName
   }
 }
 
@@ -63,8 +64,8 @@ export class AbstractMethodError extends AIChangelogError {
  */
 export class ProviderError extends AIChangelogError {
   constructor(message, providerName, context = {}, originalError = null) {
-    super(message, 'provider', { providerName, ...context }, originalError);
-    this.providerName = providerName;
+    super(message, 'provider', { providerName, ...context }, originalError)
+    this.providerName = providerName
   }
 }
 
@@ -77,22 +78,22 @@ export class ProviderError extends AIChangelogError {
  */
 export function convertSetsToArrays(obj) {
   if (obj === null || typeof obj !== 'object') {
-    return obj;
+    return obj
   }
 
   if (obj instanceof Set) {
-    return Array.from(obj);
+    return Array.from(obj)
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(convertSetsToArrays);
+    return obj.map(convertSetsToArrays)
   }
 
-  const result = {};
+  const result = {}
   for (const [key, value] of Object.entries(obj)) {
-    result[key] = convertSetsToArrays(value);
+    result[key] = convertSetsToArrays(value)
   }
-  return result;
+  return result
 }
 
 /**
@@ -101,18 +102,20 @@ export function convertSetsToArrays(obj) {
  */
 export function extractCommitScope(message) {
   // Enhanced regex to match conventional commits format: type(scope)!: description
-  const conventionalMatch = message.match(/^(?<type>\w+)(?:\((?<scope>[^()]+)\))?(?<breaking>!)?:\s*(?<description>.+)/);
+  const conventionalMatch = message.match(
+    /^(?<type>\w+)(?:\((?<scope>[^()]+)\))?(?<breaking>!)?:\s*(?<description>.+)/
+  )
 
   if (conventionalMatch) {
-    const { type, scope, breaking, description } = conventionalMatch.groups;
+    const { type, scope, breaking, description } = conventionalMatch.groups
 
     return {
-      type: type,
+      type,
       scope: scope || null,
       description: description.trim(),
       breaking: !!breaking,
-      isConventional: true
-    };
+      isConventional: true,
+    }
   }
 
   // Fallback for non-conventional commits
@@ -121,49 +124,53 @@ export function extractCommitScope(message) {
     scope: null,
     description: message.trim(),
     breaking: false,
-    isConventional: false
-  };
+    isConventional: false,
+  }
 }
 
 /**
  * Parse conventional commit message with full body analysis
  */
 export function parseConventionalCommit(subject, body = '') {
-  const parsed = extractCommitScope(subject);
-  const fullMessage = `${subject}\n\n${body}`.trim();
+  const parsed = extractCommitScope(subject)
+  const fullMessage = `${subject}\n\n${body}`.trim()
 
   // Enhanced breaking change detection from body
-  const breakingChanges = [];
+  const breakingChanges = []
 
   // Check for BREAKING CHANGE: footer
-  const breakingMatch = fullMessage.match(/BREAKING CHANGE:\s*(.*?)(?:\n\n|\n[A-Z]|\n*$)/s);
+  const breakingMatch = fullMessage.match(/BREAKING CHANGE:\s*(.*?)(?:\n\n|\n[A-Z]|\n*$)/s)
   if (breakingMatch) {
-    breakingChanges.push(breakingMatch[1].trim());
-    parsed.breaking = true;
+    breakingChanges.push(breakingMatch[1].trim())
+    parsed.breaking = true
   }
 
   // Check for BREAKING-CHANGE: footer (alternative format)
-  const breakingAltMatch = fullMessage.match(/BREAKING-CHANGE:\s*(.*?)(?:\n\n|\n[A-Z]|\n*$)/s);
+  const breakingAltMatch = fullMessage.match(/BREAKING-CHANGE:\s*(.*?)(?:\n\n|\n[A-Z]|\n*$)/s)
   if (breakingAltMatch) {
-    breakingChanges.push(breakingAltMatch[1].trim());
-    parsed.breaking = true;
+    breakingChanges.push(breakingAltMatch[1].trim())
+    parsed.breaking = true
   }
 
   // Extract issue references (GitHub/GitLab format)
-  const issueRefs = [];
-  const issueMatches = fullMessage.match(/#[0-9]+/g);
+  const issueRefs = []
+  const issueMatches = fullMessage.match(/#[0-9]+/g)
   if (issueMatches) {
-    issueRefs.push(...issueMatches);
+    issueRefs.push(...issueMatches)
   }
 
   // Extract closes references
-  const closesMatches = fullMessage.match(/(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s*#?([0-9]+)/gi);
-  const closesRefs = [];
+  const closesMatches = fullMessage.match(
+    /(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s*#?([0-9]+)/gi
+  )
+  const closesRefs = []
   if (closesMatches) {
-    closesMatches.forEach(match => {
-      const num = match.match(/([0-9]+)/);
-      if (num) closesRefs.push(`#${num[1]}`);
-    });
+    closesMatches.forEach((match) => {
+      const num = match.match(/([0-9]+)/)
+      if (num) {
+        closesRefs.push(`#${num[1]}`)
+      }
+    })
   }
 
   return {
@@ -172,8 +179,8 @@ export function parseConventionalCommit(subject, body = '') {
     issueReferences: [...new Set(issueRefs)],
     closesReferences: [...new Set(closesRefs)],
     body: body.trim(),
-    revert: subject.toLowerCase().startsWith('revert')
-  };
+    revert: subject.toLowerCase().startsWith('revert'),
+  }
 }
 
 /**
@@ -181,12 +188,12 @@ export function parseConventionalCommit(subject, body = '') {
  */
 export function markdownCommitLink(commitHash, commitUrl, shortHash = true) {
   if (!commitUrl) {
-    return shortHash ? commitHash.substring(0, 7) : commitHash;
+    return shortHash ? commitHash.substring(0, 7) : commitHash
   }
 
-  const url = commitUrl.replace('%commit%', commitHash);
-  const displayHash = shortHash ? commitHash.substring(0, 7) : commitHash;
-  return `[${displayHash}](${url})`;
+  const url = commitUrl.replace('%commit%', commitHash)
+  const displayHash = shortHash ? commitHash.substring(0, 7) : commitHash
+  return `[${displayHash}](${url})`
 }
 
 /**
@@ -194,13 +201,11 @@ export function markdownCommitLink(commitHash, commitUrl, shortHash = true) {
  */
 export function markdownCommitRangeLink(fromCommit, toCommit, commitRangeUrl) {
   if (!commitRangeUrl) {
-    return `${fromCommit.substring(0, 7)}...${toCommit.substring(0, 7)}`;
+    return `${fromCommit.substring(0, 7)}...${toCommit.substring(0, 7)}`
   }
 
-  const url = commitRangeUrl
-    .replace('%from%', fromCommit)
-    .replace('%to%', toCommit);
-  return `[${fromCommit.substring(0, 7)}...${toCommit.substring(0, 7)}](${url})`;
+  const url = commitRangeUrl.replace('%from%', fromCommit).replace('%to%', toCommit)
+  return `[${fromCommit.substring(0, 7)}...${toCommit.substring(0, 7)}](${url})`
 }
 
 /**
@@ -208,40 +213,42 @@ export function markdownCommitRangeLink(fromCommit, toCommit, commitRangeUrl) {
  */
 export function markdownIssueLink(issueId, issueUrl) {
   if (!issueUrl) {
-    return issueId;
+    return issueId
   }
 
-  const cleanIssueId = issueId.replace('#', '');
-  const url = issueUrl.replace('%issue%', cleanIssueId);
-  return `[${issueId}](${url})`;
+  const cleanIssueId = issueId.replace('#', '')
+  const url = issueUrl.replace('%issue%', cleanIssueId)
+  return `[${issueId}](${url})`
 }
 
 /**
  * Process issue references in text and convert to markdown links
  */
 export function processIssueReferences(text, issueUrl, issueRegex) {
-  if (!issueUrl || !text) return text;
+  if (!(issueUrl && text)) {
+    return text
+  }
 
   return text.replace(issueRegex, (match) => {
-    return markdownIssueLink(match, issueUrl);
-  });
+    return markdownIssueLink(match, issueUrl)
+  })
 }
 
 /**
  * Deep merge objects
  */
 export function deepMerge(target, source) {
-  const result = { ...target };
+  const result = { ...target }
 
   for (const key in source) {
     if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      result[key] = deepMerge(result[key] || {}, source[key]);
+      result[key] = deepMerge(result[key] || {}, source[key])
     } else {
-      result[key] = source[key];
+      result[key] = source[key]
     }
   }
 
-  return result;
+  return result
 }
 
 // ========================================
@@ -252,18 +259,24 @@ export function deepMerge(target, source) {
  * Format duration in human-readable format
  */
 export function formatDuration(ms) {
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-  if (ms < 3600000) return `${(ms / 60000).toFixed(1)}m`;
-  return `${(ms / 3600000).toFixed(1)}h`;
+  if (ms < 1000) {
+    return `${ms}ms`
+  }
+  if (ms < 60000) {
+    return `${(ms / 1000).toFixed(1)}s`
+  }
+  if (ms < 3600000) {
+    return `${(ms / 60000).toFixed(1)}m`
+  }
+  return `${(ms / 3600000).toFixed(1)}h`
 }
 
 /**
  * Interactive configuration prompt (simplified)
  */
 export function promptForConfig(message = 'Configure settings', defaultValue = '') {
-  console.log(colors.infoMessage(message));
-  return Promise.resolve(defaultValue);
+  console.log(colors.infoMessage(message))
+  return Promise.resolve(defaultValue)
 }
 
 /**
@@ -271,32 +284,36 @@ export function promptForConfig(message = 'Configure settings', defaultValue = '
  */
 export function getHealthColor(status) {
   const colorMap = {
-    'excellent': colors.successMessage,
-    'good': colors.successMessage,
-    'fair': colors.warningMessage,
-    'poor': colors.errorMessage,
-    'critical': colors.errorMessage
-  };
-  return colorMap[status] || colors.infoMessage;
+    excellent: colors.successMessage,
+    good: colors.successMessage,
+    fair: colors.warningMessage,
+    poor: colors.errorMessage,
+    critical: colors.errorMessage,
+  }
+  return colorMap[status] || colors.infoMessage
 }
 
 /**
  * Format file size
  */
 export function formatFileSize(bytes) {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  if (bytes === 0) {
+    return '0 B'
+  }
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`
 }
 
 /**
  * Format percentage
  */
 export function formatPercentage(value, total) {
-  if (total === 0) return '0%';
-  return `${((value / total) * 100).toFixed(1)}%`;
+  if (total === 0) {
+    return '0%'
+  }
+  return `${((value / total) * 100).toFixed(1)}%`
 }
 
 // ========================================
@@ -308,63 +325,88 @@ export function formatPercentage(value, total) {
  */
 export function categorizeFile(filePath) {
   if (!filePath || typeof filePath !== 'string') {
-    return 'other';
+    return 'other'
   }
-  const path = filePath.toLowerCase();
-  const ext = path.split('.').pop();
+  const path = filePath.toLowerCase()
+  const ext = path.split('.').pop()
 
   // Configuration files
-  if (path.includes('package.json') || path.includes('yarn.lock') ||
-      path.includes('pnpm-lock') || path.includes('.gitignore') ||
-      ext === 'toml' || ext === 'yaml' || ext === 'yml' ||
-      path.includes('dockerfile') || path.includes('.env')) {
-    return 'configuration';
+  if (
+    path.includes('package.json') ||
+    path.includes('yarn.lock') ||
+    path.includes('pnpm-lock') ||
+    path.includes('.gitignore') ||
+    ext === 'toml' ||
+    ext === 'yaml' ||
+    ext === 'yml' ||
+    path.includes('dockerfile') ||
+    path.includes('.env')
+  ) {
+    return 'configuration'
   }
 
   // Documentation
-  if (ext === 'md' || ext === 'txt' || ext === 'rst' ||
-      path.includes('readme') || path.includes('changelog') ||
-      path.includes('/docs/') || path.includes('/doc/')) {
-    return 'documentation';
+  if (
+    ext === 'md' ||
+    ext === 'txt' ||
+    ext === 'rst' ||
+    path.includes('readme') ||
+    path.includes('changelog') ||
+    path.includes('/docs/') ||
+    path.includes('/doc/')
+  ) {
+    return 'documentation'
   }
 
   // Test files
-  if (path.includes('/test/') || path.includes('/tests/') ||
-      path.includes('__tests__') || path.includes('.test.') ||
-      path.includes('.spec.') || ext === 'test' || ext === 'spec') {
-    return 'tests';
+  if (
+    path.includes('/test/') ||
+    path.includes('/tests/') ||
+    path.includes('__tests__') ||
+    path.includes('.test.') ||
+    path.includes('.spec.') ||
+    ext === 'test' ||
+    ext === 'spec'
+  ) {
+    return 'tests'
   }
 
   // Source code
-  const sourceExts = ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'go', 'rs', 'php'];
+  const sourceExts = ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'go', 'rs', 'php']
   if (sourceExts.includes(ext)) {
     if (path.includes('/src/') || path.includes('/lib/')) {
-      return 'source';
+      return 'source'
     }
-    return 'source';
+    return 'source'
   }
 
   // Frontend/UI
-  const frontendExts = ['html', 'css', 'scss', 'sass', 'less', 'vue', 'svelte'];
+  const frontendExts = ['html', 'css', 'scss', 'sass', 'less', 'vue', 'svelte']
   if (frontendExts.includes(ext)) {
-    return 'frontend';
+    return 'frontend'
   }
 
   // Assets
-  const assetExts = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'webp'];
+  const assetExts = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'webp']
   if (assetExts.includes(ext)) {
-    return 'assets';
+    return 'assets'
   }
 
   // Build/tooling
-  if (path.includes('webpack') || path.includes('rollup') ||
-      path.includes('vite') || path.includes('babel') ||
-      path.includes('eslint') || path.includes('prettier') ||
-      path.includes('/build/') || path.includes('/dist/')) {
-    return 'build';
+  if (
+    path.includes('webpack') ||
+    path.includes('rollup') ||
+    path.includes('vite') ||
+    path.includes('babel') ||
+    path.includes('eslint') ||
+    path.includes('prettier') ||
+    path.includes('/build/') ||
+    path.includes('/dist/')
+  ) {
+    return 'build'
   }
 
-  return 'other';
+  return 'other'
 }
 
 /**
@@ -372,9 +414,9 @@ export function categorizeFile(filePath) {
  */
 export function detectLanguage(filePath) {
   if (!filePath || typeof filePath !== 'string') {
-    return 'Unknown';
+    return 'Unknown'
   }
-  const ext = filePath.split('.').pop()?.toLowerCase();
+  const ext = filePath.split('.').pop()?.toLowerCase()
 
   const langMap = {
     js: 'JavaScript',
@@ -405,10 +447,10 @@ export function detectLanguage(filePath) {
     yml: 'YAML',
     toml: 'TOML',
     md: 'Markdown',
-    sql: 'SQL'
-  };
+    sql: 'SQL',
+  }
 
-  return langMap[ext] || 'Unknown';
+  return langMap[ext] || 'Unknown'
 }
 
 /**
@@ -416,47 +458,56 @@ export function detectLanguage(filePath) {
  */
 export function assessFileImportance(filePath, status) {
   if (!filePath || typeof filePath !== 'string') {
-    return 'medium';
+    return 'medium'
   }
-  const path = filePath.toLowerCase();
+  const path = filePath.toLowerCase()
 
   // Critical files
-  if (path.includes('package.json') || path.includes('pom.xml') ||
-      path.includes('cargo.toml') || path.includes('requirements.txt') ||
-      path.includes('dockerfile') || path.includes('docker-compose')) {
-    return 'critical';
+  if (
+    path.includes('package.json') ||
+    path.includes('pom.xml') ||
+    path.includes('cargo.toml') ||
+    path.includes('requirements.txt') ||
+    path.includes('dockerfile') ||
+    path.includes('docker-compose')
+  ) {
+    return 'critical'
   }
 
   // Core source files
   if (path.includes('/src/') || path.includes('/lib/')) {
-    if (path.includes('index.') || path.includes('main.') ||
-        path.includes('app.') || path.includes('server.')) {
-      return 'critical';
+    if (
+      path.includes('index.') ||
+      path.includes('main.') ||
+      path.includes('app.') ||
+      path.includes('server.')
+    ) {
+      return 'critical'
     }
-    return 'high';
+    return 'high'
   }
 
   // Configuration
   if (categorizeFile(filePath) === 'configuration') {
-    return 'high';
+    return 'high'
   }
 
   // Tests
   if (categorizeFile(filePath) === 'tests') {
-    return 'medium';
+    return 'medium'
   }
 
   // Documentation
   if (categorizeFile(filePath) === 'documentation') {
-    return 'low';
+    return 'low'
   }
 
   // File deletion is always important
   if (status === 'D') {
-    return 'high';
+    return 'high'
   }
 
-  return 'medium';
+  return 'medium'
 }
 
 // ========================================
@@ -467,18 +518,18 @@ export function assessFileImportance(filePath, status) {
  * Assess overall complexity of changes
  */
 export function assessOverallComplexity(diffContent, fileCount) {
-  const lines = diffContent.split('\n');
-  const addedLines = lines.filter(line => line.startsWith('+')).length;
-  const deletedLines = lines.filter(line => line.startsWith('-')).length;
-  const totalChanges = addedLines + deletedLines;
+  const lines = diffContent.split('\n')
+  const addedLines = lines.filter((line) => line.startsWith('+')).length
+  const deletedLines = lines.filter((line) => line.startsWith('-')).length
+  const totalChanges = addedLines + deletedLines
 
   // Complexity factors
-  let complexity = 'low';
+  let complexity = 'low'
 
   if (fileCount > 20 || totalChanges > 500) {
-    complexity = 'high';
+    complexity = 'high'
   } else if (fileCount > 5 || totalChanges > 100) {
-    complexity = 'medium';
+    complexity = 'medium'
   }
 
   // Check for complex patterns
@@ -489,39 +540,39 @@ export function assessOverallComplexity(diffContent, fileCount) {
     /try\s*{/g,
     /catch\s*\(/g,
     /interface\s+\w+/g,
-    /type\s+\w+/g
-  ];
+    /type\s+\w+/g,
+  ]
 
   const patternMatches = complexPatterns.reduce((count, pattern) => {
-    return count + (diffContent.match(pattern) || []).length;
-  }, 0);
+    return count + (diffContent.match(pattern) || []).length
+  }, 0)
 
   if (patternMatches > 10) {
-    complexity = complexity === 'low' ? 'medium' : 'high';
+    complexity = complexity === 'low' ? 'medium' : 'high'
   }
 
-  return complexity;
+  return complexity
 }
 
 /**
  * Assess risk level of changes
  */
 export function assessRisk(diffContent, fileCount, commitMessage) {
-  let risk = 'low';
+  let risk = 'low'
 
   // High-risk keywords in commit message
-  const highRiskKeywords = ['breaking', 'remove', 'delete', 'deprecated', 'migration'];
-  const mediumRiskKeywords = ['refactor', 'restructure', 'change', 'modify', 'update'];
+  const highRiskKeywords = ['breaking', 'remove', 'delete', 'deprecated', 'migration']
+  const mediumRiskKeywords = ['refactor', 'restructure', 'change', 'modify', 'update']
 
   if (!commitMessage || typeof commitMessage !== 'string') {
-    return risk; // Return early with default risk level
+    return risk // Return early with default risk level
   }
-  const message = commitMessage.toLowerCase();
+  const message = commitMessage.toLowerCase()
 
-  if (highRiskKeywords.some(keyword => message.includes(keyword))) {
-    risk = 'high';
-  } else if (mediumRiskKeywords.some(keyword => message.includes(keyword))) {
-    risk = 'medium';
+  if (highRiskKeywords.some((keyword) => message.includes(keyword))) {
+    risk = 'high'
+  } else if (mediumRiskKeywords.some((keyword) => message.includes(keyword))) {
+    risk = 'medium'
   }
 
   // High-risk file patterns
@@ -534,24 +585,24 @@ export function assessRisk(diffContent, fileCount, commitMessage) {
     /database/,
     /migration/,
     /config/,
-    /env/
-  ];
+    /env/,
+  ]
 
-  const diffLines = diffContent.split('\n');
-  const hasHighRiskFiles = diffLines.some(line =>
-    highRiskPatterns.some(pattern => pattern.test(line))
-  );
+  const diffLines = diffContent.split('\n')
+  const hasHighRiskFiles = diffLines.some((line) =>
+    highRiskPatterns.some((pattern) => pattern.test(line))
+  )
 
   if (hasHighRiskFiles) {
-    risk = risk === 'low' ? 'medium' : 'high';
+    risk = risk === 'low' ? 'medium' : 'high'
   }
 
   // Large changes are risky
   if (fileCount > 15 || diffContent.length > 10000) {
-    risk = risk === 'low' ? 'medium' : 'high';
+    risk = risk === 'low' ? 'medium' : 'high'
   }
 
-  return risk;
+  return risk
 }
 
 /**
@@ -559,13 +610,13 @@ export function assessRisk(diffContent, fileCount, commitMessage) {
  */
 export function isBreakingChange(commitMessage, diffContent) {
   if (!commitMessage || typeof commitMessage !== 'string') {
-    return false;
+    return false
   }
-  const message = commitMessage.toLowerCase();
+  const message = commitMessage.toLowerCase()
 
   // Check commit message for breaking indicators
   if (message.includes('breaking') || message.includes('!:')) {
-    return true;
+    return true
   }
 
   // Check diff for breaking patterns
@@ -573,10 +624,10 @@ export function isBreakingChange(commitMessage, diffContent) {
     /function\s+\w+\s*\([^)]*\)\s*{[\s\S]*?}[\s\S]*?-/g, // Function signature changes
     /class\s+\w+[\s\S]*?-/g, // Class changes
     /interface\s+\w+[\s\S]*?-/g, // Interface changes
-    /export\s+[\s\S]*?-/g // Export changes
-  ];
+    /export\s+[\s\S]*?-/g, // Export changes
+  ]
 
-  return breakingPatterns.some(pattern => pattern.test(diffContent));
+  return breakingPatterns.some((pattern) => pattern.test(diffContent))
 }
 
 /**
@@ -584,33 +635,54 @@ export function isBreakingChange(commitMessage, diffContent) {
  */
 export function assessBusinessRelevance(commitMessage, filePaths) {
   if (!commitMessage || typeof commitMessage !== 'string') {
-    return 'low';
+    return 'low'
   }
-  const message = commitMessage.toLowerCase();
+  const message = commitMessage.toLowerCase()
 
   // Business-relevant keywords
   const businessKeywords = [
-    'feature', 'user', 'customer', 'client', 'business', 'revenue',
-    'payment', 'billing', 'subscription', 'auth', 'login', 'security'
-  ];
+    'feature',
+    'user',
+    'customer',
+    'client',
+    'business',
+    'revenue',
+    'payment',
+    'billing',
+    'subscription',
+    'auth',
+    'login',
+    'security',
+  ]
 
-  const hasBusinessKeywords = businessKeywords.some(keyword =>
-    message.includes(keyword)
-  );
+  const hasBusinessKeywords = businessKeywords.some((keyword) => message.includes(keyword))
 
   // Business-relevant file paths
   const businessPaths = [
-    '/api/', '/service/', '/controller/', '/model/',
-    '/auth/', '/payment/', '/billing/', '/user/'
-  ];
+    '/api/',
+    '/service/',
+    '/controller/',
+    '/model/',
+    '/auth/',
+    '/payment/',
+    '/billing/',
+    '/user/',
+  ]
 
-  const hasBusinessFiles = filePaths.some(path =>
-    path && typeof path === 'string' && businessPaths.some(businessPath => path.includes(businessPath))
-  );
+  const hasBusinessFiles = filePaths.some(
+    (path) =>
+      path &&
+      typeof path === 'string' &&
+      businessPaths.some((businessPath) => path.includes(businessPath))
+  )
 
-  if (hasBusinessKeywords && hasBusinessFiles) return 'high';
-  if (hasBusinessKeywords || hasBusinessFiles) return 'medium';
-  return 'low';
+  if (hasBusinessKeywords && hasBusinessFiles) {
+    return 'high'
+  }
+  if (hasBusinessKeywords || hasBusinessFiles) {
+    return 'medium'
+  }
+  return 'low'
 }
 
 // ========================================
@@ -622,7 +694,7 @@ export function assessBusinessRelevance(commitMessage, filePaths) {
  */
 export function safeJsonParse(jsonString, fallback = null) {
   // Use the advanced JsonUtils for better error handling
-  return JsonUtils.safeParse(jsonString, fallback);
+  return JsonUtils.safeParse(jsonString, fallback)
 }
 
 /**
@@ -630,10 +702,10 @@ export function safeJsonParse(jsonString, fallback = null) {
  */
 export function safeJsonStringify(obj, indent = 2) {
   try {
-    return JSON.stringify(convertSetsToArrays(obj), null, indent);
+    return JSON.stringify(convertSetsToArrays(obj), null, indent)
   } catch (error) {
-    console.warn(colors.warningMessage(`JSON stringify error: ${error.message}`));
-    return '{}';
+    console.warn(colors.warningMessage(`JSON stringify error: ${error.message}`))
+    return '{}'
   }
 }
 
@@ -645,57 +717,57 @@ export function safeJsonStringify(obj, indent = 2) {
  * Sleep utility for rate limiting
  */
 export function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
  * Retry utility with exponential backoff
  */
 export async function retry(fn, maxRetries = 3, baseDelay = 1000) {
-  let lastError;
+  let lastError
 
   for (let i = 0; i < maxRetries; i++) {
     try {
-      return await fn();
+      return await fn()
     } catch (error) {
-      lastError = error;
+      lastError = error
       if (i < maxRetries - 1) {
-        const delay = baseDelay * Math.pow(2, i);
-        await sleep(delay);
+        const delay = baseDelay * 2 ** i
+        await sleep(delay)
       }
     }
   }
 
-  throw lastError;
+  throw lastError
 }
 
 /**
  * Debounce utility
  */
 export function debounce(func, wait) {
-  let timeout;
+  let timeout
   return function executedFunction(...args) {
     const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
+      clearTimeout(timeout)
+      func(...args)
+    }
+    clearTimeout(timeout)
+    timeout = setTimeout(later, wait)
+  }
 }
 
 /**
  * Throttle utility
  */
 export function throttle(func, limit) {
-  let inThrottle;
+  let inThrottle
   return function executedFunction(...args) {
     if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      func.apply(this, args)
+      inThrottle = true
+      setTimeout(() => (inThrottle = false), limit)
     }
-  };
+  }
 }
 
 // ========================================
@@ -713,90 +785,106 @@ export function analyzeSemanticChanges(diff, filePath) {
     keywords: new Set(),
     codeElements: new Set(),
     apiChanges: [],
-    dataChanges: []
-  };
-
-  if (!diff || diff === 'Binary file or diff unavailable') {
-    return convertSetsToArrays(analysis);
+    dataChanges: [],
   }
 
-  const addedLines = diff.split('\n').filter(line => line.startsWith('+') && !line.startsWith('+++'));
-  const removedLines = diff.split('\n').filter(line => line.startsWith('-') && !line.startsWith('---'));
+  if (!diff || diff === 'Binary file or diff unavailable') {
+    return convertSetsToArrays(analysis)
+  }
+
+  const _addedLines = diff
+    .split('\n')
+    .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
+  const _removedLines = diff
+    .split('\n')
+    .filter((line) => line.startsWith('-') && !line.startsWith('---'))
 
   // Framework detection (only if filePath is valid)
-  if (filePath && typeof filePath === 'string' && (filePath.includes('database/') || filePath.includes('sql/') || filePath.includes('migrations/'))) {
-    analysis.frameworks.add('Database');
+  if (
+    filePath &&
+    typeof filePath === 'string' &&
+    (filePath.includes('database/') ||
+      filePath.includes('sql/') ||
+      filePath.includes('migrations/'))
+  ) {
+    analysis.frameworks.add('Database')
     if (diff.includes('CREATE TABLE') || diff.includes('ALTER TABLE')) {
-      analysis.changeType = 'schema_change';
-      analysis.patterns.add('database_schema');
+      analysis.changeType = 'schema_change'
+      analysis.patterns.add('database_schema')
     }
     if (diff.includes('CREATE POLICY') || diff.includes('ALTER POLICY')) {
-      analysis.patterns.add('security_policy');
+      analysis.patterns.add('security_policy')
     }
   }
 
   if (filePath.endsWith('.tsx') || filePath.endsWith('.jsx')) {
-    analysis.frameworks.add('React');
+    analysis.frameworks.add('React')
     if (diff.includes('useState') || diff.includes('useEffect')) {
-      analysis.patterns.add('react_hooks');
+      analysis.patterns.add('react_hooks')
     }
     if (diff.includes('useCallback') || diff.includes('useMemo')) {
-      analysis.patterns.add('performance_optimization');
+      analysis.patterns.add('performance_optimization')
     }
   }
 
-  if (filePath && typeof filePath === 'string' && (filePath.includes('/api/') || filePath.includes('route.'))) {
-    analysis.frameworks.add('API');
-    analysis.changeType = 'api_change';
+  if (
+    filePath &&
+    typeof filePath === 'string' &&
+    (filePath.includes('/api/') || filePath.includes('route.'))
+  ) {
+    analysis.frameworks.add('API')
+    analysis.changeType = 'api_change'
 
-    ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].forEach(method => {
-      if (diff.includes(`export async function ${method}`) ||
-          diff.includes(`app.${method.toLowerCase()}`)) {
-        analysis.apiChanges.push(`${method} endpoint`);
-        analysis.patterns.add('api_endpoint');
+    ;['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].forEach((method) => {
+      if (
+        diff.includes(`export async function ${method}`) ||
+        diff.includes(`app.${method.toLowerCase()}`)
+      ) {
+        analysis.apiChanges.push(`${method} endpoint`)
+        analysis.patterns.add('api_endpoint')
       }
-    });
+    })
   }
 
   // Code element detection
   const codePatterns = {
-    'function_definition': /(?:export\s+)?(?:async\s+)?function\s+(\w+)/g,
-    'component_definition': /(?:export\s+)?(?:const|function)\s+(\w+Component|\w+Page|\w+Layout)/g,
-    'hook_definition': /(?:export\s+)?(?:const|function)\s+(use\w+)/g,
-    'type_definition': /(?:export\s+)?(?:type|interface)\s+(\w+)/g,
-    'constant_definition': /(?:export\s+)?const\s+(\w+)/g
-  };
+    function_definition: /(?:export\s+)?(?:async\s+)?function\s+(\w+)/g,
+    component_definition: /(?:export\s+)?(?:const|function)\s+(\w+Component|\w+Page|\w+Layout)/g,
+    hook_definition: /(?:export\s+)?(?:const|function)\s+(use\w+)/g,
+    type_definition: /(?:export\s+)?(?:type|interface)\s+(\w+)/g,
+    constant_definition: /(?:export\s+)?const\s+(\w+)/g,
+  }
 
   Object.entries(codePatterns).forEach(([pattern, regex]) => {
-    const matches = [...diff.matchAll(regex)];
+    const matches = [...diff.matchAll(regex)]
     if (matches.length > 0) {
-      analysis.patterns.add(pattern);
-      matches.forEach(match => analysis.codeElements.add(match[1]));
+      analysis.patterns.add(pattern)
+      matches.forEach((match) => analysis.codeElements.add(match[1]))
     }
-  });
+  })
 
   // Advanced pattern detection
   const advancedPatterns = {
-    'error_handling': [/try\s*{/, /catch\s*\(/, /throw\s+/, /Error\(/],
-    'async_operations': [/async\s+/, /await\s+/, /Promise\./, /\.then\(/],
-    'data_validation': [/validate/, /schema/, /validation/, /validator/i],
-    'authentication': [/auth/, /login/, /logout/, /token/, /jwt/, /session/i],
-    'authorization': [/permission/, /role/, /access/, /policy/, /guard/i],
-    'caching': [/cache/, /memo/, /useMemo/, /useCallback/i],
-    'testing': [/test/, /spec/, /mock/, /describe/, /it\(/],
-    'styling': [/className/, /css/, /styled/, /style/],
-    'state_management': [/useState/, /useReducer/, /store/, /state/i],
-    'routing': [/router/, /navigate/, /redirect/, /route/, /Link/],
-    'data_fetching': [/fetch/, /axios/, /useQuery/, /useMutation/, /api/i]
-  };
+    error_handling: [/try\s*{/, /catch\s*\(/, /throw\s+/, /Error\(/],
+    async_operations: [/async\s+/, /await\s+/, /Promise\./, /\.then\(/],
+    data_validation: [/validate/, /schema/, /validation/, /validator/i],
+    authentication: [/auth/, /login/, /logout/, /token/, /jwt/, /session/i],
+    authorization: [/permission/, /role/, /access/, /policy/, /guard/i],
+    caching: [/cache/, /memo/, /useMemo/, /useCallback/i],
+    testing: [/test/, /spec/, /mock/, /describe/, /it\(/],
+    styling: [/className/, /css/, /styled/, /style/],
+    state_management: [/useState/, /useReducer/, /store/, /state/i],
+    routing: [/router/, /navigate/, /redirect/, /route/, /Link/],
+    data_fetching: [/fetch/, /axios/, /useQuery/, /useMutation/, /api/i],
+  }
 
   Object.entries(advancedPatterns).forEach(([pattern, regexes]) => {
-    if (regexes.some(regex => regex.test(diff))) {
-      analysis.patterns.add(pattern);
+    if (regexes.some((regex) => regex.test(diff))) {
+      analysis.patterns.add(pattern)
     }
-  });
+  })
 
-  return convertSetsToArrays(analysis);
+  return convertSetsToArrays(analysis)
 }
 
 /**
@@ -810,49 +898,57 @@ export function analyzeFunctionalImpact(diff, filePath, status) {
     businessImpact: 'minimal',
     technicalDebt: 'none',
     migrationRequired: false,
-    backwardCompatible: true
-  };
+    backwardCompatible: true,
+  }
 
   if (!diff || diff === 'Binary file or diff unavailable') {
-    return convertSetsToArrays(impact);
+    return convertSetsToArrays(impact)
   }
 
   // File deletion has high impact
   if (status === 'D') {
-    impact.severity = 'high';
-    impact.scope = 'global';
-    impact.backwardCompatible = false;
-    return convertSetsToArrays(impact);
+    impact.severity = 'high'
+    impact.scope = 'global'
+    impact.backwardCompatible = false
+    return convertSetsToArrays(impact)
   }
 
-  const addedLines = diff.split('\n').filter(line => line.startsWith('+') && !line.startsWith('+++'));
-  const removedLines = diff.split('\n').filter(line => line.startsWith('-') && !line.startsWith('---'));
+  const _addedLines = diff
+    .split('\n')
+    .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
+  const _removedLines = diff
+    .split('\n')
+    .filter((line) => line.startsWith('-') && !line.startsWith('---'))
 
   // Assess scope based on file type and changes (only if filePath is valid)
   if (filePath && typeof filePath === 'string') {
-    if (filePath.includes('/api/') || filePath.includes('/server/') || filePath.includes('/backend/')) {
-      impact.scope = 'system';
-      impact.affectedSystems.add('backend');
+    if (
+      filePath.includes('/api/') ||
+      filePath.includes('/server/') ||
+      filePath.includes('/backend/')
+    ) {
+      impact.scope = 'system'
+      impact.affectedSystems.add('backend')
 
       if (diff.includes('export') || diff.includes('endpoint') || diff.includes('route')) {
-        impact.scope = 'global';
-        impact.severity = 'medium';
+        impact.scope = 'global'
+        impact.severity = 'medium'
       }
     }
 
     if (filePath.includes('package.json') || filePath.includes('package-lock.json')) {
-      impact.scope = 'global';
-      impact.severity = 'high';
-      impact.affectedSystems.add('dependencies');
-      impact.migrationRequired = true;
+      impact.scope = 'global'
+      impact.severity = 'high'
+      impact.affectedSystems.add('dependencies')
+      impact.migrationRequired = true
     }
 
     if (filePath.includes('database/') || filePath.includes('migrations/')) {
-      impact.scope = 'global';
-      impact.severity = 'high';
-      impact.affectedSystems.add('database');
-      impact.migrationRequired = true;
-      impact.backwardCompatible = false;
+      impact.scope = 'global'
+      impact.severity = 'high'
+      impact.affectedSystems.add('database')
+      impact.migrationRequired = true
+      impact.backwardCompatible = false
     }
   }
 
@@ -860,28 +956,28 @@ export function analyzeFunctionalImpact(diff, filePath, status) {
   const breakingPatterns = [
     /export\s+(?:async\s+)?function\s+\w+\s*\([^)]*\)\s*{[\s\S]*?}-/g,
     /export\s+(?:const|let|var)\s+\w+\s*=[\s\S]*?-/g,
-    /export\s+(?:class|interface|type)\s+\w+[\s\S]*?-/g
-  ];
+    /export\s+(?:class|interface|type)\s+\w+[\s\S]*?-/g,
+  ]
 
-  if (breakingPatterns.some(pattern => pattern.test(diff))) {
-    impact.backwardCompatible = false;
-    impact.severity = 'high';
-    impact.businessImpact = 'high';
+  if (breakingPatterns.some((pattern) => pattern.test(diff))) {
+    impact.backwardCompatible = false
+    impact.severity = 'high'
+    impact.businessImpact = 'high'
   }
 
   // Performance impact
   if (diff.includes('async') || diff.includes('await') || diff.includes('Promise')) {
-    impact.affectedSystems.add('performance');
+    impact.affectedSystems.add('performance')
   }
 
   // Security impact
   if (diff.includes('auth') || diff.includes('permission') || diff.includes('security')) {
-    impact.affectedSystems.add('security');
-    impact.severity = 'high';
-    impact.businessImpact = 'high';
+    impact.affectedSystems.add('security')
+    impact.severity = 'high'
+    impact.businessImpact = 'high'
   }
 
-  return convertSetsToArrays(impact);
+  return convertSetsToArrays(impact)
 }
 
 /**
@@ -896,56 +992,56 @@ export function generateAnalysisSummary(semanticAnalysis, functionalImpact) {
     frameworks: Array.from(semanticAnalysis.frameworks || []),
     patterns: Array.from(semanticAnalysis.patterns || []),
     recommendations: [],
-    riskFactors: []
-  };
+    riskFactors: [],
+  }
 
   // Generate primary changes based on patterns
-  if (semanticAnalysis.patterns && semanticAnalysis.patterns.includes('api_endpoint')) {
-    summary.primaryChanges.push('API endpoint modifications');
+  if (semanticAnalysis.patterns?.includes('api_endpoint')) {
+    summary.primaryChanges.push('API endpoint modifications')
   }
-  if (semanticAnalysis.patterns && semanticAnalysis.patterns.includes('database_schema')) {
-    summary.primaryChanges.push('Database schema changes');
+  if (semanticAnalysis.patterns?.includes('database_schema')) {
+    summary.primaryChanges.push('Database schema changes')
   }
-  if (semanticAnalysis.patterns && semanticAnalysis.patterns.includes('react_hooks')) {
-    summary.primaryChanges.push('React component updates');
+  if (semanticAnalysis.patterns?.includes('react_hooks')) {
+    summary.primaryChanges.push('React component updates')
   }
-  if (semanticAnalysis.patterns && semanticAnalysis.patterns.includes('function_definition')) {
-    summary.primaryChanges.push('Function implementations');
+  if (semanticAnalysis.patterns?.includes('function_definition')) {
+    summary.primaryChanges.push('Function implementations')
   }
 
   // Generate recommendations
   if (functionalImpact.migrationRequired) {
-    summary.recommendations.push('Migration script required');
+    summary.recommendations.push('Migration script required')
   }
   if (!functionalImpact.backwardCompatible) {
-    summary.recommendations.push('Breaking change - update dependent code');
+    summary.recommendations.push('Breaking change - update dependent code')
   }
-  if (functionalImpact.affectedSystems && functionalImpact.affectedSystems.includes('security')) {
-    summary.recommendations.push('Security review recommended');
+  if (functionalImpact.affectedSystems?.includes('security')) {
+    summary.recommendations.push('Security review recommended')
   }
-  if (functionalImpact.affectedSystems && functionalImpact.affectedSystems.includes('performance')) {
-    summary.recommendations.push('Performance testing advised');
+  if (functionalImpact.affectedSystems?.includes('performance')) {
+    summary.recommendations.push('Performance testing advised')
   }
 
   // Identify risk factors
   if (functionalImpact.severity === 'high') {
-    summary.riskFactors.push('High impact changes');
+    summary.riskFactors.push('High impact changes')
   }
   if (functionalImpact.scope === 'global') {
-    summary.riskFactors.push('System-wide effects');
+    summary.riskFactors.push('System-wide effects')
   }
   if (semanticAnalysis.frameworks && semanticAnalysis.frameworks.length > 2) {
-    summary.riskFactors.push('Multiple framework dependencies');
+    summary.riskFactors.push('Multiple framework dependencies')
   }
 
-  return summary;
+  return summary
 }
 
 /**
  * Perform semantic analysis on files and commit message
  */
 export function performSemanticAnalysis(files, subject, body) {
-  const conventionalCommit = parseConventionalCommit(subject, body);
+  const conventionalCommit = parseConventionalCommit(subject, body)
   const analysis = {
     commitType: conventionalCommit.type || 'unknown',
     scope: conventionalCommit.scope,
@@ -958,43 +1054,43 @@ export function performSemanticAnalysis(files, subject, body) {
     affectedDomains: new Set(),
     technicalElements: new Set(),
     businessElements: new Set(),
-    complexity: 'low'
-  };
+    complexity: 'low',
+  }
 
   // Analyze files
-  files.forEach(file => {
-    const filePath = file.filePath || file.path || '';
-    const category = categorizeFile(filePath);
-    const language = detectLanguage(filePath);
+  files.forEach((file) => {
+    const filePath = file.filePath || file.path || ''
+    const category = categorizeFile(filePath)
+    const language = detectLanguage(filePath)
 
-    analysis.affectedDomains.add(category);
-    analysis.technicalElements.add(language);
+    analysis.affectedDomains.add(category)
+    analysis.technicalElements.add(language)
 
     // Business domain detection (only if filePath exists)
     if (filePath && typeof filePath === 'string') {
       if (filePath.includes('/user/') || filePath.includes('/customer/')) {
-        analysis.businessElements.add('user_management');
+        analysis.businessElements.add('user_management')
       }
       if (filePath.includes('/payment/') || filePath.includes('/billing/')) {
-        analysis.businessElements.add('financial_operations');
+        analysis.businessElements.add('financial_operations')
       }
       if (filePath.includes('/auth/') || filePath.includes('/security/')) {
-        analysis.businessElements.add('security_access');
+        analysis.businessElements.add('security_access')
       }
       if (filePath.includes('/analytics/') || filePath.includes('/metrics/')) {
-        analysis.businessElements.add('business_intelligence');
+        analysis.businessElements.add('business_intelligence')
       }
     }
-  });
+  })
 
   // Complexity assessment
   if (files.length > 10 || analysis.affectedDomains.size > 3) {
-    analysis.complexity = 'high';
+    analysis.complexity = 'high'
   } else if (files.length > 3 || analysis.affectedDomains.size > 1) {
-    analysis.complexity = 'medium';
+    analysis.complexity = 'medium'
   }
 
-  return convertSetsToArrays(analysis);
+  return convertSetsToArrays(analysis)
 }
 
 // ========================================
@@ -1005,102 +1101,57 @@ export function performSemanticAnalysis(files, subject, body) {
  * Build enhanced prompt for AI analysis
  */
 export function buildEnhancedPrompt(commitAnalysis, analysisMode = 'standard') {
-  const { subject, files = [], semanticAnalysis = {}, diffStats = {}, complexity = {}, riskAssessment = {} } = commitAnalysis;
+  const {
+    subject,
+    files = [],
+    semanticAnalysis = {},
+    diffStats = {},
+    complexity = {},
+    riskAssessment = {},
+  } = commitAnalysis
 
-  // Build comprehensive context - adjust based on commit size
-  const fileCount = files.length;
-  let fileLimit, diffLimit;
+  // Initialize DiffProcessor with analysis mode
+  const diffProcessor = new DiffProcessor({
+    analysisMode,
+    enableFiltering: true,
+    enablePatternDetection: true,
+  })
 
-  if (fileCount <= 10) {
-    // Small commits: show all files with full diffs
-    fileLimit = fileCount;
-    diffLimit = 2000;
-  } else if (fileCount <= 30) {
-    // Medium commits: show most files with substantial diffs
-    fileLimit = Math.min(20, fileCount);
-    diffLimit = 1500;
-  } else {
-    // Large commits: prioritize modified files with meaningful diffs
-    fileLimit = 20;
-    diffLimit = 800; // Increased from 300 to actually see code changes
-  }
+  // Process all files with intelligent diff compression
+  const processedResult = diffProcessor.processFiles(files)
+  const { processedFiles, patterns, filesProcessed, filesSkipped } = processedResult
 
-  // Sort files to prioritize those with actual code changes
-  const sortedFiles = [...files].sort((a, b) => {
-    // Prioritize modified files over added files
-    const statusPriority = { 'M': 0, 'R': 1, 'A': 2, 'D': 3 };
-    const aScore = statusPriority[a.status] || 4;
-    const bScore = statusPriority[b.status] || 4;
-    if (aScore !== bScore) return aScore - bScore;
+  const insertions = diffStats.insertions || 0
+  const deletions = diffStats.deletions || 0
 
-    // Secondary: prioritize source code files
-    const isSourceFile = (path) => path.includes('/src/') || path.endsWith('.js') || path.endsWith('.ts');
-    const aIsSource = isSourceFile(a.filePath) ? 0 : 1;
-    const bIsSource = isSourceFile(b.filePath) ? 0 : 1;
-    return aIsSource - bIsSource;
-  });
-  const filesContext = sortedFiles.slice(0, fileLimit).map(file => ({
-    path: file.filePath,
-    status: file.status,
-    category: file.category || categorizeFile(file.filePath),
-    language: file.language || detectLanguage(file.filePath),
-    complexity: file.complexity,
-    semanticChanges: file.semanticChanges,
-    functionalImpact: file.functionalImpact,
-    businessRelevance: file.businessRelevance,
-    diff: file.diff || 'No diff available'  // Include actual diff content so AI can see what changed
-  })).slice(0, fileLimit);
+  // Build pattern summary if patterns were detected
+  const patternSummary =
+    Object.keys(patterns).length > 0
+      ? `\n**BULK PATTERNS DETECTED:**\n${Object.values(patterns)
+          .map((p) => `- ${p.description}`)
+          .join('\n')}\n`
+      : ''
 
-  // Enhanced analysis requirements based on mode
-  const getAnalysisRequirements = () => {
-    const baseRequirements = [
-      "**Primary Impact**: What does this change do for end users?",
-      "**Technical Scope**: How does this affect the codebase architecture?",
-      "**Business Value**: What problem does this solve or feature does this enable?",
-      "**Risk Assessment**: What are the potential impacts of this change?"
-    ];
+  // Build files section with processed diffs
+  const filesSection = processedFiles
+    .map((file) => {
+      if (file.isSummary) {
+        return `\n**[REMAINING FILES SUMMARY]:**\n${file.diff}\n`
+      }
 
-    if (analysisMode === 'detailed' || analysisMode === 'enterprise') {
-      baseRequirements.push(
-        "**Migration Needs**: Are there any breaking changes or upgrade requirements?",
-        "**Performance Impact**: How might this affect system performance?",
-        "**Security Implications**: Are there any security considerations?",
-        "**Testing Strategy**: What areas should be prioritized for testing?",
-        "**Rollback Plan**: What would be needed if this change needs to be reverted?"
-      );
-    }
+      const compressionInfo = file.compressionApplied
+        ? ` [compressed from ${file.originalSize || 'unknown'} chars]`
+        : ''
+      const patternInfo = file.bulkPattern ? ` [${file.bulkPattern}]` : ''
 
-    if (analysisMode === 'enterprise') {
-      baseRequirements.push(
-        "**Operational Impact**: How does this affect deployment, monitoring, or operations?",
-        "**Compliance**: Are there regulatory or compliance considerations?",
-        "**Cross-team Impact**: What teams or systems might be affected?",
-        "**Timeline Implications**: Are there dependencies or staging requirements?"
-      );
-    }
-
-    return baseRequirements;
-  };
-
-  // Enhanced task description based on analysis mode
-  const getTaskDescription = () => {
-    switch (analysisMode) {
-      case 'enterprise':
-        return `Perform comprehensive enterprise-grade analysis of this git commit for changelog generation. Provide deep technical insights, thorough risk assessment, and detailed operational considerations suitable for enterprise deployment and stakeholder communication.`;
-      case 'detailed':
-        return `Perform detailed technical analysis of this git commit for changelog generation. Provide comprehensive technical insights, thorough impact assessment, and detailed migration considerations for development teams.`;
-      default:
-        return `Analyze this git commit for changelog generation using your reasoning capabilities.`;
-    }
-  };
-
-  const insertions = diffStats.insertions || 0;
-  const deletions = diffStats.deletions || 0;
+      return `\n**${file.filePath || file.path}** (${file.status})${compressionInfo}${patternInfo}:\n${file.diff}\n`
+    })
+    .join('')
 
   const prompt = `Analyze this git commit for changelog generation.
 
 **COMMIT:** ${subject}
-**FILES:** ${files.length} files, ${insertions + deletions} lines changed
+**FILES:** ${files.length} files (${filesProcessed} analyzed, ${filesSkipped} summarized), ${insertions + deletions} lines changed${patternSummary}
 
 **TARGET AUDIENCE:** End users and project stakeholders who need to understand what changed and why it matters.
 
@@ -1111,14 +1162,7 @@ export function buildEnhancedPrompt(commitAnalysis, analysisMode = 'standard') {
 2. **Then, focus on user impact** - what can they do now that they couldn't before?
 3. **Keep technical details minimal** - only what's necessary for understanding
 
-**ACTUAL DIFFS** (top ${fileLimit} files):
-${filesContext.map(file => {
-  const diffPreview = file.diff ? file.diff.substring(0, diffLimit) + (file.diff.length > diffLimit ? '...' : '') : 'No diff available';
-  return `
-**${file.path}** (${file.status}):
-${diffPreview}
-`;
-}).join('')}
+**PROCESSED DIFFS:**${filesSection}
 
 **CATEGORIZATION RULES (STRICTLY ENFORCED):**
 - **fix**: ONLY actual bug fixes - broken functionality now works correctly
@@ -1145,102 +1189,116 @@ Provide a JSON response with ONLY these fields:
   "recommendations": ["minimal", "list"],
   "breakingChanges": false,
   "migrationRequired": false
-}`;
+}`
 
-  return prompt;
+  return prompt
 }
 
 /**
  * Validate and correct AI categorization and impact assessment based on commit characteristics
  */
 export function validateCommitCategory(category, commitAnalysis) {
-  const { files = [], diffStats = {}, subject = '' } = commitAnalysis;
-  const fileCount = files.length;
-  const addedFiles = files.filter(f => f.status === 'A' || f.status === '??').length;
-  const { insertions = 0, deletions = 0 } = diffStats;
+  const { files = [], diffStats = {}, subject = '' } = commitAnalysis
+  const fileCount = files.length
+  const addedFiles = files.filter((f) => f.status === 'A' || f.status === '??').length
+  const { insertions = 0, deletions = 0 } = diffStats
 
   // Rule 1: Large additions cannot be bug fixes
   if (category === 'fix' && (fileCount > 10 || addedFiles > 5 || insertions > 1000)) {
     // Check if it's likely a refactor vs new feature
     if (deletions > insertions * 0.5) {
-      return 'refactor'; // Significant deletions suggest refactoring
+      return 'refactor' // Significant deletions suggest refactoring
     }
-    return 'feature'; // More additions suggest new functionality
+    return 'feature' // More additions suggest new functionality
   }
 
   // Rule 2: New module/class additions are features
   if (category === 'fix' && addedFiles > 0) {
-    const hasNewModules = files.some(f =>
-      (f.status === 'A' || f.status === '??') &&
-      (f.filePath.includes('.js') || f.filePath.includes('.ts') || f.filePath.includes('.py'))
-    );
+    const hasNewModules = files.some(
+      (f) =>
+        (f.status === 'A' || f.status === '??') &&
+        (f.filePath.includes('.js') || f.filePath.includes('.ts') || f.filePath.includes('.py'))
+    )
     if (hasNewModules) {
-      return 'feature';
+      return 'feature'
     }
   }
 
   // Rule 3: Documentation-only changes
-  if (category !== 'docs' && files.every(f =>
-    f.filePath.endsWith('.md') ||
-    f.filePath.endsWith('.txt') ||
-    f.filePath.includes('README') ||
-    f.filePath.includes('CHANGELOG')
-  )) {
-    return 'docs';
+  if (
+    category !== 'docs' &&
+    files.every(
+      (f) =>
+        f.filePath.endsWith('.md') ||
+        f.filePath.endsWith('.txt') ||
+        f.filePath.includes('README') ||
+        f.filePath.includes('CHANGELOG')
+    )
+  ) {
+    return 'docs'
   }
 
   // Rule 4: Test-only changes
-  if (category !== 'test' && files.every(f =>
-    f.filePath.includes('test') ||
-    f.filePath.includes('spec') ||
-    f.filePath.endsWith('.test.js') ||
-    f.filePath.endsWith('.spec.js')
-  )) {
-    return 'test';
+  if (
+    category !== 'test' &&
+    files.every(
+      (f) =>
+        f.filePath.includes('test') ||
+        f.filePath.includes('spec') ||
+        f.filePath.endsWith('.test.js') ||
+        f.filePath.endsWith('.spec.js')
+    )
+  ) {
+    return 'test'
   }
 
-  return category; // No correction needed
+  return category // No correction needed
 }
 
 /**
  * Validate and correct impact assessment based on actual change magnitude
  */
 export function validateImpactAssessment(impact, commitAnalysis) {
-  const { files = [], diffStats = {}, subject = '' } = commitAnalysis;
-  const fileCount = files.length;
-  const addedFiles = files.filter(f => f.status === 'A' || f.status === '??').length;
-  const { insertions = 0, deletions = 0 } = diffStats;
-  const totalChanges = insertions + deletions;
+  const { files = [], diffStats = {}, subject = '' } = commitAnalysis
+  const fileCount = files.length
+  const addedFiles = files.filter((f) => f.status === 'A' || f.status === '??').length
+  const { insertions = 0, deletions = 0 } = diffStats
+  const totalChanges = insertions + deletions
 
   // Rule 1: Large architectural changes cannot be "minimal" or "low"
   if ((impact === 'minimal' || impact === 'low') && (fileCount > 50 || totalChanges > 5000)) {
-    return 'high';
+    return 'high'
   }
 
   // Rule 2: Major refactors or large features should be at least "medium"
   if (impact === 'minimal' && (fileCount > 20 || totalChanges > 2000 || addedFiles > 10)) {
-    return 'medium';
+    return 'medium'
   }
 
   // Rule 3: Small changes cannot be "critical" or "high" unless breaking
   if ((impact === 'critical' || impact === 'high') && fileCount <= 3 && totalChanges <= 100) {
-    const hasBreakingIndicators = subject.includes('!') || subject.toLowerCase().includes('breaking');
+    const hasBreakingIndicators =
+      subject.includes('!') || subject.toLowerCase().includes('breaking')
     if (!hasBreakingIndicators) {
-      return 'medium';
+      return 'medium'
     }
   }
 
   // Rule 4: Documentation-only changes should be low impact
-  if (files.every(f =>
-    f.filePath.endsWith('.md') ||
-    f.filePath.endsWith('.txt') ||
-    f.filePath.includes('README') ||
-    f.filePath.includes('CHANGELOG')
-  ) && (impact === 'critical' || impact === 'high')) {
-    return 'low';
+  if (
+    files.every(
+      (f) =>
+        f.filePath.endsWith('.md') ||
+        f.filePath.endsWith('.txt') ||
+        f.filePath.includes('README') ||
+        f.filePath.includes('CHANGELOG')
+    ) &&
+    (impact === 'critical' || impact === 'high')
+  ) {
+    return 'low'
   }
 
-  return impact; // No correction needed
+  return impact // No correction needed
 }
 
 /**
@@ -1258,19 +1316,19 @@ export function parseAIResponse(content, originalCommit = {}) {
       riskFactors: [],
       recommendations: ['Consider configuring AI provider for detailed analysis'],
       breakingChanges: false,
-      migrationRequired: false
-    };
+      migrationRequired: false,
+    }
   }
 
   try {
     // Try to extract JSON from the response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
-      const parsed = safeJsonParse(jsonMatch[0]);
+      const parsed = safeJsonParse(jsonMatch[0])
       if (parsed) {
         // Validate and correct the category and impact
-        const validatedCategory = validateCommitCategory(parsed.category || 'chore', originalCommit);
-        const validatedImpact = validateImpactAssessment(parsed.impact || 'low', originalCommit);
+        const validatedCategory = validateCommitCategory(parsed.category || 'chore', originalCommit)
+        const validatedImpact = validateImpactAssessment(parsed.impact || 'low', originalCommit)
 
         return {
           summary: parsed.summary || originalCommit.subject || 'Unknown change',
@@ -1282,20 +1340,24 @@ export function parseAIResponse(content, originalCommit = {}) {
           riskFactors: Array.isArray(parsed.riskFactors) ? parsed.riskFactors : [],
           recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
           breakingChanges: Boolean(parsed.breakingChanges),
-          migrationRequired: Boolean(parsed.migrationRequired)
-        };
+          migrationRequired: Boolean(parsed.migrationRequired),
+        }
       }
     }
 
     // Fallback to text parsing if JSON extraction fails
-    const safeContent = content && typeof content === 'string' ? content : '';
-    const lowerContent = safeContent.toLowerCase();
+    const safeContent = content && typeof content === 'string' ? content : ''
+    const lowerContent = safeContent.toLowerCase()
 
     return {
       summary: originalCommit.subject || 'Unknown change',
-      impact: lowerContent.includes('critical') ? 'critical' :
-              lowerContent.includes('high') ? 'high' :
-              lowerContent.includes('medium') ? 'medium' : 'low',
+      impact: lowerContent.includes('critical')
+        ? 'critical'
+        : lowerContent.includes('high')
+          ? 'high'
+          : lowerContent.includes('medium')
+            ? 'medium'
+            : 'low',
       category: extractCategoryFromText(safeContent),
       description: safeContent.substring(0, 200) + (safeContent.length > 200 ? '...' : ''),
       technicalDetails: safeContent,
@@ -1303,10 +1365,10 @@ export function parseAIResponse(content, originalCommit = {}) {
       riskFactors: [],
       recommendations: [],
       breakingChanges: lowerContent.includes('breaking'),
-      migrationRequired: lowerContent.includes('migration')
-    };
+      migrationRequired: lowerContent.includes('migration'),
+    }
   } catch (error) {
-    console.warn(colors.warningMessage(`AI response parsing error: ${error.message}`));
+    console.warn(colors.warningMessage(`AI response parsing error: ${error.message}`))
     return {
       summary: originalCommit.subject || 'Unknown change',
       impact: 'low',
@@ -1317,8 +1379,8 @@ export function parseAIResponse(content, originalCommit = {}) {
       riskFactors: [],
       recommendations: [],
       breakingChanges: false,
-      migrationRequired: false
-    };
+      migrationRequired: false,
+    }
   }
 }
 
@@ -1328,21 +1390,39 @@ export function parseAIResponse(content, originalCommit = {}) {
  */
 function extractCategoryFromText(content) {
   if (!content || typeof content !== 'string') {
-    return 'chore';
+    return 'chore'
   }
-  const text = content.toLowerCase();
+  const text = content.toLowerCase()
 
-  if (text.includes('feature') || text.includes('feat')) return 'feature';
-  if (text.includes('fix') || text.includes('bug')) return 'fix';
-  if (text.includes('security')) return 'security';
-  if (text.includes('breaking')) return 'breaking';
-  if (text.includes('doc')) return 'docs';
-  if (text.includes('style')) return 'style';
-  if (text.includes('refactor')) return 'refactor';
-  if (text.includes('perf') || text.includes('performance')) return 'perf';
-  if (text.includes('test')) return 'test';
+  if (text.includes('feature') || text.includes('feat')) {
+    return 'feature'
+  }
+  if (text.includes('fix') || text.includes('bug')) {
+    return 'fix'
+  }
+  if (text.includes('security')) {
+    return 'security'
+  }
+  if (text.includes('breaking')) {
+    return 'breaking'
+  }
+  if (text.includes('doc')) {
+    return 'docs'
+  }
+  if (text.includes('style')) {
+    return 'style'
+  }
+  if (text.includes('refactor')) {
+    return 'refactor'
+  }
+  if (text.includes('perf') || text.includes('performance')) {
+    return 'perf'
+  }
+  if (text.includes('test')) {
+    return 'test'
+  }
 
-  return 'chore';
+  return 'chore'
 }
 
 // ========================================
@@ -1357,43 +1437,43 @@ function extractCategoryFromText(content) {
  */
 export function getWorkingDirectoryChanges() {
   try {
-    const result = execSync('git status --porcelain', { encoding: 'utf8' });
+    const result = execSync('git status --porcelain', { encoding: 'utf8' })
 
     if (!result.trim()) {
-      return [];
+      return []
     }
 
-    const lines = result.split('\n').filter(line => line.trim());
+    const lines = result.split('\n').filter((line) => line.trim())
 
-    const changes = lines.map(line => {
-      const status = line.substring(0, 2).trim() || '??';
-      const filePath = line.substring(3);
+    const changes = lines.map((line) => {
+      const status = line.substring(0, 2).trim() || '??'
+      const filePath = line.substring(3)
 
       return {
-        status: status,
-        filePath: filePath,
+        status,
+        filePath,
         path: filePath, // alias for compatibility
         diff: '', // Will be populated later if needed
         additions: 0,
-        deletions: 0
-      };
-    });
+        deletions: 0,
+      }
+    })
 
-    return changes;
+    return changes
   } catch (error) {
-    console.warn('Could not get git status:', error.message);
-    return [];
+    console.warn('Could not get git status:', error.message)
+    return []
   }
 }
 
-export function processWorkingDirectoryChanges(workingDirChanges, gitManager = null) {
+export function processWorkingDirectoryChanges(workingDirChanges, _gitManager = null) {
   // If no changes provided, get them from git status
   if (!workingDirChanges) {
-    workingDirChanges = getWorkingDirectoryChanges();
+    workingDirChanges = getWorkingDirectoryChanges()
   }
 
   if (!workingDirChanges || workingDirChanges.length === 0) {
-    return [];
+    return []
   }
 
   const categorizedChanges = {
@@ -1401,15 +1481,15 @@ export function processWorkingDirectoryChanges(workingDirChanges, gitManager = n
     modified: [],
     deleted: [],
     renamed: [],
-    unknown: []
-  };
+    unknown: [],
+  }
 
-  let totalFiles = 0;
+  let totalFiles = 0
 
-  workingDirChanges.forEach(change => {
-    const category = categorizeFile(change.filePath);
-    const language = detectLanguage(change.filePath);
-    const importance = assessFileImportance(change.filePath, change.status);
+  workingDirChanges.forEach((change) => {
+    const category = categorizeFile(change.filePath)
+    const language = detectLanguage(change.filePath)
+    const importance = assessFileImportance(change.filePath, change.status)
 
     const processedChange = {
       filePath: change.filePath,
@@ -1419,41 +1499,41 @@ export function processWorkingDirectoryChanges(workingDirChanges, gitManager = n
       importance,
       diff: change.diff || '',
       additions: change.additions || 0,
-      deletions: change.deletions || 0
-    };
+      deletions: change.deletions || 0,
+    }
 
     switch (change.status) {
       case 'A':
-        categorizedChanges.added.push(processedChange);
-        break;
+        categorizedChanges.added.push(processedChange)
+        break
       case 'M':
-        categorizedChanges.modified.push(processedChange);
-        break;
+        categorizedChanges.modified.push(processedChange)
+        break
       case 'D':
-        categorizedChanges.deleted.push(processedChange);
-        break;
+        categorizedChanges.deleted.push(processedChange)
+        break
       case 'R':
-        categorizedChanges.renamed.push(processedChange);
-        break;
+        categorizedChanges.renamed.push(processedChange)
+        break
       default:
-        categorizedChanges.unknown.push(processedChange);
+        categorizedChanges.unknown.push(processedChange)
     }
 
-    totalFiles++;
-  });
+    totalFiles++
+  })
 
   // Generate summary
-  const summary = generateWorkspaceChangesSummary(categorizedChanges);
+  const summary = generateWorkspaceChangesSummary(categorizedChanges)
 
   // Assess complexity
-  const complexity = assessWorkspaceComplexity(categorizedChanges, totalFiles);
+  const complexity = assessWorkspaceComplexity(categorizedChanges, totalFiles)
 
   return {
     categorizedChanges,
     summary,
     totalFiles,
-    complexity
-  };
+    complexity,
+  }
 }
 
 /**
@@ -1465,195 +1545,232 @@ export function summarizeFileChanges(changes) {
       summary: 'No file changes detected',
       categories: {},
       stats: { added: 0, modified: 0, deleted: 0, renamed: 0 },
-      languages: {}
-    };
+      languages: {},
+    }
   }
 
   const stats = {
     added: 0,
     modified: 0,
     deleted: 0,
-    renamed: 0
-  };
+    renamed: 0,
+  }
 
-  const categories = {};
-  const languages = new Set();
+  const categories = {}
+  const languages = new Set()
 
-  changes.forEach(change => {
+  changes.forEach((change) => {
     // Handle status mapping for git status format
-    let status = change.status;
-    if (status === '??') status = 'A'; // Untracked files are "added"
-    if (status.length > 1) status = status[0]; // Take first character for multiple status codes
-
-    switch (status) {
-      case 'A': stats.added++; break;
-      case 'M': stats.modified++; break;
-      case 'D': stats.deleted++; break;
-      case 'R': stats.renamed++; break;
+    let status = change.status
+    if (status === '??') {
+      status = 'A' // Untracked files are "added"
+    }
+    if (status.length > 1) {
+      status = status[0] // Take first character for multiple status codes
     }
 
-    const filePath = change.filePath || change.path;
-    const category = categorizeFile(filePath);
-    const language = detectLanguage(filePath);
+    switch (status) {
+      case 'A':
+        stats.added++
+        break
+      case 'M':
+        stats.modified++
+        break
+      case 'D':
+        stats.deleted++
+        break
+      case 'R':
+        stats.renamed++
+        break
+    }
+
+    const filePath = change.filePath || change.path
+    const category = categorizeFile(filePath)
+    const language = detectLanguage(filePath)
 
     // Group files by category
     if (!categories[category]) {
-      categories[category] = [];
+      categories[category] = []
     }
     categories[category].push({
-      status: status,
+      status,
       path: filePath,
-      language: language
-    });
+      language,
+    })
 
-    languages.add(language);
-  });
+    languages.add(language)
+  })
 
-  const parts = [];
-  if (stats.added > 0) parts.push(`${stats.added} added`);
-  if (stats.modified > 0) parts.push(`${stats.modified} modified`);
-  if (stats.deleted > 0) parts.push(`${stats.deleted} deleted`);
-  if (stats.renamed > 0) parts.push(`${stats.renamed} renamed`);
+  const parts = []
+  if (stats.added > 0) {
+    parts.push(`${stats.added} added`)
+  }
+  if (stats.modified > 0) {
+    parts.push(`${stats.modified} modified`)
+  }
+  if (stats.deleted > 0) {
+    parts.push(`${stats.deleted} deleted`)
+  }
+  if (stats.renamed > 0) {
+    parts.push(`${stats.renamed} renamed`)
+  }
 
-  let summary = `${changes.length} files changed: ${parts.join(', ')}`;
+  let summary = `${changes.length} files changed: ${parts.join(', ')}`
 
   if (Object.keys(categories).length > 0) {
-    summary += `. Affected areas: ${Object.keys(categories).join(', ')}`;
+    summary += `. Affected areas: ${Object.keys(categories).join(', ')}`
   }
 
   return {
     summary,
     categories,
     stats,
-    languages: Array.from(languages)
-  };
+    languages: Array.from(languages),
+  }
 }
 
 /**
  * Build commit changelog from analyzed commits
  */
 export function buildCommitChangelog(analyzedCommits, releaseInsights, version, options = {}) {
-  const { metrics, includeAttribution = true } = options;
-  const currentDate = new Date().toISOString().split('T')[0];
-  const versionHeader = version || 'Unreleased';
+  const { metrics, includeAttribution = true } = options
+  const currentDate = new Date().toISOString().split('T')[0]
+  const versionHeader = version || 'Unreleased'
 
-  let changelog = `# Changelog\n\n## [${versionHeader}] - ${currentDate}\n\n`;
+  let changelog = `# Changelog\n\n## [${versionHeader}] - ${currentDate}\n\n`
 
   // Add release summary with business impact
-  if (releaseInsights && releaseInsights.summary) {
-    changelog += `### 📋 Release Summary\n${releaseInsights.summary}\n\n`;
-    changelog += `**Business Impact**: ${releaseInsights.businessImpact}\n`;
-    changelog += `**Complexity**: ${releaseInsights.complexity}\n`;
-    if (releaseInsights.deploymentRequirements && releaseInsights.deploymentRequirements.length > 0) {
-      changelog += `**Deployment Requirements**: ${releaseInsights.deploymentRequirements.join(', ')}\n`;
+  if (releaseInsights?.summary) {
+    changelog += `### 📋 Release Summary\n${releaseInsights.summary}\n\n`
+    changelog += `**Business Impact**: ${releaseInsights.businessImpact}\n`
+    changelog += `**Complexity**: ${releaseInsights.complexity}\n`
+    if (
+      releaseInsights.deploymentRequirements &&
+      releaseInsights.deploymentRequirements.length > 0
+    ) {
+      changelog += `**Deployment Requirements**: ${releaseInsights.deploymentRequirements.join(', ')}\n`
     }
-    changelog += '\n';
+    changelog += '\n'
   }
 
   // Use unified format with impact-based ordering instead of categorized sections
-  changelog += `## Changes\n\n`;
+  changelog += '## Changes\n\n'
 
   // Sort commits by business impact (breaking/critical first, then by impact level)
   const sortedCommits = analyzedCommits.sort((a, b) => {
     // Breaking changes always come first
-    if (a.breaking && !b.breaking) return -1;
-    if (!a.breaking && b.breaking) return 1;
+    if (a.breaking && !b.breaking) {
+      return -1
+    }
+    if (!a.breaking && b.breaking) {
+      return 1
+    }
 
     // Then sort by impact level
-    const impactOrder = { critical: 0, high: 1, medium: 2, low: 3, minimal: 4 };
-    const aImpact = impactOrder[a.aiSummary?.impact] ?? 5;
-    const bImpact = impactOrder[b.aiSummary?.impact] ?? 5;
+    const impactOrder = { critical: 0, high: 1, medium: 2, low: 3, minimal: 4 }
+    const aImpact = impactOrder[a.aiSummary?.impact] ?? 5
+    const bImpact = impactOrder[b.aiSummary?.impact] ?? 5
 
-    return aImpact - bImpact;
-  });
+    return aImpact - bImpact
+  })
 
-  sortedCommits.forEach(commit => {
-    const type = commit.breaking ? 'breaking' : (commit.type || 'chore');
-    const summary = commit.aiSummary?.summary || commit.subject;
-    const confidence = commit.aiSummary?.confidence ? `${Math.round(commit.aiSummary.confidence * 100)}%` : '85%';
+  sortedCommits.forEach((commit) => {
+    const type = commit.breaking ? 'breaking' : commit.type || 'chore'
+    const summary = commit.aiSummary?.summary || commit.subject
+    const confidence = commit.aiSummary?.confidence
+      ? `${Math.round(commit.aiSummary.confidence * 100)}%`
+      : '85%'
 
     // Format: - (tag) Brief description - Detailed explanation (hash) (confidence%)
-    let line = `- (${type}) ${summary}`;
+    let line = `- (${type}) ${summary}`
 
     // Add breaking change indicator
     if (commit.breaking || commit.aiSummary?.breaking) {
-      line += ' ⚠️ BREAKING CHANGE';
+      line += ' ⚠️ BREAKING CHANGE'
     }
 
     // Add high/critical impact indicator
     if (commit.aiSummary?.impact === 'critical' || commit.aiSummary?.impact === 'high') {
-      line += ' 🔥';
+      line += ' 🔥'
     }
 
     // Add detailed technical explanation
     if (commit.aiSummary?.technicalDetails) {
-      line += ` - ${commit.aiSummary.technicalDetails}`;
-    } else if (commit.aiSummary?.description && commit.aiSummary.description !== commit.aiSummary.summary) {
-      line += ` - ${commit.aiSummary.description}`;
+      line += ` - ${commit.aiSummary.technicalDetails}`
+    } else if (
+      commit.aiSummary?.description &&
+      commit.aiSummary.description !== commit.aiSummary.summary
+    ) {
+      line += ` - ${commit.aiSummary.description}`
     }
 
     // Add commit hash and confidence
-    line += ` (${commit.hash}) (${confidence})`;
+    line += ` (${commit.hash}) (${confidence})`
 
-    changelog += `${line}\n`;
+    changelog += `${line}\n`
 
     // Add sub-bullets for additional details
     if (commit.aiSummary?.highlights?.length > 1) {
-      commit.aiSummary.highlights.slice(1).forEach(highlight => {
-        changelog += `  - ${highlight}\n`;
-      });
+      commit.aiSummary.highlights.slice(1).forEach((highlight) => {
+        changelog += `  - ${highlight}\n`
+      })
     }
 
     // Add migration notes
     if (commit.aiSummary?.migrationNotes) {
-      changelog += `  - **Migration**: ${commit.aiSummary.migrationNotes}\n`;
+      changelog += `  - **Migration**: ${commit.aiSummary.migrationNotes}\n`
     }
 
-    changelog += '\n';
-  });
+    changelog += '\n'
+  })
 
   // Add detailed risk assessment
   if (releaseInsights && (releaseInsights.riskLevel !== 'low' || releaseInsights.breaking)) {
-    changelog += `### ⚠️ Risk Assessment\n`;
-    changelog += `**Risk Level:** ${releaseInsights.riskLevel.toUpperCase()}\n\n`;
+    changelog += '### ⚠️ Risk Assessment\n'
+    changelog += `**Risk Level:** ${releaseInsights.riskLevel.toUpperCase()}\n\n`
 
     if (releaseInsights.breaking) {
-      changelog += `🚨 **Breaking Changes**: This release contains breaking changes. Please review migration notes above.\n\n`;
+      changelog +=
+        '🚨 **Breaking Changes**: This release contains breaking changes. Please review migration notes above.\n\n'
     }
 
-    if (releaseInsights.deploymentRequirements && releaseInsights.deploymentRequirements.length > 0) {
-      changelog += `📋 **Deployment Requirements**:\n`;
-      releaseInsights.deploymentRequirements.forEach(req => {
-        changelog += `- ${req}\n`;
-      });
-      changelog += '\n';
+    if (
+      releaseInsights.deploymentRequirements &&
+      releaseInsights.deploymentRequirements.length > 0
+    ) {
+      changelog += '📋 **Deployment Requirements**:\n'
+      releaseInsights.deploymentRequirements.forEach((req) => {
+        changelog += `- ${req}\n`
+      })
+      changelog += '\n'
     }
   }
 
   // Add performance metrics
   if (metrics) {
-    changelog += `### 📊 Generation Metrics\n`;
-    changelog += `- **Total Commits**: ${analyzedCommits.length}\n`;
+    changelog += '### 📊 Generation Metrics\n'
+    changelog += `- **Total Commits**: ${analyzedCommits.length}\n`
     if (metrics.startTime) {
-      changelog += `- **Processing Time**: ${formatDuration(Date.now() - metrics.startTime)}\n`;
+      changelog += `- **Processing Time**: ${formatDuration(Date.now() - metrics.startTime)}\n`
     }
-    changelog += `- **AI Calls**: ${metrics.apiCalls || 0}\n`;
+    changelog += `- **AI Calls**: ${metrics.apiCalls || 0}\n`
     if (metrics.totalTokens > 0) {
-      changelog += `- **Tokens Used**: ${metrics.totalTokens.toLocaleString()}\n`;
+      changelog += `- **Tokens Used**: ${metrics.totalTokens.toLocaleString()}\n`
     }
-    changelog += `- **Batches Processed**: ${metrics.batchesProcessed || 0}\n`;
+    changelog += `- **Batches Processed**: ${metrics.batchesProcessed || 0}\n`
     if (metrics.errors > 0) {
-      changelog += `- **Errors**: ${metrics.errors}\n`;
+      changelog += `- **Errors**: ${metrics.errors}\n`
     }
-    changelog += '\n';
+    changelog += '\n'
   }
 
   // Add attribution footer
   if (includeAttribution !== false) {
-    changelog += `---\n\n*Generated using [ai-changelog-generator](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*\n`;
+    changelog +=
+      '---\n\n*Generated using [ai-changelog-generator](https://github.com/entro314-labs/AI-changelog-generator) - AI-powered changelog generation for Git repositories*\n'
   }
 
-  return changelog;
+  return changelog
 }
 
 /**
@@ -1661,22 +1778,22 @@ export function buildCommitChangelog(analyzedCommits, releaseInsights, version, 
  * Helper for processWorkingDirectoryChanges
  */
 function generateWorkspaceChangesSummary(categorizedChanges) {
-  const parts = [];
+  const parts = []
 
   if (categorizedChanges.added.length > 0) {
-    parts.push(`${categorizedChanges.added.length} files added`);
+    parts.push(`${categorizedChanges.added.length} files added`)
   }
   if (categorizedChanges.modified.length > 0) {
-    parts.push(`${categorizedChanges.modified.length} files modified`);
+    parts.push(`${categorizedChanges.modified.length} files modified`)
   }
   if (categorizedChanges.deleted.length > 0) {
-    parts.push(`${categorizedChanges.deleted.length} files deleted`);
+    parts.push(`${categorizedChanges.deleted.length} files deleted`)
   }
   if (categorizedChanges.renamed.length > 0) {
-    parts.push(`${categorizedChanges.renamed.length} files renamed`);
+    parts.push(`${categorizedChanges.renamed.length} files renamed`)
   }
 
-  return parts.length > 0 ? parts.join(', ') : 'No changes detected';
+  return parts.length > 0 ? parts.join(', ') : 'No changes detected'
 }
 
 /**
@@ -1684,10 +1801,16 @@ function generateWorkspaceChangesSummary(categorizedChanges) {
  * Helper for processWorkingDirectoryChanges
  */
 function assessWorkspaceComplexity(categorizedChanges, totalFiles) {
-  if (totalFiles > 20) return 'high';
-  if (totalFiles > 5) return 'medium';
-  if (categorizedChanges.deleted.length > 0) return 'medium';
-  return 'low';
+  if (totalFiles > 20) {
+    return 'high'
+  }
+  if (totalFiles > 5) {
+    return 'medium'
+  }
+  if (categorizedChanges.deleted.length > 0) {
+    return 'medium'
+  }
+  return 'low'
 }
 
 // ========================================
@@ -1698,48 +1821,48 @@ function assessWorkspaceComplexity(categorizedChanges, totalFiles) {
  * Handle unified output for analysis commands
  */
 export function handleUnifiedOutput(data, config) {
-  const { format = 'markdown', outputFile, silent } = config;
+  const { format = 'markdown', outputFile, silent } = config
   if (format === 'json') {
-    const jsonOutput = safeJsonStringify(data);
+    const jsonOutput = safeJsonStringify(data)
 
     if (outputFile) {
       // Write to file
       try {
-        fs.writeFileSync(outputFile, jsonOutput, 'utf8');
+        fs.writeFileSync(outputFile, jsonOutput, 'utf8')
         if (!silent) {
-          console.log(colors.success(`📄 Changelog saved to: ${colors.file(outputFile)}`));
+          console.log(colors.success(`📄 Changelog saved to: ${colors.file(outputFile)}`))
         }
       } catch (error) {
-        console.error(`❌ Error writing to file: ${error.message}`);
+        console.error(`❌ Error writing to file: ${error.message}`)
         if (!silent) {
-          console.log(jsonOutput);
+          console.log(jsonOutput)
         }
       }
     } else if (!silent) {
-      console.log(jsonOutput);
+      console.log(jsonOutput)
     }
   } else {
     // Markdown format (default)
-    const markdownOutput = typeof data === 'string' ? data : safeJsonStringify(data);
+    const markdownOutput = typeof data === 'string' ? data : safeJsonStringify(data)
 
     if (outputFile) {
       try {
-        fs.writeFileSync(outputFile, markdownOutput, 'utf8');
+        fs.writeFileSync(outputFile, markdownOutput, 'utf8')
         if (!silent) {
-          console.log(colors.success(`📄 Changelog saved to: ${colors.file(outputFile)}`));
+          console.log(colors.success(`📄 Changelog saved to: ${colors.file(outputFile)}`))
         }
       } catch (error) {
-        console.error(`❌ Error writing to file: ${error.message}`);
+        console.error(`❌ Error writing to file: ${error.message}`)
         if (!silent) {
-          console.log(markdownOutput);
+          console.log(markdownOutput)
         }
       }
     } else if (!silent) {
-      console.log(markdownOutput);
+      console.log(markdownOutput)
     }
   }
 
-  return data;
+  return data
 }
 
 /**
@@ -1747,7 +1870,7 @@ export function handleUnifiedOutput(data, config) {
  * Wrapper around handleUnifiedOutput for backwards compatibility
  */
 export function outputData(data, format = 'markdown') {
-  return handleUnifiedOutput(data, { format, silent: false });
+  return handleUnifiedOutput(data, { format, silent: false })
 }
 
 // ========================================
@@ -1758,9 +1881,9 @@ export function outputData(data, format = 'markdown') {
  * Run interactive mode with full menu system
  */
 export async function runInteractiveMode() {
-  const { select, intro } = await import('@clack/prompts');
+  const { select, intro } = await import('@clack/prompts')
 
-  intro(colors.header('🎮 AI Changelog Generator - Interactive Mode'));
+  intro(colors.header('🎮 AI Changelog Generator - Interactive Mode'))
 
   const choices = [
     { value: 'changelog-recent', label: '📝 Generate changelog from recent commits' },
@@ -1770,114 +1893,131 @@ export async function runInteractiveMode() {
     { value: 'commit-message', label: '💬 Generate commit message for current changes' },
     { value: 'configure-providers', label: '⚙️  Configure AI providers' },
     { value: 'validate-config', label: '🔍 Validate configuration' },
-    { value: 'exit', label: '❌ Exit' }
-  ];
+    { value: 'exit', label: '❌ Exit' },
+  ]
 
   const action = await select({
     message: 'What would you like to do?',
-    options: choices
-  });
+    options: choices,
+  })
 
-  return { action, timestamp: new Date().toISOString() };
+  return { action, timestamp: new Date().toISOString() }
 }
 
 /**
  * Analyze changes for commit message with detailed analysis
  */
 export function analyzeChangesForCommitMessage(changes, includeScope = false) {
-  if (!changes || !Array.isArray(changes) || changes.length === 0) {
+  if (!(changes && Array.isArray(changes)) || changes.length === 0) {
     return {
       summary: 'No changes detected',
       scope: null,
       changes: 0,
       recommendations: ['Make some changes first'],
-      type: 'chore'
-    };
+      type: 'chore',
+    }
   }
 
   // Categorize changes
-  const categories = {};
-  const scopes = new Set();
-  let hasTests = false;
-  let hasDocs = false;
-  let hasConfig = false;
-  let hasSource = false;
+  const categories = {}
+  const scopes = new Set()
+  let hasTests = false
+  let hasDocs = false
+  let hasConfig = false
+  let hasSource = false
 
-  changes.forEach(change => {
-    const filePath = change.path || change.filePath || '';
-    const category = categorizeFile(filePath);
+  changes.forEach((change) => {
+    const filePath = change.path || change.filePath || ''
+    const category = categorizeFile(filePath)
 
-    if (!categories[category]) categories[category] = [];
-    categories[category].push(change);
+    if (!categories[category]) {
+      categories[category] = []
+    }
+    categories[category].push(change)
 
     // Extract scope from path
     if (includeScope) {
-      const pathParts = filePath.split('/');
+      const pathParts = filePath.split('/')
       if (pathParts.length > 1) {
-        const scope = pathParts[pathParts.length - 2];
+        const scope = pathParts.at(-2)
         if (scope && scope !== '.' && scope !== '..') {
-          scopes.add(scope);
+          scopes.add(scope)
         }
       }
     }
 
     // Track content types
-    if (category === 'tests') hasTests = true;
-    if (category === 'documentation') hasDocs = true;
-    if (category === 'configuration') hasConfig = true;
-    if (category === 'source') hasSource = true;
-  });
+    if (category === 'tests') {
+      hasTests = true
+    }
+    if (category === 'documentation') {
+      hasDocs = true
+    }
+    if (category === 'configuration') {
+      hasConfig = true
+    }
+    if (category === 'source') {
+      hasSource = true
+    }
+  })
 
   // Determine primary category and type
-  const primaryCategory = Object.keys(categories)
-    .sort((a, b) => categories[b].length - categories[a].length)[0];
+  const primaryCategory = Object.keys(categories).sort(
+    (a, b) => categories[b].length - categories[a].length
+  )[0]
 
   const typeMapping = {
-    'source': 'feat',
-    'tests': 'test',
-    'documentation': 'docs',
-    'configuration': 'chore',
-    'build': 'build',
-    'frontend': 'feat',
-    'assets': 'chore'
-  };
+    source: 'feat',
+    tests: 'test',
+    documentation: 'docs',
+    configuration: 'chore',
+    build: 'build',
+    frontend: 'feat',
+    assets: 'chore',
+  }
 
-  const commitType = typeMapping[primaryCategory] || 'chore';
+  const commitType = typeMapping[primaryCategory] || 'chore'
 
   // Generate summary
-  const fileCount = changes.length;
-  const addedFiles = changes.filter(c => c.status === 'A').length;
-  const modifiedFiles = changes.filter(c => c.status === 'M').length;
-  const deletedFiles = changes.filter(c => c.status === 'D').length;
+  const fileCount = changes.length
+  const addedFiles = changes.filter((c) => c.status === 'A').length
+  const modifiedFiles = changes.filter((c) => c.status === 'M').length
+  const deletedFiles = changes.filter((c) => c.status === 'D').length
 
-  let summary = `${fileCount} file${fileCount === 1 ? '' : 's'} changed`;
+  let summary = `${fileCount} file${fileCount === 1 ? '' : 's'} changed`
 
-  const changeDetails = [];
-  if (addedFiles > 0) changeDetails.push(`${addedFiles} added`);
-  if (modifiedFiles > 0) changeDetails.push(`${modifiedFiles} modified`);
-  if (deletedFiles > 0) changeDetails.push(`${deletedFiles} deleted`);
+  const changeDetails = []
+  if (addedFiles > 0) {
+    changeDetails.push(`${addedFiles} added`)
+  }
+  if (modifiedFiles > 0) {
+    changeDetails.push(`${modifiedFiles} modified`)
+  }
+  if (deletedFiles > 0) {
+    changeDetails.push(`${deletedFiles} deleted`)
+  }
 
   if (changeDetails.length > 0) {
-    summary += ` (${changeDetails.join(', ')})`;
+    summary += ` (${changeDetails.join(', ')})`
   }
 
   // Generate recommendations
-  const recommendations = [];
+  const recommendations = []
 
   if (hasSource && !hasTests) {
-    recommendations.push('Consider adding tests for source changes');
+    recommendations.push('Consider adding tests for source changes')
   }
 
   if (hasSource && !hasDocs) {
-    recommendations.push('Consider updating documentation');
+    recommendations.push('Consider updating documentation')
   }
 
   if (fileCount > 10) {
-    recommendations.push('Consider breaking this into smaller commits');
+    recommendations.push('Consider breaking this into smaller commits')
   }
 
   if (hasConfig) {
-    recommendations.push('Review configuration changes carefully');
+    recommendations.push('Review configuration changes carefully')
   }
 
   return {
@@ -1895,68 +2035,70 @@ export function analyzeChangesForCommitMessage(changes, includeScope = false) {
       hasTests,
       hasDocs,
       hasConfig,
-      hasSource
-    }
-  };
+      hasSource,
+    },
+  }
 }
 
 /**
  * Select specific commits with interactive interface
  */
 export async function selectSpecificCommits(maxCommits = 20) {
-  const { multiselect, note } = await import('@clack/prompts');
-  const { execSync } = await import('child_process');
+  const { multiselect, note } = await import('@clack/prompts')
+  const { execSync } = await import('node:child_process')
 
   try {
-    note('🔍 Fetching recent commits...', 'Please wait');
+    note('🔍 Fetching recent commits...', 'Please wait')
 
     // Get recent commits with formatted output
-    const gitCommand = `git log --oneline --no-merges -${maxCommits} --pretty=format:"%h|%s|%an|%ar"`;
-    const output = execSync(gitCommand, { encoding: 'utf8' });
+    const gitCommand = `git log --oneline --no-merges -${maxCommits} --pretty=format:"%h|%s|%an|%ar"`
+    const output = execSync(gitCommand, { encoding: 'utf8' })
 
     if (!output.trim()) {
-      note('No commits found', 'Warning');
-      return [];
+      note('No commits found', 'Warning')
+      return []
     }
 
     // Parse commits
-    const commits = output.trim().split('\n').map(line => {
-      const [hash, subject, author, date] = line.split('|');
-      return {
-        hash,
-        subject: subject || 'No subject',
-        author: author || 'Unknown',
-        date: date || 'Unknown',
-        display: `${hash} ${subject} (${author}, ${date})`
-      };
-    });
+    const commits = output
+      .trim()
+      .split('\n')
+      .map((line) => {
+        const [hash, subject, author, date] = line.split('|')
+        return {
+          hash,
+          subject: subject || 'No subject',
+          author: author || 'Unknown',
+          date: date || 'Unknown',
+          display: `${hash} ${subject} (${author}, ${date})`,
+        }
+      })
 
     if (commits.length === 0) {
-      note('No commits available', 'Warning');
-      return [];
+      note('No commits available', 'Warning')
+      return []
     }
 
-    note(`Found ${commits.length} recent commits`, 'Info');
+    note(`Found ${commits.length} recent commits`, 'Info')
 
     // Create choices for selection
-    const choices = commits.map(commit => ({
+    const choices = commits.map((commit) => ({
       value: commit.hash,
       label: commit.display,
-      hint: commit.hash
-    }));
+      hint: commit.hash,
+    }))
 
     const selectedCommits = await multiselect({
       message: 'Select commits to include in changelog:',
       options: choices,
-      required: true
-    });
+      required: true,
+    })
 
-    note(`✅ Selected ${selectedCommits.length} commits`, 'Success');
-    return selectedCommits;
-
+    note(`✅ Selected ${selectedCommits.length} commits`, 'Success')
+    return selectedCommits
   } catch (error) {
-    note(`Error fetching commits: ${error.message}`, 'Error');
-    return [];
+    note(`Error fetching commits: ${error.message}`, 'Error')
+    return []
   }
 }
 
@@ -1968,26 +2110,33 @@ export async function selectSpecificCommits(maxCommits = 20) {
  * Assess change complexity based on diff output
  */
 export function assessChangeComplexity(diff) {
-  if (!diff || diff === 'Binary file or diff unavailable') return { score: 1 };
+  if (!diff || diff === 'Binary file or diff unavailable') {
+    return { score: 1 }
+  }
 
-  const lines = diff.split('\n');
-  const additions = lines.filter(line => line.startsWith('+')).length;
-  const deletions = lines.filter(line => line.startsWith('-')).length;
-  const total = additions + deletions;
+  const lines = diff.split('\n')
+  const additions = lines.filter((line) => line.startsWith('+')).length
+  const deletions = lines.filter((line) => line.startsWith('-')).length
+  const total = additions + deletions
 
-  let score = 1;
-  if (total >= 200) score = 5;
-  else if (total >= 100) score = 4;
-  else if (total >= 50) score = 3;
-  else if (total >= 10) score = 2;
+  let score = 1
+  if (total >= 200) {
+    score = 5
+  } else if (total >= 100) {
+    score = 4
+  } else if (total >= 50) {
+    score = 3
+  } else if (total >= 10) {
+    score = 2
+  }
 
   return {
     score,
     additions,
     deletions,
     total,
-    level: score <= 2 ? 'low' : score <= 3 ? 'medium' : 'high'
-  };
+    level: score <= 2 ? 'low' : score <= 3 ? 'medium' : 'high',
+  }
 }
 
 // ========================================
@@ -1999,11 +2148,11 @@ export function assessChangeComplexity(diff) {
  */
 export function getCurrentBranch() {
   try {
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
-    return branch !== 'HEAD' ? branch : null;
-  } catch (error) {
-    console.warn(colors.warning('Could not determine current branch'));
-    return null;
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim()
+    return branch !== 'HEAD' ? branch : null
+  } catch (_error) {
+    console.warn(colors.warning('Could not determine current branch'))
+    return null
   }
 }
 
@@ -2012,8 +2161,8 @@ export function getCurrentBranch() {
  * Based on better-commits patterns: type/ticket-description, feat/ABC-123-add-feature
  */
 export function analyzeBranchIntelligence(branchName = null) {
-  const branch = branchName || getCurrentBranch();
-  
+  const branch = branchName || getCurrentBranch()
+
   if (!branch) {
     return {
       branch: null,
@@ -2021,8 +2170,8 @@ export function analyzeBranchIntelligence(branchName = null) {
       ticket: null,
       description: null,
       confidence: 0,
-      patterns: []
-    };
+      patterns: [],
+    }
   }
 
   const analysis = {
@@ -2031,193 +2180,214 @@ export function analyzeBranchIntelligence(branchName = null) {
     ticket: null,
     description: null,
     confidence: 0,
-    patterns: []
-  };
+    patterns: [],
+  }
 
   // Pattern 1: type/ticket-description (e.g., feat/ABC-123-add-feature)
-  const typeTicketDescPattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)\/([A-Z]{2,}-\d+)-(.+)$/i;
-  let match = branch.match(typeTicketDescPattern);
+  const typeTicketDescPattern =
+    /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)\/([A-Z]{2,}-\d+)-(.+)$/i
+  let match = branch.match(typeTicketDescPattern)
   if (match) {
-    analysis.type = match[1].toLowerCase();
-    analysis.ticket = match[2].toUpperCase();
-    analysis.description = match[3].replace(/[-_]/g, ' ');
-    analysis.confidence = 95;
-    analysis.patterns.push('type/ticket-description');
-    return analysis;
+    analysis.type = match[1].toLowerCase()
+    analysis.ticket = match[2].toUpperCase()
+    analysis.description = match[3].replace(/[-_]/g, ' ')
+    analysis.confidence = 95
+    analysis.patterns.push('type/ticket-description')
+    return analysis
   }
 
   // Pattern 2: type/description (e.g., feat/add-new-feature)
-  const typeDescPattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)\/(.+)$/i;
-  match = branch.match(typeDescPattern);
+  const typeDescPattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)\/(.+)$/i
+  match = branch.match(typeDescPattern)
   if (match) {
-    analysis.type = match[1].toLowerCase();
-    analysis.description = match[2].replace(/[-_]/g, ' ');
-    analysis.confidence = 85;
-    analysis.patterns.push('type/description');
-    
+    analysis.type = match[1].toLowerCase()
+    analysis.description = match[2].replace(/[-_]/g, ' ')
+    analysis.confidence = 85
+    analysis.patterns.push('type/description')
+
     // Look for ticket in description
-    const ticketInDesc = match[2].match(/([A-Z]{2,}-\d+)/);
+    const ticketInDesc = match[2].match(/([A-Z]{2,}-\d+)/)
     if (ticketInDesc) {
-      analysis.ticket = ticketInDesc[1];
-      analysis.confidence = 90;
-      analysis.patterns.push('ticket-in-description');
+      analysis.ticket = ticketInDesc[1]
+      analysis.confidence = 90
+      analysis.patterns.push('ticket-in-description')
     }
-    return analysis;
+    return analysis
   }
 
   // Pattern 3: ticket-description (e.g., ABC-123-fix-bug)
-  const ticketDescPattern = /^([A-Z]{2,}-\d+)-(.+)$/;
-  match = branch.match(ticketDescPattern);
+  const ticketDescPattern = /^([A-Z]{2,}-\d+)-(.+)$/
+  match = branch.match(ticketDescPattern)
   if (match) {
-    analysis.ticket = match[1];
-    analysis.description = match[2].replace(/[-_]/g, ' ');
-    analysis.confidence = 70;
-    analysis.patterns.push('ticket-description');
-    
+    analysis.ticket = match[1]
+    analysis.description = match[2].replace(/[-_]/g, ' ')
+    analysis.confidence = 70
+    analysis.patterns.push('ticket-description')
+
     // Infer type from description
-    const inferredType = inferTypeFromDescription(match[2]);
+    const inferredType = inferTypeFromDescription(match[2])
     if (inferredType) {
-      analysis.type = inferredType;
-      analysis.confidence = 75;
-      analysis.patterns.push('inferred-type');
+      analysis.type = inferredType
+      analysis.confidence = 75
+      analysis.patterns.push('inferred-type')
     }
-    return analysis;
+    return analysis
   }
 
   // Pattern 4: just type at start (e.g., feat-add-feature)
-  const typeStartPattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)[-_](.+)$/i;
-  match = branch.match(typeStartPattern);
+  const typeStartPattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)[-_](.+)$/i
+  match = branch.match(typeStartPattern)
   if (match) {
-    analysis.type = match[1].toLowerCase();
-    analysis.description = match[2].replace(/[-_]/g, ' ');
-    analysis.confidence = 60;
-    analysis.patterns.push('type-start');
-    return analysis;
+    analysis.type = match[1].toLowerCase()
+    analysis.description = match[2].replace(/[-_]/g, ' ')
+    analysis.confidence = 60
+    analysis.patterns.push('type-start')
+    return analysis
   }
 
   // Pattern 5: ticket at start (e.g., ABC-123_add_feature)
-  const ticketStartPattern = /^([A-Z]{2,}-\d+)[-_](.+)$/;
-  match = branch.match(ticketStartPattern);
+  const ticketStartPattern = /^([A-Z]{2,}-\d+)[-_](.+)$/
+  match = branch.match(ticketStartPattern)
   if (match) {
-    analysis.ticket = match[1];
-    analysis.description = match[2].replace(/[-_]/g, ' ');
-    analysis.confidence = 60;
-    analysis.patterns.push('ticket-start');
-    
+    analysis.ticket = match[1]
+    analysis.description = match[2].replace(/[-_]/g, ' ')
+    analysis.confidence = 60
+    analysis.patterns.push('ticket-start')
+
     // Infer type from description
-    const inferredType = inferTypeFromDescription(match[2]);
+    const inferredType = inferTypeFromDescription(match[2])
     if (inferredType) {
-      analysis.type = inferredType;
-      analysis.confidence = 65;
-      analysis.patterns.push('inferred-type');
+      analysis.type = inferredType
+      analysis.confidence = 65
+      analysis.patterns.push('inferred-type')
     }
-    return analysis;
+    return analysis
   }
 
   // Pattern 6: just ticket anywhere (e.g., add-feature-ABC-123)
-  const ticketAnywherePattern = /([A-Z]{2,}-\d+)/;
-  match = branch.match(ticketAnywherePattern);
+  const ticketAnywherePattern = /([A-Z]{2,}-\d+)/
+  match = branch.match(ticketAnywherePattern)
   if (match) {
-    analysis.ticket = match[1];
-    analysis.confidence = 40;
-    analysis.patterns.push('ticket-anywhere');
-    
+    analysis.ticket = match[1]
+    analysis.confidence = 40
+    analysis.patterns.push('ticket-anywhere')
+
     // Use the whole branch as description, removing ticket
-    analysis.description = branch.replace(match[1], '').replace(/[-_]/g, ' ').trim();
-    return analysis;
+    analysis.description = branch.replace(match[1], '').replace(/[-_]/g, ' ').trim()
+    return analysis
   }
 
   // Pattern 7: conventional type anywhere in branch
-  const typeAnywherePattern = /(feat|fix|docs|style|refactor|perf|test|build|ci|chore)/i;
-  match = branch.match(typeAnywherePattern);
+  const typeAnywherePattern = /(feat|fix|docs|style|refactor|perf|test|build|ci|chore)/i
+  match = branch.match(typeAnywherePattern)
   if (match) {
-    analysis.type = match[1].toLowerCase();
-    analysis.confidence = 30;
-    analysis.patterns.push('type-anywhere');
-    analysis.description = branch.replace(/[-_]/g, ' ');
-    return analysis;
+    analysis.type = match[1].toLowerCase()
+    analysis.confidence = 30
+    analysis.patterns.push('type-anywhere')
+    analysis.description = branch.replace(/[-_]/g, ' ')
+    return analysis
   }
 
   // Fallback: use branch as description and try to infer type
-  analysis.description = branch.replace(/[-_]/g, ' ');
-  const inferredType = inferTypeFromDescription(branch);
+  analysis.description = branch.replace(/[-_]/g, ' ')
+  const inferredType = inferTypeFromDescription(branch)
   if (inferredType) {
-    analysis.type = inferredType;
-    analysis.confidence = 25;
-    analysis.patterns.push('inferred-type');
+    analysis.type = inferredType
+    analysis.confidence = 25
+    analysis.patterns.push('inferred-type')
   } else {
-    analysis.confidence = 10;
-    analysis.patterns.push('no-pattern');
+    analysis.confidence = 10
+    analysis.patterns.push('no-pattern')
   }
 
-  return analysis;
+  return analysis
 }
 
 /**
  * Infer commit type from description text
  */
 function inferTypeFromDescription(description) {
-  const text = description.toLowerCase();
-  
+  const text = description.toLowerCase()
+
   // Feature indicators
-  if (text.match(/add|new|create|implement|introduce|feature/)) return 'feat';
-  
+  if (text.match(/add|new|create|implement|introduce|feature/)) {
+    return 'feat'
+  }
+
   // Fix indicators
-  if (text.match(/fix|bug|error|issue|resolve|correct|patch/)) return 'fix';
-  
+  if (text.match(/fix|bug|error|issue|resolve|correct|patch/)) {
+    return 'fix'
+  }
+
   // Documentation indicators
-  if (text.match(/doc|readme|comment|guide|tutorial/)) return 'docs';
-  
+  if (text.match(/doc|readme|comment|guide|tutorial/)) {
+    return 'docs'
+  }
+
   // Style indicators
-  if (text.match(/style|format|lint|prettier|eslint/)) return 'style';
-  
+  if (text.match(/style|format|lint|prettier|eslint/)) {
+    return 'style'
+  }
+
   // Refactor indicators
-  if (text.match(/refactor|restructure|reorganize|cleanup|clean/)) return 'refactor';
-  
+  if (text.match(/refactor|restructure|reorganize|cleanup|clean/)) {
+    return 'refactor'
+  }
+
   // Performance indicators
-  if (text.match(/perf|performance|optimize|speed|fast/)) return 'perf';
-  
+  if (text.match(/perf|performance|optimize|speed|fast/)) {
+    return 'perf'
+  }
+
   // Test indicators
-  if (text.match(/test|spec|unit|integration/)) return 'test';
-  
+  if (text.match(/test|spec|unit|integration/)) {
+    return 'test'
+  }
+
   // Build indicators
-  if (text.match(/build|deploy|package|bundle|webpack|vite/)) return 'build';
-  
+  if (text.match(/build|deploy|package|bundle|webpack|vite/)) {
+    return 'build'
+  }
+
   // CI indicators
-  if (text.match(/ci|pipeline|action|workflow|github/)) return 'ci';
-  
+  if (text.match(/ci|pipeline|action|workflow|github/)) {
+    return 'ci'
+  }
+
   // Chore indicators
-  if (text.match(/chore|update|upgrade|dependency|deps|config/)) return 'chore';
-  
-  return null;
+  if (text.match(/chore|update|upgrade|dependency|deps|config/)) {
+    return 'chore'
+  }
+
+  return null
 }
 
 /**
  * Generate enhanced commit message context from branch intelligence
  */
-export function generateCommitContextFromBranch(branchAnalysis, changes = []) {
+export function generateCommitContextFromBranch(branchAnalysis, _changes = []) {
   if (!branchAnalysis || branchAnalysis.confidence < 20) {
-    return '';
+    return ''
   }
 
-  let context = '\n**Branch Context:**';
-  
+  let context = '\n**Branch Context:**'
+
   if (branchAnalysis.type) {
-    context += `\n- Inferred type: ${branchAnalysis.type}`;
+    context += `\n- Inferred type: ${branchAnalysis.type}`
   }
-  
+
   if (branchAnalysis.ticket) {
-    context += `\n- Related ticket: ${branchAnalysis.ticket}`;
+    context += `\n- Related ticket: ${branchAnalysis.ticket}`
   }
-  
+
   if (branchAnalysis.description) {
-    context += `\n- Branch description: ${branchAnalysis.description}`;
+    context += `\n- Branch description: ${branchAnalysis.description}`
   }
-  
-  context += `\n- Confidence: ${branchAnalysis.confidence}%`;
-  context += `\n- Detection patterns: ${branchAnalysis.patterns.join(', ')}`;
-  
-  return context;
+
+  context += `\n- Confidence: ${branchAnalysis.confidence}%`
+  context += `\n- Detection patterns: ${branchAnalysis.patterns.join(', ')}`
+
+  return context
 }
 
 /**
@@ -2225,48 +2395,50 @@ export function generateCommitContextFromBranch(branchAnalysis, changes = []) {
  */
 export function getSuggestedCommitType(branchAnalysis, changes = []) {
   // High confidence branch type takes precedence
-  if (branchAnalysis && branchAnalysis.type && branchAnalysis.confidence >= 70) {
+  if (branchAnalysis?.type && branchAnalysis.confidence >= 70) {
     return {
       type: branchAnalysis.type,
       source: 'branch',
-      confidence: branchAnalysis.confidence
-    };
+      confidence: branchAnalysis.confidence,
+    }
   }
 
   // Analyze file changes to infer type
-  const changeAnalysis = analyzeChangesForType(changes);
-  
+  const changeAnalysis = analyzeChangesForType(changes)
+
   // Medium confidence branch type combined with file analysis
-  if (branchAnalysis && branchAnalysis.type && branchAnalysis.confidence >= 40) {
-    if (changeAnalysis.type === branchAnalysis.type) {
-      return {
-        type: branchAnalysis.type,
-        source: 'branch+files',
-        confidence: Math.min(95, branchAnalysis.confidence + 20)
-      };
+  if (
+    branchAnalysis?.type &&
+    branchAnalysis.confidence >= 40 &&
+    changeAnalysis.type === branchAnalysis.type
+  ) {
+    return {
+      type: branchAnalysis.type,
+      source: 'branch+files',
+      confidence: Math.min(95, branchAnalysis.confidence + 20),
     }
   }
 
   // Use file-based analysis
   if (changeAnalysis.confidence >= 60) {
-    return changeAnalysis;
+    return changeAnalysis
   }
 
   // Low confidence branch type as fallback
-  if (branchAnalysis && branchAnalysis.type) {
+  if (branchAnalysis?.type) {
     return {
       type: branchAnalysis.type,
       source: 'branch-fallback',
-      confidence: branchAnalysis.confidence
-    };
+      confidence: branchAnalysis.confidence,
+    }
   }
 
   // Default fallback
   return {
     type: 'feat',
     source: 'default',
-    confidence: 20
-  };
+    confidence: 20,
+  }
 }
 
 /**
@@ -2274,7 +2446,7 @@ export function getSuggestedCommitType(branchAnalysis, changes = []) {
  */
 function analyzeChangesForType(changes) {
   if (!changes || changes.length === 0) {
-    return { type: 'feat', source: 'default', confidence: 20 };
+    return { type: 'feat', source: 'default', confidence: 20 }
   }
 
   const categories = {
@@ -2282,64 +2454,64 @@ function analyzeChangesForType(changes) {
     test: 0,
     config: 0,
     source: 0,
-    style: 0
-  };
+    style: 0,
+  }
 
   // Categorize files
-  changes.forEach(change => {
-    const path = change.path || change.filePath || '';
-    const ext = path.split('.').pop()?.toLowerCase() || '';
-    
-    if (path.match(/readme|doc|\.md$|guide|tutorial/i)) {
-      categories.docs++;
-    } else if (path.match(/test|spec|\.test\.|\.spec\./i)) {
-      categories.test++;
-    } else if (path.match(/config|\.json$|\.yaml$|\.yml$|\.toml$|\.ini$/i)) {
-      categories.config++;
-    } else if (path.match(/\.css$|\.scss$|\.less$|\.styl$/i)) {
-      categories.style++;
-    } else if (['js', 'ts', 'jsx', 'tsx', 'py', 'go', 'rs', 'java', 'c', 'cpp'].includes(ext)) {
-      categories.source++;
-    }
-  });
+  changes.forEach((change) => {
+    const path = change.path || change.filePath || ''
+    const ext = path.split('.').pop()?.toLowerCase() || ''
 
-  const total = Object.values(categories).reduce((a, b) => a + b, 0);
-  
+    if (path.match(/readme|doc|\.md$|guide|tutorial/i)) {
+      categories.docs++
+    } else if (path.match(/test|spec|\.test\.|\.spec\./i)) {
+      categories.test++
+    } else if (path.match(/config|\.json$|\.yaml$|\.yml$|\.toml$|\.ini$/i)) {
+      categories.config++
+    } else if (path.match(/\.css$|\.scss$|\.less$|\.styl$/i)) {
+      categories.style++
+    } else if (['js', 'ts', 'jsx', 'tsx', 'py', 'go', 'rs', 'java', 'c', 'cpp'].includes(ext)) {
+      categories.source++
+    }
+  })
+
+  const total = Object.values(categories).reduce((a, b) => a + b, 0)
+
   if (total === 0) {
-    return { type: 'feat', source: 'files-default', confidence: 30 };
+    return { type: 'feat', source: 'files-default', confidence: 30 }
   }
 
   // Determine primary type
   if (categories.docs / total > 0.6) {
-    return { type: 'docs', source: 'files', confidence: 80 };
+    return { type: 'docs', source: 'files', confidence: 80 }
   }
-  
+
   if (categories.test / total > 0.6) {
-    return { type: 'test', source: 'files', confidence: 80 };
+    return { type: 'test', source: 'files', confidence: 80 }
   }
-  
+
   if (categories.config / total > 0.6) {
-    return { type: 'chore', source: 'files', confidence: 70 };
+    return { type: 'chore', source: 'files', confidence: 70 }
   }
-  
+
   if (categories.style / total > 0.6) {
-    return { type: 'style', source: 'files', confidence: 75 };
+    return { type: 'style', source: 'files', confidence: 75 }
   }
 
   // Mixed or source-heavy changes - look at modification patterns
-  const hasNewFiles = changes.some(c => c.status === 'A' || c.status === '??');
-  const hasDeletedFiles = changes.some(c => c.status === 'D');
-  
+  const hasNewFiles = changes.some((c) => c.status === 'A' || c.status === '??')
+  const hasDeletedFiles = changes.some((c) => c.status === 'D')
+
   if (hasNewFiles && !hasDeletedFiles) {
-    return { type: 'feat', source: 'files-new', confidence: 65 };
+    return { type: 'feat', source: 'files-new', confidence: 65 }
   }
-  
+
   if (hasDeletedFiles) {
-    return { type: 'refactor', source: 'files-deleted', confidence: 60 };
+    return { type: 'refactor', source: 'files-deleted', confidence: 60 }
   }
 
   // Default to feat for source changes
-  return { type: 'feat', source: 'files-mixed', confidence: 50 };
+  return { type: 'feat', source: 'files-mixed', confidence: 50 }
 }
 
 // ========================================

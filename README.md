@@ -108,7 +108,8 @@ npm install
 
 ### Basic Usage
 
-#### Using installed package:
+#### Using installed package
+
 ```bash
 # Generate changelog from recent commits
 ai-changelog
@@ -126,7 +127,8 @@ ai-changelog-mcp
 ai-changelog --help
 ```
 
-#### Using bash wrappers (from source):
+#### Using bash wrappers (from source)
+
 ```bash
 # Generate changelog from recent commits
 ./ai-changelog.sh
@@ -151,6 +153,7 @@ That's it! Your AI-powered changelog is ready to generate.
 ## Demo
 
 ### Interactive Mode
+
 See the tool in action with our interactive mode demo:
 
 ![Interactive Demo](docs/media/demo-interactive-optimized.gif)
@@ -158,6 +161,7 @@ See the tool in action with our interactive mode demo:
 *Interactive mode with guided setup and provider selection*
 
 ### Quick Generation
+
 Watch how fast you can generate professional changelogs:
 
 ![Quick Demo](docs/media/demo-quick-real.gif)
@@ -165,6 +169,7 @@ Watch how fast you can generate professional changelogs:
 *Generate changelogs from recent commits in seconds*
 
 ### Video Walkthrough
+
 For a complete walkthrough of features and capabilities:
 
 [📺 Watch Full Demo Video](docs/media/demo-interactive.mp4)

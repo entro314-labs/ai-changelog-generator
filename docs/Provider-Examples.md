@@ -31,6 +31,7 @@ OPENAI_MAX_RETRIES=2
 ```
 
 **Available Models:**
+
 - `gpt-4o` (flagship model)
 - `gpt-4.1-standard` (balanced performance)
 - `gpt-4.1-mini` (cost-optimized)
@@ -52,6 +53,7 @@ AZURE_USER_ID=user-123
 ```
 
 **Available Models:**
+
 - `o4` (latest reasoning model - Azure exclusive)
 - `o4-mini` (efficient reasoning)
 - `o3` (previous generation reasoning)
@@ -72,6 +74,7 @@ ANTHROPIC_MAX_RETRIES=2
 ```
 
 **Available Models:**
+
 - `claude-sonnet-4-20250514` (latest balanced model)
 - `claude-opus-4-20250617` (most capable)
 - `claude-3-5-sonnet-20241022` (previous generation)
@@ -92,6 +95,7 @@ GOOGLE_MAX_RETRIES=3
 ```
 
 **Available Models:**
+
 - `gemini-2.5-pro` (most capable with thinking mode)
 - `gemini-2.5-flash` (fastest)
 - `gemini-2.0-flash` (multimodal)
@@ -130,6 +134,7 @@ HUGGINGFACE_TIMEOUT=120000
 ```
 
 **Available Models:**
+
 - `Qwen/Qwen2.5-72B-Instruct` (best performance)
 - `meta-llama/Llama-3.3-70B-Instruct` (strong reasoning)
 - `meta-llama/Llama-3.1-8B-Instruct` (balanced)
@@ -149,12 +154,14 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 ```
 
 **Available Models:** Any model you have installed locally
+
 - `llama3.1` (recommended default)
 - `codellama` (coding tasks)
 - `mistral` (alternative)
 - `phi` (small model)
 
 **Setup:**
+
 ```bash
 # Install Ollama
 curl -fsSL https://ollama.com/install.sh | sh
@@ -180,6 +187,7 @@ LMSTUDIO_MAX_RETRIES=2
 ```
 
 **Setup:**
+
 1. Download and install LM Studio
 2. Load a model in LM Studio
 3. Start the local server (Developer > Local Server)
@@ -303,16 +311,19 @@ ai-changelog --provider lmstudio
 ### Common Issues
 
 **"No provider available"**
+
 - Check that at least one API key is set
 - Verify API keys are valid
 - Test network connectivity
 
 **"Model not found"**
+
 - Check model name spelling
 - Verify model is available in your region
 - Try alternative models
 
 **Local provider connection failed**
+
 - Ensure Ollama/LM Studio is running
 - Check host/port configuration
 - Verify firewall settings
@@ -320,16 +331,19 @@ ai-changelog --provider lmstudio
 ### Provider-Specific Troubleshooting
 
 **Azure OpenAI**
+
 - Verify deployment name matches your Azure setup
 - Check API version compatibility
 - Ensure sufficient quota
 
 **Google Vertex AI**
+
 - Verify project ID and location
 - Check service account permissions
 - Ensure Vertex AI API is enabled
 
 **Hugging Face**
+
 - Check token permissions
 - Verify model availability in your region
 - Try different provider routing
@@ -350,18 +364,21 @@ ai-changelog test-providers
 ## Best Practices
 
 ### Security
+
 - Use environment variables, not hardcoded keys
 - Rotate API keys regularly
 - Use least-privilege access
 - Consider local models for sensitive data
 
 ### Performance
+
 - Use local models for development
 - Configure provider priority based on your needs
 - Enable caching where available
 - Monitor API usage and costs
 
 ### Reliability
+
 - Configure multiple providers for redundancy
 - Set appropriate timeouts and retries
 - Monitor provider health
@@ -370,6 +387,7 @@ ai-changelog test-providers
 ## Examples
 
 ### Development Workflow
+
 ```bash
 # Fast local development
 export OLLAMA_HOST=http://localhost:11434
@@ -381,6 +399,7 @@ ai-changelog --provider anthropic --model claude-sonnet-4 --detailed
 ```
 
 ### CI/CD Integration
+
 ```yaml
 # GitHub Actions
 env:
@@ -393,6 +412,7 @@ steps:
 ```
 
 ### Cost Monitoring
+
 ```bash
 # Use cost-effective models
 ai-changelog --provider huggingface --model meta-llama/Llama-3.1-8B-Instruct
