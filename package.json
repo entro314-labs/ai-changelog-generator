@@ -1,7 +1,7 @@
 {
   "name": "@entro314labs/ai-changelog-generator",
   "displayName": "AI Changelog Generator",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "type": "module",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
   "main": "src/ai-changelog-generator.js",

@@ -203,11 +203,19 @@ export class AIChangelogGenerator {
 
   // Utility methods for backward compatibility
   get hasAI() {
-    return this.appService.orchestrator.aiProvider?.isAvailable()
+    try {
+      return this.appService?.orchestrator?.aiProvider?.isAvailable() || false
+    } catch (error) {
+      return false
+    }
   }
 
   get gitExists() {
-    return this.appService.orchestrator?.gitManager?.isGitRepo
+    try {
+      return this.appService?.orchestrator?.gitManager?.isGitRepo || false
+    } catch (error) {
+      return false
+    }
   }
 
   // Simple logging method
