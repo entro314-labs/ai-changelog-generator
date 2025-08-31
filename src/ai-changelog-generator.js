@@ -204,7 +204,7 @@ export class AIChangelogGenerator {
   // Utility methods for backward compatibility
   get hasAI() {
     try {
-      return this.appService?.orchestrator?.aiProvider?.isAvailable() || false
+      return this.appService?.orchestrator?.aiProvider?.isAvailable()
     } catch (error) {
       return false
     }
@@ -212,7 +212,7 @@ export class AIChangelogGenerator {
 
   get gitExists() {
     try {
-      return this.appService?.orchestrator?.gitManager?.isGitRepo || false
+      return this.appService?.orchestrator?.gitManager?.isGitRepo
     } catch (error) {
       return false
     }

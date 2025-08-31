@@ -529,7 +529,21 @@ export class ConfigurationManager {
   }
 
   getCommitTypes() {
-    return this.changelogConfig?.convention?.commitTypes || ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'build', 'ci', 'chore', 'revert']
+    return (
+      this.changelogConfig?.convention?.commitTypes || [
+        'feat',
+        'fix',
+        'docs',
+        'style',
+        'refactor',
+        'perf',
+        'test',
+        'build',
+        'ci',
+        'chore',
+        'revert',
+      ]
+    )
   }
 
   getChangelogCommitTypes() {

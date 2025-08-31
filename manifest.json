@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "ai-changelog-generator",
   "display_name": "AI Changelog Generator",
-  "version": "3.0.2",
+  "version": "3.2.1",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
   "long_description": "Generate intelligent changelogs  from git commits using AI. Supports multiple  providers including OpenAI, Claude, Gemini, Ollama,  and LM Studio. Perfect for automating release  documentation with smart commit analysis and  categorization.",
   "author": {
@@ -159,7 +159,7 @@
     "claude_desktop": ">=0.10.0",
     "platforms": ["darwin", "win32", "linux"],
     "runtimes": {
-      "node": ">=22.0.0"
+      "node": ">=22.18.0"
     }
   }
 }

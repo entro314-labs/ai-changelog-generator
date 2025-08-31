@@ -1276,7 +1276,7 @@ Generate only the commit message, no explanation.`
     if (!this.aiAnalysisService?.aiProvider?.isAvailable()) {
       throw new Error('AI provider not available for suggestions')
     }
-    
+
     const { select } = await this._getCachedImport('@clack/prompts')
 
     console.log(colors.processingMessage('🤖 Generating AI suggestions...'))

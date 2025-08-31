@@ -2043,11 +2043,15 @@ export class ChangelogService {
   }
 
   generateJSONChangelog(data) {
-    return JSON.stringify({
-      version: data.version || 'Unreleased',
-      changes: data.changes || [],
-      metadata: data.metadata || {}
-    }, null, 2)
+    return JSON.stringify(
+      {
+        version: data.version || 'Unreleased',
+        changes: data.changes || [],
+        metadata: data.metadata || {},
+      },
+      null,
+      2
+    )
   }
 
   generatePlainTextChangelog(data) {
@@ -2058,7 +2062,7 @@ export class ChangelogService {
     return {
       versions: [],
       format: 'markdown',
-      metadata: {}
+      metadata: {},
     }
   }
 
@@ -2070,14 +2074,14 @@ export class ChangelogService {
     return {
       valid: true,
       issues: [],
-      score: 100
+      score: 100,
     }
   }
 
   optimizeChangelogStructure(content) {
     return {
       optimized: content,
-      improvements: []
+      improvements: [],
     }
   }
 
@@ -2085,14 +2089,14 @@ export class ChangelogService {
     return {
       structure: 'standard',
       sections: ['unreleased', 'versions'],
-      completeness: 90
+      completeness: 90,
     }
   }
 
   detectChangelogPatterns(content) {
     return {
       patterns: ['keepachangelog', 'conventional'],
-      confidence: 'high'
+      confidence: 'high',
     }
   }
 
@@ -2100,7 +2104,7 @@ export class ChangelogService {
     return {
       compliant: true,
       standard: 'keepachangelog',
-      violations: []
+      violations: [],
     }
   }
 
@@ -2108,7 +2112,7 @@ export class ChangelogService {
     return {
       score: 85,
       strengths: ['consistent format'],
-      weaknesses: []
+      weaknesses: [],
     }
   }
 
@@ -2116,7 +2120,7 @@ export class ChangelogService {
     return {
       similarity: 75,
       differences: [],
-      recommendations: []
+      recommendations: [],
     }
   }
 
@@ -2124,21 +2128,21 @@ export class ChangelogService {
     return {
       title: 'Changelog',
       format: 'keepachangelog',
-      versions: []
+      versions: [],
     }
   }
 
   identifyMissingEntries(commits, changelog) {
     return {
       missing: [],
-      suggestions: []
+      suggestions: [],
     }
   }
 
   suggestImprovements(changelog) {
     return {
       improvements: [],
-      priority: 'low'
+      priority: 'low',
     }
   }
 
@@ -2146,7 +2150,7 @@ export class ChangelogService {
     return {
       versions: 0,
       entries: 0,
-      lastUpdate: null
+      lastUpdate: null,
     }
   }
 }

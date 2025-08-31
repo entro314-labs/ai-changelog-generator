@@ -679,14 +679,14 @@ Generate one entry per file or logical change group. Only describe what you can 
     return {
       structure: 'standard',
       directories: [],
-      files: []
+      files: [],
     }
   }
 
   identifyWorkspacePatterns() {
     return {
       patterns: ['monorepo', 'standard'],
-      confidence: 'medium'
+      confidence: 'medium',
     }
   }
 
@@ -694,35 +694,35 @@ Generate one entry per file or logical change group. Only describe what you can 
     return {
       health: 'good',
       issues: [],
-      score: 85
+      score: 85,
     }
   }
 
   generateWorkspaceInsights() {
     return {
       insights: [],
-      recommendations: []
+      recommendations: [],
     }
   }
 
   optimizeWorkspaceConfiguration() {
     return {
       optimizations: [],
-      impact: 'low'
+      impact: 'low',
     }
   }
 
   validateWorkspaceStandards() {
     return {
       compliant: true,
-      violations: []
+      violations: [],
     }
   }
 
   compareWorkspaceConfigurations(a, b) {
     return {
       similarity: 90,
-      differences: []
+      differences: [],
     }
   }
 
@@ -730,14 +730,14 @@ Generate one entry per file or logical change group. Only describe what you can 
     return {
       type: 'standard',
       tools: [],
-      frameworks: []
+      frameworks: [],
     }
   }
 
   suggestWorkspaceImprovements() {
     return {
       improvements: [],
-      priority: 'low'
+      priority: 'low',
     }
   }
 }

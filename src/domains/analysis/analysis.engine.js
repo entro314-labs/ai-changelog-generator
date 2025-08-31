@@ -508,14 +508,14 @@ export class AnalysisEngine {
     return {
       patterns: ['conventional', 'semantic'],
       compliance: 85,
-      suggestions: []
+      suggestions: [],
     }
   }
 
   detectChangeTypes(changes) {
     return {
       types: ['feat', 'fix', 'docs'],
-      confidence: 'high'
+      confidence: 'high',
     }
   }
 
@@ -523,7 +523,7 @@ export class AnalysisEngine {
     return {
       score: 8.5,
       issues: [],
-      recommendations: []
+      recommendations: [],
     }
   }
 
@@ -531,42 +531,42 @@ export class AnalysisEngine {
     return {
       added: [],
       removed: [],
-      updated: []
+      updated: [],
     }
   }
 
   evaluatePerformanceImpact(changes) {
     return {
       impact: 'low',
-      metrics: {}
+      metrics: {},
     }
   }
 
   checkSecurityImplications(changes) {
     return {
       issues: [],
-      score: 'safe'
+      score: 'safe',
     }
   }
 
   analyzeDocumentationChanges(changes) {
     return {
       coverage: 'good',
-      changes: []
+      changes: [],
     }
   }
 
   assessTestCoverage(changes) {
     return {
       coverage: 85,
-      missing: []
+      missing: [],
     }
   }
 
   evaluateArchitecturalChanges(changes) {
     return {
       impact: 'minimal',
-      changes: []
+      changes: [],
     }
   }
 
@@ -575,7 +575,7 @@ export class AnalysisEngine {
     return {
       analysisCount: 0,
       averageTime: 0,
-      successRate: 100
+      successRate: 100,
     }
   }
 }

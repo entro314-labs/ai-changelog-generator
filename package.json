@@ -71,19 +71,19 @@
     "postinstall": "node -e \"console.log('\\n🎉 AI Changelog Generator installed!\\n\\n⚡ Quick Start:\\n  ai-changelog                 - Generate changelog\\n  ai-changelog --detailed      - Detailed analysis\\n  ai-changelog --interactive   - Interactive mode\\n  ai-changelog-mcp            - Start MCP server\\n\\n🤖 AI Models Supported:\\n  • GPT-4.1 series (1M context, 75% cost reduction)\\n  • o3/o4 reasoning models (Azure-only)\\n  • Automatic model selection\\n\\n📖 Docs: https://github.com/entro314-labs/AI-changelog-generator\\n\\n© All trademarks belong to their respective owners.\\n')\""
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.59.0",
-    "@aws-sdk/client-bedrock-runtime": "^3.864.0",
+    "@anthropic-ai/sdk": "^0.60.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.873.0",
     "@azure/identity": "^4.11.1",
     "@clack/prompts": "^0.11.0",
-    "@google/genai": "^1.13.0",
+    "@google/genai": "^1.15.0",
     "@google/generative-ai": "^0.24.1",
     "@huggingface/hub": "^2.4.1",
-    "@huggingface/inference": "^4.6.1",
-    "@lmstudio/sdk": "^1.4.0",
-    "@modelcontextprotocol/sdk": "^1.17.2",
-    "@modelcontextprotocol/server-filesystem": "2025.7.29",
+    "@huggingface/inference": "^4.7.1",
+    "@lmstudio/sdk": "^1.5.0",
+    "@modelcontextprotocol/sdk": "^1.17.4",
+    "@modelcontextprotocol/server-filesystem": "2025.8.21",
     "boxen": "^8.0.1",
-    "chalk": "^5.5.0",
+    "chalk": "^5.6.0",
     "cli-table3": "^0.6.5",
     "dotenv": "^17.2.1",
     "figures": "^6.1.0",
@@ -91,13 +91,13 @@
     "gradient-string": "^3.0.0",
     "js-yaml": "^4.1.0",
     "ollama": "^0.5.17",
-    "openai": "^5.12.2",
+    "openai": "^5.15.0",
     "ora": "^8.2.0",
     "yargs": "^18.0.0"
   },
   "devDependencies": {
     "@anthropic-ai/dxt": "^0.2.6",
-    "@types/node": "24.2.1",
+    "@types/node": "24.3.0",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "tempy": "^3.1.0",
@@ -143,8 +143,8 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=22.18.0",
+    "pnpm": ">=10.15.0"
   },
   "funding": {
     "type": "github",
@@ -156,8 +156,8 @@
     }
   },
   "volta": {
-    "node": "22.17.1",
-    "pnpm": "9.17.0"
+    "node": "22.18.0",
+    "pnpm": "10.15.0"
   },
   "pnpm": {
     "overrides": {
