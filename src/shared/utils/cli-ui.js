@@ -438,7 +438,7 @@ export const cliUtils = {
   // Format bytes
   formatBytes(bytes) {
     const sizes = ['B', 'KB', 'MB', 'GB']
-    if (bytes === 0) {
+    if (bytes <= 0 || !Number.isFinite(bytes)) {
       return '0B'
     }
     const i = Math.floor(Math.log(bytes) / Math.log(1024))

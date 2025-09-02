@@ -83,6 +83,11 @@ export class CLIController {
   }
 
   async ensureConfig() {
+    // Skip config setup in test environments to prevent hanging
+    if (process.env.NODE_ENV === 'test' || process.env.CI) {
+      return
+    }
+    
     const configPath = path.join(process.cwd(), '.env.local')
     try {
       await access(configPath)

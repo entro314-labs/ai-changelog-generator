@@ -212,7 +212,8 @@ export class AIChangelogGenerator {
 
   get gitExists() {
     try {
-      return this.appService?.orchestrator?.gitManager?.isGitRepo
+      const isGitRepo = this.appService?.orchestrator?.gitManager?.isGitRepo
+      return Boolean(isGitRepo)
     } catch (error) {
       return false
     }

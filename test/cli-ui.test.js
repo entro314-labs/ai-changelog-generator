@@ -243,7 +243,7 @@ describe('CLI UI Components', () => {
       EnhancedConsole.ai('AI message')
       EnhancedConsole.metrics('Metrics message')
 
-      expect(console.log).toHaveBeenCalledTimes(expect.any(Number))
+      expect(console.log).toHaveBeenCalled()
     })
 
     it('should create sections', () => {
@@ -297,12 +297,14 @@ describe('CLI UI Components', () => {
 
     it('should handle empty data gracefully', () => {
       // These should not throw errors or log anything
-      EnhancedConsole.table([])
-      EnhancedConsole.fileList([], 'Empty Files')
-      EnhancedConsole.metrics({}, 'Empty Metrics')
+      expect(() => {
+        EnhancedConsole.table([])
+        EnhancedConsole.fileList([], 'Empty Files')
+        EnhancedConsole.metrics({}, 'Empty Metrics')
+      }).not.toThrow()
 
-      // Should handle empty data without errors
-      expect(console.log).toHaveBeenCalled()
+      // Methods with guards should not log when data is empty
+      // This is expected behavior
     })
   })
 

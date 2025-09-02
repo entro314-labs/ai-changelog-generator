@@ -6,6 +6,7 @@ import {
   handleUnifiedOutput,
   markdownCommitLink,
   markdownCommitRangeLink,
+  markdownIssueLink,
   parseConventionalCommit,
   processIssueReferences,
   sleep,
@@ -1639,11 +1640,9 @@ export class ChangelogService {
 
     // Configuration changes
     if (path?.includes('package.json')) {
-      if (addedContent.includes('"dependencies"') || addedContent.includes('"devDependencies"')) {
-        changes.push('updated dependencies')
-      }
-      if (addedContent.includes('"scripts"')) {
-        changes.push('modified scripts')
+      const configChanges = this.analyzePackageJsonChanges(addedContent, removedContent)
+      if (configChanges.length > 0) {
+        changes.push(...configChanges)
       }
     }
 

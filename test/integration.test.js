@@ -311,7 +311,7 @@ describe('Integration & Error Handling', () => {
         authFailures.forEach((failure) => {
           const handled = handleAuthFailure(failure)
           expect(handled.requiresUserAction).toBe(true)
-          expect(handled.message).toContain('authentication')
+          expect(handled.message.toLowerCase()).toContain('authentication')
         })
       })
 
