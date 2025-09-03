@@ -38,6 +38,7 @@ changelog:
     - docs
     - build
     - chore
+    - merge
 
   # Include commits that don't follow conventional format
   includeInvalidCommits: true
