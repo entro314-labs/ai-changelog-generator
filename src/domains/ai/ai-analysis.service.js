@@ -143,6 +143,8 @@ export class AIAnalysisService {
         temperature: 0.3,
       })
 
+      // Debug logging removed
+
       if (response?.usage) {
         this.metrics.totalTokens +=
           (response.usage.prompt_tokens || 0) + (response.usage.completion_tokens || 0)

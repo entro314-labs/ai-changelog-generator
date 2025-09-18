@@ -87,7 +87,7 @@ export class CLIController {
     if (process.env.NODE_ENV === 'test' || process.env.CI) {
       return
     }
-    
+
     const configPath = path.join(process.cwd(), '.env.local')
     try {
       await access(configPath)

@@ -101,3 +101,5 @@ validate-*.js
 platform.*.md
 OpenAI API Models (*
 
+.github/copilot-instructions.md
+AI_CHANGELOG.md

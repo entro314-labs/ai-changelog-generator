@@ -356,6 +356,39 @@ export class NetworkError extends AIChangelogError {
 }
 
 /**
+ * Parse error for malformed data/responses
+ */
+export class ParseError extends Error {
+  constructor(message, data = null, originalError = null) {
+    super(message)
+    this.name = 'ParseError'
+    this.data = data
+    this.originalError = originalError
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ParseError)
+    }
+  }
+}
+
+/**
+ * Concurrency limit error for resource management
+ */
+export class ConcurrencyLimitError extends Error {
+  constructor(message, limit, active, originalError = null) {
+    super(message)
+    this.name = 'ConcurrencyLimitError'
+    this.limit = limit
+    this.active = active
+    this.originalError = originalError
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ConcurrencyLimitError)
+    }
+  }
+}
+
+/**
  * Error context builder utility
  */
 export class ErrorContext {

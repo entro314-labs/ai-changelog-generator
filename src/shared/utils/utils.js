@@ -1110,9 +1110,22 @@ export function buildEnhancedPrompt(commitAnalysis, analysisMode = 'standard') {
     riskAssessment = {},
   } = commitAnalysis
 
-  // Initialize DiffProcessor with analysis mode
+  // Detect merge commits and upgrade analysis mode for better specificity
+  const isMergeCommit = subject && subject.toLowerCase().includes('merge')
+  const effectiveAnalysisMode = isMergeCommit && files.length > 10 ? 'detailed' : analysisMode
+
+  // Debug logging for merge commits (disabled)
+  // if (isMergeCommit) {
+  //   console.log('\n=== MERGE COMMIT DEBUG (EARLY) ===')
+  //   console.log('Subject:', subject)
+  //   console.log('Files count:', files.length)
+  //   console.log('Effective analysis mode:', effectiveAnalysisMode)
+  //   console.log('=== END EARLY DEBUG ===\n')
+  // }
+
+  // Initialize DiffProcessor with effective analysis mode
   const diffProcessor = new DiffProcessor({
-    analysisMode,
+    analysisMode: effectiveAnalysisMode,
     enableFiltering: true,
     enablePatternDetection: true,
   })
@@ -1148,10 +1161,41 @@ export function buildEnhancedPrompt(commitAnalysis, analysisMode = 'standard') {
     })
     .join('')
 
+  // Check if we have enhanced merge summary from GitService (isMergeCommit already detected above)
+  const enhancedMergeSummary =
+    files.length > 0 && files[0].enhancedMergeSummary ? files[0].enhancedMergeSummary : null
+
   const prompt = `Analyze this git commit for changelog generation.
 
-**COMMIT:** ${subject}
-**FILES:** ${files.length} files (${filesProcessed} analyzed, ${filesSkipped} summarized), ${insertions + deletions} lines changed${patternSummary}
+**COMMIT:** ${subject}${isMergeCommit ? ' (MERGE COMMIT - categorize as "merge")' : ''}
+**FILES:** ${files.length} files (${filesProcessed} analyzed, ${filesSkipped} summarized), ${insertions + deletions} lines changed${patternSummary}${
+    enhancedMergeSummary
+      ? `
+
+**ENHANCED MERGE SUMMARY:**
+${enhancedMergeSummary}
+
+**IMPORTANT FOR MERGE COMMITS:** Use the above enhanced summary as your description. Do NOT create a generic summary. Instead, convert the bullet points above into a flowing description that includes the specific file names, numbers, and technical details provided.`
+      : ''
+  }
+
+  // Debug logging for merge commits with "pull request"
+  if (isMergeCommit && subject.includes('pull request')) {
+    try {
+      const fs = require('fs')
+      const debugContent = '=== EXACT AI INPUT FOR fd97ab7 ===\n' +
+        'SUBJECT: ' + subject + '\n' +
+        'FILES COUNT: ' + files.length + '\n' +
+        'ENHANCED MERGE SUMMARY:\n' + (enhancedMergeSummary || 'None') + '\n\n' +
+        'FILES SECTION (first 3000 chars):\n' + filesSection.substring(0, 3000) + '\n\n' +
+        'FULL PROMPT PREVIEW:\n' + prompt.substring(0, 2000) + '\n=== END DEBUG ==='
+      
+      fs.writeFileSync('AI_INPUT_DEBUG.txt', debugContent)
+      console.log('*** AI INPUT SAVED TO AI_INPUT_DEBUG.txt ***')
+    } catch (error) {
+      console.log('DEBUG ERROR:', error.message)
+    }
+  }
 
 **TARGET AUDIENCE:** End users and project stakeholders who need to understand what changed and why it matters.
 
@@ -1161,30 +1205,36 @@ export function buildEnhancedPrompt(commitAnalysis, analysisMode = 'standard') {
 1. **First, categorize correctly** using the rules below
 2. **Then, focus on user impact** - what can they do now that they couldn't before?
 3. **Keep technical details minimal** - only what's necessary for understanding
+4. **Be definitive and factual** - never use uncertain language like "likely", "probably", "appears to", "seems to", or "possibly"
+5. **Base analysis on actual code changes** - only describe what you can verify from the diff content
+6. **For merge commits** - ALWAYS categorize as "merge" regardless of content
+7. **Use enhanced merge summary** - If an "ENHANCED MERGE SUMMARY" section is provided above, DO NOT analyze individual file diffs. Instead, directly incorporate the specific bullet points from the enhanced summary into your response. Use the exact technical details, file names, and numbers provided in the enhanced summary.
 
 **PROCESSED DIFFS:**${filesSection}
 
 **CATEGORIZATION RULES (STRICTLY ENFORCED):**
+- **merge**: Any commit with "Merge" in the subject line (branch merges, pull request merges)
 - **fix**: ONLY actual bug fixes - broken functionality now works correctly
-- **feature**: New capabilities, tools, or major functionality additions
+- **feature**: New capabilities, tools, or major functionality additions (NOT merges)
 - **refactor**: Code restructuring without changing what users can do
 - **perf**: Performance improvements users will notice
 - **docs**: Documentation updates only
 - **build/chore**: Build system, dependencies, maintenance
 
 **CRITICAL VALIDATION:**
-- Large additions (>10 files OR >1000 lines) = "feature" or "refactor", NEVER "fix"
-- New modules/classes/tools = "feature"
+- Commits with "Merge" in subject = "merge" category ALWAYS
+- Large additions (>10 files OR >1000 lines) = "feature" or "refactor", NEVER "fix" (unless merge)
+- New modules/classes/tools = "feature" (unless merge)
 - Only actual bug repairs = "fix"
 
-Provide a JSON response with ONLY these fields:
+Provide a JSON response with ONLY these fields (use definitive language - NO "likely", "probably", "appears", etc.):
 {
   "summary": "${subject}",
   "impact": "critical|high|medium|low|minimal",
   "category": "feature|fix|security|breaking|docs|style|refactor|perf|test|chore",
-  "description": "One clear sentence describing what users can now do (for features) or what now works correctly (for fixes)",
-  "technicalDetails": "Maximum 2 sentences about key technical changes - focus on the most important functions/modules/APIs added or modified",
-  "businessValue": "Brief user benefit in 1 sentence",
+  "description": "One clear, factual sentence describing what users can now do (for features) or what now works correctly (for fixes)",
+  "technicalDetails": "Maximum 2 factual sentences about key technical changes - focus on the most important functions/modules/APIs added or modified",
+  "businessValue": "Brief, definitive user benefit in 1 sentence",
   "riskFactors": ["minimal", "list"],
   "recommendations": ["minimal", "list"],
   "breakingChanges": false,

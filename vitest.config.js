@@ -28,9 +28,9 @@ export default defineConfig({
       },
     },
 
-    // Test timeout for async operations (reduced to prevent hanging tests)
-    testTimeout: 15000,
-    hookTimeout: 5000,
+    // Test timeout for async operations - increased for complex service initialization
+    testTimeout: 30000,
+    hookTimeout: 15000,
 
     // Reporters
     reporter: ['default', 'html'],

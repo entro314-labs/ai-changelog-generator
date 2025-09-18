@@ -151,7 +151,7 @@ export class ConfigurationManager {
         releaseTagGlobPattern: 'v[0-9]*.[0-9]*.[0-9]*',
       },
       changelog: {
-        commitTypes: ['feat', 'fix', 'perf', 'refactor', 'docs'],
+        commitTypes: ['feat', 'fix', 'perf', 'refactor', 'docs', 'merge'],
         includeInvalidCommits: true,
         commitIgnoreRegexPattern: '^WIP ',
         headlines: {

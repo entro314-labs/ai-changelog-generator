@@ -223,8 +223,8 @@ describe('MCP Server', () => {
         const params = {
           since: { type: 'string', description: 'Start date for changelog' },
           until: { type: 'string', description: 'End date for changelog' },
-          format: { type: 'string', enum: ['markdown', 'json', 'text'] },
-          mode: { type: 'string', enum: ['standard', 'detailed', 'enterprise'] },
+          format: { type: 'string', description: 'Output format', enum: ['markdown', 'json', 'text'] },
+          mode: { type: 'string', description: 'Generation mode', enum: ['standard', 'detailed', 'enterprise'] },
         }
 
         Object.values(params).forEach((param) => {

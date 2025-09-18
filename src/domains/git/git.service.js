@@ -31,22 +31,56 @@ export class GitService {
       const [hash, subject, author, date] = lines[0].split('|')
       const body = lines.slice(1).join('\n').trim()
 
-      // Get files with detailed analysis
-      const filesCommand = `git show --name-status --pretty=format: ${commitHash}`
-      const filesOutput = this.gitManager.execGitSafe(filesCommand)
-      const files = await Promise.all(
-        filesOutput
-          .split('\n')
-          .filter(Boolean)
-          .map(async (line) => {
-            const parts = line.split('\t')
-            if (parts.length < 2) {
-              return null
-            }
-            const [status, filePath] = parts
-            return await this.analyzeFileChange(commitHash, status, filePath)
-          })
-      )
+      // Detect merge commits and handle them differently
+      let isMergeCommit = subject.toLowerCase().includes('merge')
+      if (!isMergeCommit) {
+        // Check if commit has multiple parents (more reliable for merge detection)
+        try {
+          const parents = this.gitManager
+            .execGitSafe(`git show --format='%P' --no-patch ${commitHash}`)
+            .trim()
+            .split(' ')
+          isMergeCommit = parents.length > 1
+        } catch {
+          isMergeCommit = false
+        }
+      }
+
+      let files = []
+
+      if (isMergeCommit) {
+        // For merge commits, get the stat summary and create a special analysis
+        const statOutput = this.gitManager.execGitSafe(
+          `git show --stat --pretty=format: ${commitHash}`
+        )
+        files = this.processMergeCommitStats(commitHash, statOutput)
+
+        // Generate comprehensive summary for large merge commits
+        if (files.length > 10) {
+          const enhancedSummary = this.generateMergeCommitSummary(files, commitHash, subject)
+          // Add the enhanced summary to the first file entry for the AI to use
+          if (files.length > 0) {
+            files[0].enhancedMergeSummary = enhancedSummary
+          }
+        }
+      } else {
+        // For regular commits, use the existing approach
+        const filesCommand = `git show --name-status --pretty=format: ${commitHash}`
+        const filesOutput = this.gitManager.execGitSafe(filesCommand)
+        files = await Promise.all(
+          filesOutput
+            .split('\n')
+            .filter(Boolean)
+            .map(async (line) => {
+              const parts = line.split('\t')
+              if (parts.length < 2) {
+                return null
+              }
+              const [status, filePath] = parts
+              return await this.analyzeFileChange(commitHash, status, filePath)
+            })
+        )
+      }
 
       // Filter out null entries
       const validFiles = files.filter(Boolean)
@@ -318,5 +352,387 @@ export class GitService {
       console.error(colors.errorMessage('Error getting commits since:'), error.message)
       return []
     }
+  }
+
+  /**
+   * Process merge commit statistics to create meaningful file analysis
+   */
+  processMergeCommitStats(commitHash, statOutput) {
+    if (!statOutput || statOutput.trim() === '') {
+      return []
+    }
+
+    // Parse the git stat output to extract file information
+    const lines = statOutput.split('\n').filter(Boolean)
+    const files = []
+
+    for (const line of lines) {
+      // Look for lines with file changes: "filename | additions +++--- deletions"
+      const match = line.match(/^\s*(.+?)\s*\|\s*(\d+)\s*([+\-\s]+)/)
+      if (match) {
+        const [, filePath, changes, diffSymbols] = match
+        const additions = (diffSymbols.match(/\+/g) || []).length
+        const deletions = (diffSymbols.match(/-/g) || []).length
+
+        // Determine file status based on changes
+        let status = 'M' // Default to modified
+        if (additions > 0 && deletions === 0) {
+          status = 'A' // Likely added
+        } else if (deletions > 0 && additions === 0) {
+          status = 'D' // Likely deleted
+        }
+
+        // Create a meaningful diff summary for the AI
+        const diff = this.createMergeCommitDiffSummary(
+          filePath,
+          parseInt(changes),
+          additions,
+          deletions,
+          commitHash
+        )
+
+        files.push({
+          status,
+          filePath: filePath.trim(),
+          diff,
+          beforeContent: '',
+          afterContent: '',
+          category: categorizeFile(filePath),
+          language: detectLanguage(filePath),
+          importance: assessFileImportance(filePath, status),
+          complexity: { level: changes > 100 ? 'high' : changes > 20 ? 'medium' : 'low' },
+          semanticChanges: { patterns: ['merge-commit'] },
+          functionalImpact: { level: changes > 50 ? 'high' : 'medium' },
+          isMergeCommit: true,
+          changeCount: parseInt(changes),
+          additions,
+          deletions,
+        })
+      }
+    }
+
+    return files
+  }
+
+  /**
+   * Create a meaningful diff summary for merge commits with enhanced categorization
+   */
+  createMergeCommitDiffSummary(filePath, totalChanges, additions, deletions, commitHash) {
+    const changeType =
+      additions > deletions ? 'expanded' : deletions > additions ? 'reduced' : 'modified'
+
+    let summary = `Merge commit changes: ${totalChanges} lines ${changeType}`
+
+    if (additions > 0 && deletions > 0) {
+      summary += ` (${additions} added, ${deletions} removed)`
+    } else if (additions > 0) {
+      summary += ` (${additions} lines added)`
+    } else if (deletions > 0) {
+      summary += ` (${deletions} lines removed)`
+    }
+
+    // Enhanced context based on file type and size of changes
+    if (filePath.includes('test')) {
+      summary += ' - Test infrastructure changes from merge'
+    } else if (filePath.includes('config') || filePath.includes('.json')) {
+      summary += ' - Configuration and dependency changes from merge'
+    } else if (filePath.includes('README') || filePath.includes('.md')) {
+      summary += ' - Documentation updates from merge'
+    } else if (filePath.includes('src/domains/')) {
+      summary += ' - Core domain logic changes from merge'
+    } else if (filePath.includes('src/infrastructure/')) {
+      summary += ' - Infrastructure and provider changes from merge'
+    } else if (filePath.includes('src/application/')) {
+      summary += ' - Application service changes from merge'
+    } else if (filePath.includes('bin/') || filePath.includes('cli')) {
+      summary += ' - CLI interface changes from merge'
+    } else if (totalChanges > 100) {
+      summary += ' - Major code changes from merge'
+    } else if (totalChanges > 20) {
+      summary += ' - Moderate code changes from merge'
+    } else {
+      summary += ' - Minor code changes from merge'
+    }
+
+    return summary
+  }
+
+  /**
+   * Generate comprehensive merge commit summary with categorized changes and technical details
+   */
+  generateMergeCommitSummary(files, commitHash, subject) {
+    const categories = {
+      tests: { count: 0, lines: 0, files: [] },
+      docs: { count: 0, lines: 0, files: [] },
+      config: { count: 0, lines: 0, files: [] },
+      core: { count: 0, lines: 0, files: [] },
+      infrastructure: { count: 0, lines: 0, files: [] },
+      cli: { count: 0, lines: 0, files: [] },
+      other: { count: 0, lines: 0, files: [] },
+    }
+
+    let totalLines = 0
+    let totalFiles = files.length
+
+    // Categorize files and accumulate statistics
+    for (const file of files) {
+      const changes = file.changeCount || 0
+      totalLines += changes
+
+      if (file.filePath.includes('test')) {
+        categories.tests.count++
+        categories.tests.lines += changes
+        categories.tests.files.push(file.filePath)
+      } else if (
+        file.filePath.includes('.md') ||
+        file.filePath.includes('README') ||
+        file.filePath.includes('docs/')
+      ) {
+        categories.docs.count++
+        categories.docs.lines += changes
+        categories.docs.files.push(file.filePath)
+      } else if (
+        file.filePath.includes('config') ||
+        file.filePath.includes('.json') ||
+        file.filePath.includes('package.json')
+      ) {
+        categories.config.count++
+        categories.config.lines += changes
+        categories.config.files.push(file.filePath)
+      } else if (file.filePath.includes('src/domains/')) {
+        categories.core.count++
+        categories.core.lines += changes
+        categories.core.files.push(file.filePath)
+      } else if (file.filePath.includes('src/infrastructure/')) {
+        categories.infrastructure.count++
+        categories.infrastructure.lines += changes
+        categories.infrastructure.files.push(file.filePath)
+      } else if (file.filePath.includes('bin/') || file.filePath.includes('cli')) {
+        categories.cli.count++
+        categories.cli.lines += changes
+        categories.cli.files.push(file.filePath)
+      } else {
+        categories.other.count++
+        categories.other.lines += changes
+        categories.other.files.push(file.filePath)
+      }
+    }
+
+    // Extract technical details from key files for more specific descriptions
+    const technicalDetails = this.extractTechnicalDetailsFromMerge(files, commitHash)
+
+    // Generate detailed summary bullets with specifics
+    const bullets = []
+
+    if (categories.tests.count > 0) {
+      const testSamples = categories.tests.files
+        .slice(0, 3)
+        .map((f) => f.split('/').pop())
+        .join(', ')
+      bullets.push(
+        `Added comprehensive test infrastructure with ${categories.tests.count} test files (${testSamples}${categories.tests.count > 3 ? ', ...' : ''}) totaling ${categories.tests.lines.toLocaleString()} lines of test code`
+      )
+    }
+
+    if (categories.core.count > 0) {
+      const coreSamples = categories.core.files
+        .slice(0, 3)
+        .map((f) => f.split('/').pop())
+        .join(', ')
+      const coreDetails = technicalDetails.filter(
+        (detail) => detail.includes('Enhanced') && detail.includes('.js')
+      )
+      const detailSuffix =
+        coreDetails.length > 0 ? ` with ${coreDetails.slice(0, 2).join(' and ')}` : ''
+      bullets.push(
+        `Enhanced core domain services (${coreSamples}${categories.core.count > 3 ? ', ...' : ''}) for changelog generation, AI analysis, and Git operations with ${categories.core.lines.toLocaleString()} lines changed${detailSuffix}`
+      )
+    }
+
+    if (categories.infrastructure.count > 0) {
+      const infraSamples = categories.infrastructure.files
+        .slice(0, 3)
+        .map((f) => f.split('/').pop())
+        .join(', ')
+      bullets.push(
+        `Updated provider integrations and infrastructure services (${infraSamples}${categories.infrastructure.count > 3 ? ', ...' : ''}) across ${categories.infrastructure.count} files`
+      )
+    }
+
+    if (categories.cli.count > 0) {
+      const cliSamples = categories.cli.files
+        .slice(0, 3)
+        .map((f) => f.split('/').pop())
+        .join(', ')
+      bullets.push(
+        `Improved CLI interface and command handling (${cliSamples}${categories.cli.count > 3 ? ', ...' : ''}) across ${categories.cli.count} files`
+      )
+    }
+
+    if (categories.docs.count > 0) {
+      const docSamples = categories.docs.files
+        .slice(0, 3)
+        .map((f) => f.split('/').pop())
+        .join(', ')
+      bullets.push(
+        `Updated documentation and guides (${docSamples}${categories.docs.count > 3 ? ', ...' : ''}) across ${categories.docs.count} files`
+      )
+    }
+
+    if (categories.config.count > 0) {
+      const configSamples = categories.config.files
+        .slice(0, 3)
+        .map((f) => f.split('/').pop())
+        .join(', ')
+      const configDetails = technicalDetails.filter(
+        (detail) =>
+          detail.includes('dependencies') ||
+          detail.includes('configuration') ||
+          detail.includes('.gitignore')
+      )
+      const detailSuffix =
+        configDetails.length > 0 ? ` including ${configDetails.slice(0, 2).join(' and ')}` : ''
+      bullets.push(
+        `Modified configuration files and dependencies (${configSamples}${categories.config.count > 3 ? ', ...' : ''}) across ${categories.config.count} files${detailSuffix}`
+      )
+    }
+
+    // Create enhanced merge commit description
+    let description = `${subject} brought together major updates across ${totalFiles} files with ${totalLines.toLocaleString()} total line changes:\n\n`
+
+    if (bullets.length > 0) {
+      description += bullets.map((bullet) => `  • ${bullet}`).join('\n')
+    } else {
+      description += `  • Major codebase changes across multiple modules and services`
+    }
+
+    return description
+  }
+
+  /**
+   * Extract technical details from key merge commit files for specific descriptions
+   */
+  extractTechnicalDetailsFromMerge(files, commitHash) {
+    const details = []
+
+    // Focus on key configuration and important files for technical details
+    const keyFiles = files
+      .filter((file) => {
+        const path = file.filePath.toLowerCase()
+        return (
+          path.includes('package.json') ||
+          path.includes('.config.') ||
+          path.includes('biome.json') ||
+          path.includes('.gitignore') ||
+          path.endsWith('.md') ||
+          (path.includes('src/') && file.changeCount > 100)
+        ) // Major code changes
+      })
+      .slice(0, 5) // Limit to 5 key files to avoid overwhelming
+
+    for (const file of keyFiles) {
+      try {
+        // Get a sample of the actual diff for technical details
+        const diffCommand = `git show ${commitHash} --pretty=format: -U2 -- "${file.filePath}"`
+        const diff = this.gitManager.execGitSafe(diffCommand)
+
+        if (diff && diff.length > 0) {
+          const techDetail = this.extractSpecificChanges(file.filePath, diff)
+          if (techDetail) {
+            details.push(techDetail)
+          }
+        }
+      } catch (error) {}
+    }
+
+    return details
+  }
+
+  /**
+   * Extract specific technical changes from a diff
+   */
+  extractSpecificChanges(filePath, diff) {
+    const fileName = filePath.split('/').pop()
+
+    // Package.json changes
+    if (fileName === 'package.json') {
+      const versionChanges = diff.match(/[-+]\s*"([^"]+)":\s*"([^"]+)"/g)
+      if (versionChanges && versionChanges.length > 0) {
+        const changes = versionChanges
+          .slice(0, 3)
+          .map((change) => {
+            const match = change.match(/[-+]\s*"([^"]+)":\s*"([^"]+)"/)
+            if (match) {
+              const [, pkg, version] = match
+              return `${pkg} to ${version}`
+            }
+            return change
+          })
+          .join(', ')
+        return `Updated dependencies: ${changes}${versionChanges.length > 3 ? ', ...' : ''}`
+      }
+    }
+
+    // Configuration file changes
+    if (fileName.includes('.json') || fileName.includes('.config')) {
+      const addedLines = diff
+        .split('\n')
+        .filter((line) => line.startsWith('+'))
+        .slice(0, 3)
+      if (addedLines.length > 0) {
+        const configChanges = addedLines
+          .map((line) => line.replace(/^\+\s*/, '').trim())
+          .filter((line) => line.length > 0)
+        if (configChanges.length > 0) {
+          return `Modified ${fileName} configuration: ${configChanges.slice(0, 2).join(', ')}${configChanges.length > 2 ? ', ...' : ''}`
+        }
+      }
+    }
+
+    // .gitignore changes
+    if (fileName === '.gitignore') {
+      const removedPatterns = diff
+        .split('\n')
+        .filter((line) => line.startsWith('-'))
+        .map((line) => line.replace(/^-\s*/, '').trim())
+        .filter((line) => line.length > 0)
+      const addedPatterns = diff
+        .split('\n')
+        .filter((line) => line.startsWith('+'))
+        .map((line) => line.replace(/^\+\s*/, '').trim())
+        .filter((line) => line.length > 0)
+
+      if (removedPatterns.length > 0 || addedPatterns.length > 0) {
+        let change = ''
+        if (removedPatterns.length > 0) {
+          change += `removed ${removedPatterns.slice(0, 3).join(', ')} patterns`
+        }
+        if (addedPatterns.length > 0) {
+          change +=
+            (change ? ' and ' : '') + `added ${addedPatterns.slice(0, 3).join(', ')} patterns`
+        }
+        return `Updated .gitignore: ${change}`
+      }
+    }
+
+    // Major code files - look for function/method additions
+    if (filePath.includes('src/') && fileName.endsWith('.js')) {
+      const functionMatches = diff.match(/\+.*(?:function|async|const|let|var)\s+(\w+)/g)
+      if (functionMatches && functionMatches.length > 0) {
+        const functions = functionMatches
+          .slice(0, 3)
+          .map((match) => {
+            const funcMatch = match.match(/\+.*(?:function|async|const|let|var)\s+(\w+)/)
+            return funcMatch ? funcMatch[1] : null
+          })
+          .filter(Boolean)
+
+        if (functions.length > 0) {
+          return `Enhanced ${fileName}: added ${functions.join(', ')}${functionMatches.length > 3 ? ', ...' : ''} functions`
+        }
+      }
+    }
+
+    return null
   }
 }

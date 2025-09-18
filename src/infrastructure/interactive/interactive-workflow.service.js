@@ -198,6 +198,10 @@ Provide 3 suggestions.`
     return summary
   }
 
+  async generateChangelogForCommitHashes(commitHashes) {
+    return await this.generateChangelogForCommits(commitHashes)
+  }
+
   async selectSpecificCommits() {
     return await selectSpecificCommits()
   }
@@ -207,7 +211,10 @@ Provide 3 suggestions.`
       const spinner = new SimpleSpinner(`Generating changelog for recent ${count} commits...`)
       spinner.start()
 
-      const commits = await this.gitService.getCommitsSince(null)
+      const commits =
+        (await this.gitService.getCommitsSince?.(null)) ||
+        (await this.gitService.getCommitAnalysis?.()) ||
+        []
       const recentCommits = commits.slice(0, count)
 
       if (recentCommits.length === 0) {

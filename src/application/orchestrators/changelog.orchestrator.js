@@ -316,12 +316,13 @@ export class ChangelogOrchestrator {
     return {
       systemPrompts: {
         master:
-          'You are an expert software analyst specializing in code change analysis and changelog generation.',
-        standard: 'Provide clear, concise analysis focusing on the practical impact of changes.',
+          'You are an expert software analyst specializing in code change analysis and changelog generation. Analyze code changes with precision and provide definitive, factual assessments. Never use uncertain language like "likely", "probably", "appears to", "seems to", or "possibly". Base your analysis solely on the actual changes shown in the code diffs.',
+        standard:
+          'Provide clear, concise analysis focusing on the practical impact of changes. Be definitive and factual in your descriptions.',
         detailed:
-          'Provide comprehensive technical analysis with detailed explanations and implications.',
+          'Provide comprehensive technical analysis with detailed explanations and implications. Use precise, confident language backed by evidence from the code changes.',
         enterprise:
-          'Provide enterprise-grade analysis suitable for stakeholder communication and decision-making.',
+          'Provide enterprise-grade analysis suitable for stakeholder communication and decision-making. Use authoritative, factual language that conveys confidence and accuracy.',
         changesAnalysis: 'You are an expert at analyzing code changes and their business impact.',
       },
 

@@ -16,18 +16,18 @@ export class DiffProcessor {
 
   getDefaultMaxSize() {
     const sizes = {
-      standard: 12000,
-      detailed: 20000,
-      enterprise: 30000,
+      standard: 50000, // Increased from 12000 - modern LLMs can handle more
+      detailed: 80000, // Increased from 20000
+      enterprise: 120000, // Increased from 30000
     }
     return sizes[this.analysisMode] || sizes.standard
   }
 
   getDefaultPriorityFiles() {
     const counts = {
-      standard: 15,
-      detailed: 25,
-      enterprise: 40,
+      standard: 30, // Increased from 15 - analyze more files in detail
+      detailed: 50, // Increased from 25
+      enterprise: 80, // Increased from 40
     }
     return counts[this.analysisMode] || counts.standard
   }
@@ -101,7 +101,7 @@ export class DiffProcessor {
    * Process a single file's diff with intelligent compression
    */
   processFileDiff(file, options = {}) {
-    const { budget = 1500, patterns = {}, isHighPriority = false } = options
+    const { budget = 4000, patterns = {}, isHighPriority = false } = options // Increased from 1500
 
     if (!file.diff || file.diff === 'No diff available') {
       return {
@@ -119,17 +119,18 @@ export class DiffProcessor {
       processedDiff = this.applyDiffFiltering(processedDiff, file)
     }
 
-    // Check if file matches bulk patterns
-    const patternMatch = this.matchesBulkPattern(file, patterns)
-    if (patternMatch) {
-      return {
-        ...file,
-        diff: `[Bulk ${patternMatch.type}]: ${patternMatch.description}`,
-        processed: true,
-        compressionApplied: true,
-        bulkPattern: patternMatch.type,
-      }
-    }
+    // Temporarily disable bulk pattern matching to preserve more detail
+    // TODO: Make this smarter - only apply to truly repetitive patterns
+    // const patternMatch = this.matchesBulkPattern(file, patterns)
+    // if (patternMatch) {
+    //   return {
+    //     ...file,
+    //     diff: `[Bulk ${patternMatch.type}]: ${patternMatch.description}`,
+    //     processed: true,
+    //     compressionApplied: true,
+    //     bulkPattern: patternMatch.type,
+    //   }
+    // }
 
     // Apply intelligent truncation if still too large
     if (processedDiff.length > budget) {
@@ -313,7 +314,8 @@ export class DiffProcessor {
       return trimmed.match(/^(import|require|from\s+['"])/)
     })
 
-    if (importLines.length > 10) {
+    if (importLines.length > 25) {
+      // Increased threshold from 10 to 25
       // If many import changes, summarize them
       filteredDiff = filteredDiff.replace(/^[+-]\s*(import|require|from\s+['"]).*$/gm, '')
       filteredDiff = `[${importLines.length} import/require changes summarized]\n${filteredDiff}`
