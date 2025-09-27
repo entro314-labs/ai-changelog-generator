@@ -392,7 +392,12 @@ describe('Domain Services', () => {
         return
       }
 
-      const engine = new AnalysisEngine({ silent: true })
+      // Create mock dependencies
+      const mockGitService = { getCommitsSince: () => [] }
+      const mockAiService = { hasAI: false }
+      const mockGitManager = { execGit: () => '', validateCommitHash: () => true }
+
+      const engine = new AnalysisEngine(mockGitService, mockAiService, mockGitManager)
       // Test that the constructor works and basic properties exist
       expect(engine).toBeDefined()
       expect(engine.gitService).toBeDefined()
@@ -478,12 +483,16 @@ describe('Domain Services', () => {
         return
       }
 
-      const service = new ChangelogService({ silent: true })
+      // Create mock dependencies
+      const mockGitService = { getCommitsSince: () => [] }
+      const mockAiService = { hasAI: false }
+
+      const service = new ChangelogService(mockGitService, mockAiService)
       // Test that the service has basic functionality rather than specific format methods
       expect(service).toBeDefined()
       expect(service.gitService).toBeDefined()
       expect(service.aiAnalysisService).toBeDefined()
-      expect(service.workspaceChangelogService).toBeDefined()
+      // workspaceChangelogService was merged into main service, no longer exists as separate property
     })
 
     it('should have changelog analysis methods', () => {

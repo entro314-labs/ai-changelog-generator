@@ -24,11 +24,8 @@ export class AnalysisEngine {
 
   async _ensureGitAnalyzer() {
     if (!this.gitRepoAnalyzer && this.gitService?.gitManager) {
-      const { GitRepositoryAnalyzer } = await import('../git/git-repository.analyzer.js')
-      this.gitRepoAnalyzer = new GitRepositoryAnalyzer(
-        this.gitService.gitManager,
-        this.aiAnalysisService
-      )
+      // Use the existing GitService instead of separate analyzer
+      this.gitRepoAnalyzer = this.gitService
     }
     return this.gitRepoAnalyzer
   }
@@ -503,70 +500,750 @@ export class AnalysisEngine {
     return { health: 'unknown', analysis: 'Git analyzer not available' }
   }
 
-  // Missing methods expected by tests
+  // Advanced analysis methods
   analyzeCommitPatterns(commits) {
-    return {
-      patterns: ['conventional', 'semantic'],
-      compliance: 85,
-      suggestions: [],
+    try {
+      if (!commits || commits.length === 0) {
+        return {
+          patterns: [],
+          compliance: 0,
+          suggestions: ['No commits provided for analysis'],
+        }
+      }
+
+      const patterns = []
+      let conventionalCount = 0
+      let semanticCount = 0
+
+      const suggestions = []
+
+      for (const commit of commits) {
+        const message = commit.subject || commit.message || ''
+
+        // Check for conventional commit format
+        if (/^(feat|fix|docs|style|refactor|test|chore|perf|build|ci)(\(.+\))?!?:/.test(message)) {
+          conventionalCount++
+          patterns.push('conventional')
+        }
+
+        // Check for semantic patterns
+        if (/\b(add|remove|update|fix|improve|refactor)\b/i.test(message)) {
+          semanticCount++
+          patterns.push('semantic')
+        }
+      }
+
+      const compliance = Math.round((conventionalCount / commits.length) * 100)
+
+      if (compliance < 50) {
+        suggestions.push(
+          'Consider adopting conventional commit format for better changelog generation'
+        )
+      }
+      if (conventionalCount === 0) {
+        suggestions.push('No conventional commits found. See https://www.conventionalcommits.org/')
+      }
+
+      return {
+        patterns: [...new Set(patterns)],
+        compliance,
+        conventionalCommits: conventionalCount,
+        semanticCommits: semanticCount,
+        totalCommits: commits.length,
+        suggestions,
+      }
+    } catch (error) {
+      console.warn(`Commit pattern analysis failed: ${error.message}`)
+      return {
+        patterns: [],
+        compliance: 0,
+        suggestions: ['Analysis failed - ensure valid commits provided'],
+      }
     }
   }
 
   detectChangeTypes(changes) {
-    return {
-      types: ['feat', 'fix', 'docs'],
-      confidence: 'high',
+    try {
+      if (!changes || changes.length === 0) {
+        return {
+          types: [],
+          confidence: 'low',
+          details: 'No changes provided',
+        }
+      }
+
+      const detectedTypes = new Set()
+      const typeIndicators = {
+        feat: ['feat', 'feature', 'add', 'new', 'implement', 'create'],
+        fix: ['fix', 'bug', 'issue', 'resolve', 'correct', 'repair'],
+        docs: ['doc', 'readme', 'comment', 'documentation', 'guide'],
+        test: ['test', 'spec', 'coverage', 'unit', 'integration'],
+        refactor: ['refactor', 'cleanup', 'restructure', 'reorganize'],
+        style: ['style', 'format', 'lint', 'prettier', 'formatting'],
+        perf: ['perf', 'performance', 'optimize', 'speed', 'efficient'],
+        build: ['build', 'compile', 'bundle', 'package', 'deploy'],
+        chore: ['chore', 'maintenance', 'update', 'upgrade', 'bump'],
+      }
+
+      // Analyze file paths and change descriptions
+      for (const change of changes) {
+        const searchText = [
+          change.filePath || change.path || '',
+          change.diff || '',
+          change.description || '',
+        ]
+          .join(' ')
+          .toLowerCase()
+
+        for (const [type, indicators] of Object.entries(typeIndicators)) {
+          if (indicators.some((indicator) => searchText.includes(indicator))) {
+            detectedTypes.add(type)
+          }
+        }
+
+        // File-based type detection
+        const filePath = change.filePath || change.path || ''
+        if (filePath.includes('test') || filePath.includes('spec')) {
+          detectedTypes.add('test')
+        } else if (filePath.includes('doc') || filePath.endsWith('.md')) {
+          detectedTypes.add('docs')
+        } else if (filePath.includes('config') || filePath.includes('build')) {
+          detectedTypes.add('build')
+        }
+      }
+
+      const confidence =
+        detectedTypes.size > 0 ? (detectedTypes.size === 1 ? 'high' : 'medium') : 'low'
+
+      return {
+        types: Array.from(detectedTypes),
+        confidence,
+        totalChanges: changes.length,
+        details: `Detected ${detectedTypes.size} change types from ${changes.length} changes`,
+      }
+    } catch (error) {
+      console.warn(`Change type detection failed: ${error.message}`)
+      return {
+        types: [],
+        confidence: 'low',
+        details: `Analysis failed: ${error.message}`,
+      }
     }
   }
 
   assessCodeQuality(files) {
-    return {
-      score: 8.5,
-      issues: [],
-      recommendations: [],
+    try {
+      if (!files || files.length === 0) {
+        return {
+          score: 0,
+          issues: ['No files provided for analysis'],
+          recommendations: [],
+        }
+      }
+
+      let score = 10.0
+      const issues = []
+      const recommendations = []
+
+      // Analyze each file
+      for (const file of files) {
+        const filePath = file.filePath || file.path || ''
+        const diff = file.diff || ''
+
+        // Check for code quality indicators
+        if (diff.includes('TODO') || diff.includes('FIXME')) {
+          issues.push(`${filePath}: Contains TODO/FIXME comments`)
+          score -= 0.5
+        }
+
+        if (diff.includes('console.log') && !filePath.includes('test')) {
+          issues.push(`${filePath}: Contains console.log statements`)
+          score -= 0.3
+        }
+
+        if (diff.includes('debugger')) {
+          issues.push(`${filePath}: Contains debugger statements`)
+          score -= 0.5
+        }
+
+        // Check for large functions (very basic heuristic)
+        const functionMatches = diff.match(/function\s+\w+|const\s+\w+\s*=/g)
+        if (functionMatches && functionMatches.length > 5) {
+          issues.push(`${filePath}: May contain large or complex functions`)
+          score -= 0.2
+        }
+
+        // Check for proper error handling
+        if (diff.includes('try') && !diff.includes('catch')) {
+          issues.push(`${filePath}: Incomplete error handling detected`)
+          score -= 0.3
+        }
+
+        // Check for documentation
+        if (!(diff.includes('/**') || diff.includes('//')) && filePath.endsWith('.js')) {
+          issues.push(`${filePath}: Lacks documentation comments`)
+          score -= 0.2
+        }
+      }
+
+      // Generate recommendations based on issues
+      if (issues.some((issue) => issue.includes('TODO'))) {
+        recommendations.push('Address TODO comments before releasing')
+      }
+      if (issues.some((issue) => issue.includes('console.log'))) {
+        recommendations.push('Remove debug console.log statements')
+      }
+      if (issues.some((issue) => issue.includes('documentation'))) {
+        recommendations.push('Add documentation comments to improve maintainability')
+      }
+      if (score < 7) {
+        recommendations.push('Consider code review and refactoring for better quality')
+      }
+
+      return {
+        score: Math.max(0, Math.min(10, score)),
+        issues: issues.slice(0, 10), // Limit to top 10 issues
+        recommendations,
+        filesAnalyzed: files.length,
+      }
+    } catch (error) {
+      console.warn(`Code quality assessment failed: ${error.message}`)
+      return {
+        score: 0,
+        issues: [`Assessment failed: ${error.message}`],
+        recommendations: ['Ensure valid file data is provided'],
+      }
     }
   }
 
   identifyDependencies(changes) {
-    return {
-      added: [],
-      removed: [],
-      updated: [],
+    try {
+      const dependencies = {
+        added: [],
+        removed: [],
+        updated: [],
+        details: [],
+      }
+
+      if (!changes || changes.length === 0) {
+        return dependencies
+      }
+
+      // Look for package.json changes
+      const packageJsonChanges = changes.filter((change) =>
+        (change.filePath || change.path || '').includes('package.json')
+      )
+
+      for (const change of packageJsonChanges) {
+        const diff = change.diff || ''
+
+        // Parse dependency changes from diff
+        const addedDeps = diff.match(/\+\s*"([^"]+)":\s*"([^"]+)"/g) || []
+        const removedDeps = diff.match(/-\s*"([^"]+)":\s*"([^"]+)"/g) || []
+
+        for (const match of addedDeps) {
+          const [, name, version] = match.match(/\+\s*"([^"]+)":\s*"([^"]+)"/) || []
+          if (name && version) {
+            dependencies.added.push({ name, version, file: change.filePath })
+          }
+        }
+
+        for (const match of removedDeps) {
+          const [, name, version] = match.match(/-\s*"([^"]+)":\s*"([^"]+)"/) || []
+          if (name && version) {
+            dependencies.removed.push({ name, version, file: change.filePath })
+          }
+        }
+      }
+
+      // Look for other dependency files
+      const depFiles = changes.filter((change) => {
+        const path = change.filePath || change.path || ''
+        return (
+          path.includes('requirements.txt') ||
+          path.includes('Gemfile') ||
+          path.includes('go.mod') ||
+          path.includes('Cargo.toml')
+        )
+      })
+
+      dependencies.details = [
+        `Found ${packageJsonChanges.length} package.json changes`,
+        `Found ${depFiles.length} other dependency file changes`,
+        `Total: ${dependencies.added.length} added, ${dependencies.removed.length} removed`,
+      ]
+
+      return dependencies
+    } catch (error) {
+      console.warn(`Dependency analysis failed: ${error.message}`)
+      return {
+        added: [],
+        removed: [],
+        updated: [],
+        details: [`Analysis failed: ${error.message}`],
+      }
     }
   }
 
   evaluatePerformanceImpact(changes) {
-    return {
-      impact: 'low',
-      metrics: {},
+    try {
+      const impact = {
+        impact: 'low',
+        metrics: {},
+        concerns: [],
+        improvements: [],
+      }
+
+      if (!changes || changes.length === 0) {
+        return impact
+      }
+
+      // Performance-related patterns
+      const performancePatterns = {
+        high: [
+          /database.*query/i,
+          /n\+1/i,
+          /memory.*leak/i,
+          /infinite.*loop/i,
+          /synchronous.*call/i,
+        ],
+        medium: [/algorithm/i, /cache/i, /optimization/i, /performance/i, /async/i, /await/i],
+        improvements: [
+          /optimize/i,
+          /faster/i,
+          /efficient/i,
+          /reduce.*time/i,
+          /improve.*performance/i,
+        ],
+      }
+
+      let riskScore = 0
+      let improvementScore = 0
+
+      for (const change of changes) {
+        const content = [
+          change.filePath || change.path || '',
+          change.diff || '',
+          change.description || '',
+        ].join(' ')
+
+        // Check for performance risks
+        for (const pattern of performancePatterns.high) {
+          if (pattern.test(content)) {
+            riskScore += 3
+            impact.concerns.push(`High-risk pattern detected in ${change.filePath}`)
+          }
+        }
+
+        for (const pattern of performancePatterns.medium) {
+          if (pattern.test(content)) {
+            riskScore += 1
+          }
+        }
+
+        for (const pattern of performancePatterns.improvements) {
+          if (pattern.test(content)) {
+            improvementScore += 2
+            impact.improvements.push(`Performance improvement in ${change.filePath}`)
+          }
+        }
+      }
+
+      // Determine overall impact
+      if (riskScore > 5) {
+        impact.impact = 'high'
+      } else if (riskScore > 2 || improvementScore > 3) {
+        impact.impact = 'medium'
+      }
+
+      impact.metrics = {
+        riskScore,
+        improvementScore,
+        filesAnalyzed: changes.length,
+        concernsFound: impact.concerns.length,
+        improvementsFound: impact.improvements.length,
+      }
+
+      return impact
+    } catch (error) {
+      console.warn(`Performance impact evaluation failed: ${error.message}`)
+      return {
+        impact: 'unknown',
+        metrics: { error: error.message },
+        concerns: [],
+        improvements: [],
+      }
     }
   }
 
   checkSecurityImplications(changes) {
-    return {
-      issues: [],
-      score: 'safe',
+    try {
+      const security = {
+        issues: [],
+        score: 'safe',
+        warnings: [],
+        recommendations: [],
+      }
+
+      if (!changes || changes.length === 0) {
+        return security
+      }
+
+      // Security-related patterns
+      const securityPatterns = {
+        critical: [
+          /password.*=.*['"][^'"]+['"]/i,
+          /api[_-]?key.*=.*['"][^'"]+['"]/i,
+          /secret.*=.*['"][^'"]+['"]/i,
+          /token.*=.*['"][^'"]+['"]/i,
+          /eval\s*\(/i,
+          /innerHTML\s*=/i,
+          /document\.write/i,
+        ],
+        warning: [
+          /http:\/\//i,
+          /\.execute\(/i,
+          /shell_exec/i,
+          /system\(/i,
+          /exec\(/i,
+          /sudo/i,
+          /chmod\s+777/i,
+        ],
+        auth: [/auth/i, /login/i, /permission/i, /role/i, /access/i],
+      }
+
+      let riskLevel = 0
+
+      for (const change of changes) {
+        const content = [
+          change.filePath || change.path || '',
+          change.diff || '',
+          change.description || '',
+        ].join(' ')
+
+        // Check for critical security issues
+        for (const pattern of securityPatterns.critical) {
+          if (pattern.test(content)) {
+            security.issues.push(`Critical: Potential security issue in ${change.filePath}`)
+            riskLevel += 10
+          }
+        }
+
+        // Check for warnings
+        for (const pattern of securityPatterns.warning) {
+          if (pattern.test(content)) {
+            security.warnings.push(`Warning: Security concern in ${change.filePath}`)
+            riskLevel += 3
+          }
+        }
+
+        // Check for authentication changes
+        for (const pattern of securityPatterns.auth) {
+          if (pattern.test(content)) {
+            security.warnings.push(`Authentication changes detected in ${change.filePath}`)
+            riskLevel += 1
+          }
+        }
+      }
+
+      // Determine security score
+      if (riskLevel >= 10) {
+        security.score = 'critical'
+        security.recommendations.push('Immediate security review required')
+      } else if (riskLevel >= 5) {
+        security.score = 'warning'
+        security.recommendations.push('Security review recommended')
+      } else if (riskLevel > 0) {
+        security.score = 'caution'
+        security.recommendations.push('Monitor for security implications')
+      }
+
+      if (security.issues.length > 0) {
+        security.recommendations.push('Remove hardcoded credentials immediately')
+      }
+
+      return security
+    } catch (error) {
+      console.warn(`Security analysis failed: ${error.message}`)
+      return {
+        issues: [`Analysis failed: ${error.message}`],
+        score: 'unknown',
+        warnings: [],
+        recommendations: [],
+      }
     }
   }
 
   analyzeDocumentationChanges(changes) {
-    return {
-      coverage: 'good',
-      changes: [],
+    try {
+      const documentation = {
+        coverage: 'unknown',
+        changes: [],
+        statistics: {},
+        recommendations: [],
+      }
+
+      if (!changes || changes.length === 0) {
+        return documentation
+      }
+
+      let docFiles = 0
+      let codeFiles = 0
+      let docChanges = 0
+
+      for (const change of changes) {
+        const filePath = change.filePath || change.path || ''
+        const diff = change.diff || ''
+
+        if (filePath.endsWith('.md') || filePath.includes('doc') || filePath.includes('readme')) {
+          docFiles++
+          docChanges++
+          documentation.changes.push({
+            file: filePath,
+            type: 'documentation',
+            status: change.status,
+          })
+        } else if (
+          filePath.endsWith('.js') ||
+          filePath.endsWith('.ts') ||
+          filePath.endsWith('.py')
+        ) {
+          codeFiles++
+
+          // Check for comment changes
+          if (diff.includes('/**') || diff.includes('//') || diff.includes('#')) {
+            documentation.changes.push({
+              file: filePath,
+              type: 'code-comments',
+              status: change.status,
+            })
+          }
+        }
+      }
+
+      // Calculate coverage assessment
+      const totalFiles = docFiles + codeFiles
+      if (totalFiles === 0) {
+        documentation.coverage = 'unknown'
+      } else {
+        const docRatio = docFiles / totalFiles
+        if (docRatio > 0.3) {
+          documentation.coverage = 'good'
+        } else if (docRatio > 0.1) {
+          documentation.coverage = 'fair'
+        } else {
+          documentation.coverage = 'poor'
+        }
+      }
+
+      documentation.statistics = {
+        documentationFiles: docFiles,
+        codeFiles,
+        totalChanges: documentation.changes.length,
+        documentationRatio: totalFiles > 0 ? Math.round((docFiles / totalFiles) * 100) : 0,
+      }
+
+      // Generate recommendations
+      if (documentation.coverage === 'poor') {
+        documentation.recommendations.push('Consider adding more documentation')
+      }
+      if (codeFiles > 0 && docChanges === 0) {
+        documentation.recommendations.push('Code changes detected without documentation updates')
+      }
+
+      return documentation
+    } catch (error) {
+      console.warn(`Documentation analysis failed: ${error.message}`)
+      return {
+        coverage: 'unknown',
+        changes: [],
+        statistics: { error: error.message },
+        recommendations: [],
+      }
     }
   }
 
   assessTestCoverage(changes) {
-    return {
-      coverage: 85,
-      missing: [],
+    try {
+      const coverage = {
+        coverage: 0,
+        missing: [],
+        statistics: {},
+        recommendations: [],
+      }
+
+      if (!changes || changes.length === 0) {
+        return coverage
+      }
+
+      let testFiles = 0
+      let codeFiles = 0
+      const missingTests = []
+
+      for (const change of changes) {
+        const filePath = change.filePath || change.path || ''
+
+        if (
+          filePath.includes('test') ||
+          filePath.includes('spec') ||
+          filePath.endsWith('.test.js') ||
+          filePath.endsWith('.spec.js')
+        ) {
+          testFiles++
+        } else if (
+          filePath.endsWith('.js') ||
+          filePath.endsWith('.ts') ||
+          filePath.endsWith('.py')
+        ) {
+          codeFiles++
+
+          // Check if corresponding test file exists (simplified check)
+          const hasTest = changes.some((c) => {
+            const testPath = c.filePath || c.path || ''
+            return (
+              testPath.includes(filePath.replace(/\.(js|ts|py)$/, '')) &&
+              (testPath.includes('test') || testPath.includes('spec'))
+            )
+          })
+
+          if (!hasTest) {
+            missingTests.push(filePath)
+          }
+        }
+      }
+
+      // Calculate coverage estimate
+      const totalFiles = testFiles + codeFiles
+      if (totalFiles > 0) {
+        coverage.coverage = Math.round((testFiles / totalFiles) * 100)
+      }
+
+      coverage.missing = missingTests.slice(0, 10) // Limit to top 10
+      coverage.statistics = {
+        testFiles,
+        codeFiles,
+        totalFiles,
+        estimatedCoverage: coverage.coverage,
+      }
+
+      // Generate recommendations
+      if (coverage.coverage < 50) {
+        coverage.recommendations.push('Low test coverage detected - consider adding more tests')
+      }
+      if (missingTests.length > 0) {
+        coverage.recommendations.push(
+          `${missingTests.length} code files may lack corresponding tests`
+        )
+      }
+
+      return coverage
+    } catch (error) {
+      console.warn(`Test coverage assessment failed: ${error.message}`)
+      return {
+        coverage: 0,
+        missing: [],
+        statistics: { error: error.message },
+        recommendations: [],
+      }
     }
   }
 
   evaluateArchitecturalChanges(changes) {
-    return {
-      impact: 'minimal',
-      changes: [],
+    try {
+      const architecture = {
+        impact: 'minimal',
+        changes: [],
+        patterns: [],
+        recommendations: [],
+      }
+
+      if (!changes || changes.length === 0) {
+        return architecture
+      }
+
+      // Architectural patterns to detect
+      const architecturalPatterns = {
+        'database-schema': /migration|schema|table|index/i,
+        'api-changes': /api|endpoint|route|controller/i,
+        'dependency-injection': /inject|provider|service|factory/i,
+        configuration: /config|setting|environment|env/i,
+        security: /auth|security|permission|role/i,
+        infrastructure: /docker|kubernetes|deploy|infra/i,
+      }
+
+      let impactScore = 0
+      const detectedPatterns = new Set()
+
+      for (const change of changes) {
+        const content = [
+          change.filePath || change.path || '',
+          change.diff || '',
+          change.description || '',
+        ].join(' ')
+
+        // Check for architectural patterns
+        for (const [pattern, regex] of Object.entries(architecturalPatterns)) {
+          if (regex.test(content)) {
+            detectedPatterns.add(pattern)
+            impactScore += 2
+
+            architecture.changes.push({
+              file: change.filePath || change.path,
+              pattern,
+              type: change.status,
+            })
+          }
+        }
+
+        // Check for directory structure changes
+        const filePath = change.filePath || change.path || ''
+        if (filePath.includes('/') && (change.status === 'A' || change.status === 'D')) {
+          impactScore += 1
+          architecture.changes.push({
+            file: filePath,
+            pattern: 'structure-change',
+            type: change.status,
+          })
+        }
+      }
+
+      // Determine impact level
+      if (impactScore > 10) {
+        architecture.impact = 'major'
+      } else if (impactScore > 5) {
+        architecture.impact = 'moderate'
+      } else if (impactScore > 0) {
+        architecture.impact = 'minor'
+      }
+
+      architecture.patterns = Array.from(detectedPatterns)
+
+      // Generate recommendations
+      if (detectedPatterns.has('database-schema')) {
+        architecture.recommendations.push(
+          'Database schema changes detected - ensure migration scripts are tested'
+        )
+      }
+      if (detectedPatterns.has('api-changes')) {
+        architecture.recommendations.push(
+          'API changes detected - update documentation and versioning'
+        )
+      }
+      if (architecture.impact === 'major') {
+        architecture.recommendations.push(
+          'Major architectural changes - consider architectural review'
+        )
+      }
+
+      return architecture
+    } catch (error) {
+      console.warn(`Architectural analysis failed: ${error.message}`)
+      return {
+        impact: 'unknown',
+        changes: [],
+        patterns: [],
+        recommendations: [`Analysis failed: ${error.message}`],
+      }
     }
   }
 

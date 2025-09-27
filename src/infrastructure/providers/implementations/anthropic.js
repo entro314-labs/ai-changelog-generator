@@ -2,7 +2,6 @@ import Anthropic from '@anthropic-ai/sdk'
 
 import { BaseProvider } from '../core/base-provider.js'
 import { applyMixins, ProviderResponseHandler } from '../utils/base-provider-helpers.js'
-import { buildClientOptions } from '../utils/provider-utils.js'
 
 export class AnthropicProvider extends BaseProvider {
   constructor(config) {
@@ -14,7 +13,7 @@ export class AnthropicProvider extends BaseProvider {
   }
 
   initializeClient() {
-    const clientOptions = buildClientOptions(this.getProviderConfig(), {
+    const clientOptions = this.buildClientOptions({
       timeout: 60000,
       maxRetries: 2,
       defaultHeaders: {
@@ -24,7 +23,7 @@ export class AnthropicProvider extends BaseProvider {
     })
 
     this.anthropic = new Anthropic({
-      apiKey: clientOptions.apiKey,
+      apiKey: clientOptions.ANTHROPIC_API_KEY,
       baseURL: clientOptions.baseURL,
       timeout: clientOptions.timeout,
       maxRetries: clientOptions.maxRetries,
@@ -45,7 +44,8 @@ export class AnthropicProvider extends BaseProvider {
   }
 
   getDefaultModel() {
-    return 'claude-sonnet-4-20250514'
+    const modelConfig = this.getProviderModelConfig()
+    return modelConfig.standardModel
   }
 
   async generateCompletion(messages, options = {}) {
@@ -115,127 +115,32 @@ export class AnthropicProvider extends BaseProvider {
 
   async getAvailableModels() {
     // Anthropic doesn't provide a models endpoint, return known models
+    // Use direct model names to avoid circular dependency with mixins
     return [
-      {
-        name: 'claude-sonnet-4-20250514',
-        id: 'claude-sonnet-4-20250514',
-        description: 'Claude Sonnet 4 - Latest balanced model (2025)',
-        contextWindow: 200000,
-        capabilities: {
-          reasoning: true,
-          function_calling: true,
-          json_mode: true,
-          multimodal: true,
-          largeContext: true,
-          toolUse: true,
-        },
-      },
       {
         name: 'claude-opus-4-20250514',
         id: 'claude-opus-4-20250514',
         description: 'Claude Opus 4 - Most capable model for complex tasks (2025)',
-        contextWindow: 200000,
-        capabilities: {
-          reasoning: true,
-          function_calling: true,
-          json_mode: true,
-          multimodal: true,
-          largeContext: true,
-          toolUse: true,
-          advancedReasoning: true,
-        },
+      },
+      {
+        name: 'claude-sonnet-4-20250514',
+        id: 'claude-sonnet-4-20250514',
+        description: 'Claude Sonnet 4 - Latest balanced model (2025)',
       },
       {
         name: 'claude-3.7-sonnet-20250219',
         id: 'claude-3.7-sonnet-20250219',
         description: 'Claude 3.7 Sonnet - Enhanced reasoning capabilities',
-        contextWindow: 200000,
-        capabilities: {
-          reasoning: true,
-          function_calling: true,
-          json_mode: true,
-          multimodal: true,
-          largeContext: true,
-          toolUse: true,
-        },
-      },
-      {
-        name: 'claude-3-5-sonnet-20241022',
-        id: 'claude-3-5-sonnet-20241022',
-        description: 'Claude 3.5 Sonnet - Previous generation',
-        contextWindow: 200000,
-        capabilities: {
-          reasoning: true,
-          function_calling: true,
-          json_mode: true,
-          multimodal: true,
-        },
       },
       {
         name: 'claude-3-5-haiku-20241022',
         id: 'claude-3-5-haiku-20241022',
         description: 'Claude 3.5 Haiku - Fast and efficient',
-        contextWindow: 200000,
-        capabilities: {
-          reasoning: true,
-          function_calling: true,
-          json_mode: true,
-          multimodal: true,
-        },
       },
     ]
   }
 
-  async validateModelAvailability(modelName) {
-    try {
-      const models = await this.getAvailableModels()
-      const model = models.find((m) => m.name === modelName)
-
-      if (model) {
-        return {
-          available: true,
-          model: modelName,
-          capabilities: model.capabilities,
-          contextWindow: model.contextWindow,
-        }
-      }
-      const availableModels = models.map((m) => m.name)
-      return {
-        available: false,
-        error: `Model '${modelName}' not available`,
-        alternatives: availableModels.slice(0, 5),
-      }
-    } catch (error) {
-      return {
-        available: false,
-        error: error.message,
-        alternatives: [
-          'claude-sonnet-4-20250514',
-          'claude-opus-4-20250514',
-          'claude-3.7-sonnet-20250219',
-        ],
-      }
-    }
-  }
-
-  async testConnection() {
-    try {
-      const response = await this.generateCompletion([{ role: 'user', content: 'Hello' }], {
-        max_tokens: 5,
-      })
-
-      return {
-        success: true,
-        model: response.model,
-        message: 'Connection successful',
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      }
-    }
-  }
+  // testConnection() and validateModelAvailability() now provided by mixins
 
   async testModel(modelName) {
     try {
@@ -258,73 +163,11 @@ export class AnthropicProvider extends BaseProvider {
     }
   }
 
-  getCapabilities(_modelName) {
-    return {
-      completion: true,
-      streaming: true,
-      function_calling: true,
-      json_mode: true,
-      reasoning: true,
-      multimodal: true,
-      large_context: true,
-    }
-  }
-
-  getModelRecommendation(commitDetails) {
-    const { files = 0, lines = 0, breaking = false, complex = false } = commitDetails
-
-    // Use the most capable model for complex or breaking changes
-    if (breaking || complex || files > 20 || lines > 1000) {
-      return {
-        model: 'claude-3-5-sonnet-20241022',
-        reason: 'Complex or breaking change requiring advanced reasoning',
-      }
-    }
-
-    // Use standard model for medium changes
-    if (files > 5 || lines > 200) {
-      return {
-        model: 'claude-3-sonnet-20240229',
-        reason: 'Medium-sized change requiring good analysis',
-      }
-    }
-
-    // Use efficient model for small changes
-    return {
-      model: 'claude-3-haiku-20240307',
-      reason: 'Small change, optimized for efficiency',
-    }
-  }
-
-  async selectOptimalModel(commitInfo) {
-    const recommendation = this.getModelRecommendation(commitInfo)
-    const validation = await this.validateModelAvailability(recommendation.model)
-
-    if (validation.available) {
-      return {
-        model: recommendation.model,
-        reason: recommendation.reason,
-        capabilities: validation.capabilities,
-      }
-    }
-    return {
-      model: this.getDefaultModel(),
-      reason: 'Fallback to default model',
-      capabilities: this.getCapabilities(this.getDefaultModel()),
-    }
-  }
-
-  getProviderModelConfig() {
-    return {
-      smallModel: 'claude-3-5-haiku-20241022',
-      mediumModel: 'claude-3.7-sonnet-20250219',
-      standardModel: 'claude-sonnet-4-20250514',
-      complexModel: 'claude-opus-4-20250514',
-      default: 'claude-sonnet-4-20250514',
-      temperature: 0.3,
-      maxTokens: 4096,
-    }
-  }
+  // All common methods now provided by mixins:
+  // - getCapabilities() from CapabilitiesMixin
+  // - getModelRecommendation() from ModelRecommendationMixin
+  // - selectOptimalModel() from ModelRecommendationMixin
+  // - getProviderModelConfig() from ConfigurationMixin
 }
 
 // Apply mixins to add standard provider functionality

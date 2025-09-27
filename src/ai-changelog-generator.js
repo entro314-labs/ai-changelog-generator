@@ -205,7 +205,7 @@ export class AIChangelogGenerator {
   get hasAI() {
     try {
       return this.appService?.orchestrator?.aiProvider?.isAvailable()
-    } catch (error) {
+    } catch (_error) {
       return false
     }
   }
@@ -214,7 +214,7 @@ export class AIChangelogGenerator {
     try {
       const isGitRepo = this.appService?.orchestrator?.gitManager?.isGitRepo
       return Boolean(isGitRepo)
-    } catch (error) {
+    } catch (_error) {
       return false
     }
   }

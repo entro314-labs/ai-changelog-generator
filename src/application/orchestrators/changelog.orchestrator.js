@@ -3,7 +3,9 @@ import process from 'node:process'
 import { AIAnalysisService } from '../../domains/ai/ai-analysis.service.js'
 import { AnalysisEngine } from '../../domains/analysis/analysis.engine.js'
 import { ChangelogService } from '../../domains/changelog/changelog.service.js'
+import { CommitTagger } from '../../domains/git/commit-tagger.js'
 import { GitService } from '../../domains/git/git.service.js'
+import { GitManager } from '../../domains/git/git-manager.js'
 import { InteractiveStagingService } from '../../infrastructure/interactive/interactive-staging.service.js'
 import { InteractiveWorkflowService } from '../../infrastructure/interactive/interactive-workflow.service.js'
 import { ProviderManagerService } from '../../infrastructure/providers/provider-manager.service.js'
@@ -58,9 +60,9 @@ export class ChangelogOrchestrator {
       })
       this.aiProvider = this.providerManager.getActiveProvider()
 
-      // Create lightweight implementations for missing dependencies
-      this.gitManager = await this.createGitManager()
-      this.tagger = await this.createTagger()
+      // Create proper implementations using the new classes
+      this.gitManager = new GitManager()
+      this.tagger = new CommitTagger()
       this.promptEngine = await this.createPromptEngine()
 
       // Initialize domain services with proper dependencies
@@ -121,198 +123,7 @@ export class ChangelogOrchestrator {
     }
   }
 
-  async createGitManager() {
-    const { execSync } = await this._getCachedImport('child_process')
-
-    return {
-      isGitRepo: (() => {
-        try {
-          execSync('git rev-parse --git-dir', { stdio: 'ignore' })
-          return true
-        } catch {
-          return false
-        }
-      })(),
-
-      execGit(command) {
-        try {
-          return execSync(command, { encoding: 'utf8', stdio: 'pipe' })
-        } catch (error) {
-          // Enhanced error handling with more specific messages
-          if (error.code === 128) {
-            throw new Error(
-              `Git repository error: ${error.message.includes('not a git repository') ? 'Not in a git repository' : error.message}`
-            )
-          }
-          if (error.code === 129) {
-            throw new Error(`Git command syntax error: ${command}`)
-          }
-          throw new Error(`Git command failed (${command}): ${error.message}`)
-        }
-      },
-
-      execGitSafe(command) {
-        try {
-          return execSync(command, { encoding: 'utf8', stdio: 'pipe' })
-        } catch {
-          return ''
-        }
-      },
-
-      execGitShow(command) {
-        try {
-          return execSync(command, { encoding: 'utf8', stdio: 'pipe' })
-        } catch (_error) {
-          // console.warn(`Git command failed: ${command}`);
-          // console.warn(`Error: ${error.message}`);
-          return null
-        }
-      },
-
-      validateCommitHash(hash) {
-        try {
-          execSync(`git cat-file -e ${hash}`, { stdio: 'ignore' })
-          return true
-        } catch {
-          return false
-        }
-      },
-
-      getAllBranches() {
-        try {
-          const output = execSync('git branch -a', { encoding: 'utf8' })
-          return output
-            .split('\n')
-            .filter(Boolean)
-            .map((branch) => branch.trim().replace(/^\*\s*/, ''))
-        } catch {
-          return []
-        }
-      },
-
-      getUnmergedCommits() {
-        try {
-          const output = execSync('git log --oneline --no-merges HEAD ^origin/main', {
-            encoding: 'utf8',
-          })
-          return output.split('\n').filter(Boolean)
-        } catch {
-          return []
-        }
-      },
-
-      getDanglingCommits() {
-        try {
-          const output = execSync('git fsck --no-reflog | grep "dangling commit"', {
-            encoding: 'utf8',
-          })
-          return output.split('\n').filter(Boolean)
-        } catch {
-          return []
-        }
-      },
-
-      getUntrackedFiles() {
-        try {
-          const output = execSync('git ls-files --others --exclude-standard', { encoding: 'utf8' })
-          return output.split('\n').filter(Boolean)
-        } catch {
-          return []
-        }
-      },
-
-      getRecentCommits(limit = 10) {
-        try {
-          const output = execSync(`git log --oneline -${limit}`, { encoding: 'utf8' })
-          return output.split('\n').filter(Boolean)
-        } catch {
-          return []
-        }
-      },
-
-      getComprehensiveAnalysis() {
-        return {
-          totalCommits: this.getRecentCommits(1000).length,
-          branches: this.getAllBranches(),
-          untrackedFiles: this.getUntrackedFiles(),
-        }
-      },
-
-      hasFile(filename) {
-        try {
-          execSync(`test -f ${filename}`, { stdio: 'ignore' })
-          return true
-        } catch {
-          return false
-        }
-      },
-    }
-  }
-
-  async createTagger() {
-    const { analyzeSemanticChanges, analyzeFunctionalImpact } = await import(
-      '../../shared/utils/utils.js'
-    )
-
-    return {
-      analyzeCommit(commit) {
-        const semanticChanges = []
-        const breakingChanges = []
-        const categories = []
-        const tags = []
-
-        // Basic analysis based on commit message
-        const message = commit.message.toLowerCase()
-
-        if (message.includes('breaking') || message.includes('!:')) {
-          breakingChanges.push('Breaking change detected in commit message')
-          categories.push('breaking')
-          tags.push('breaking')
-        }
-
-        if (message.startsWith('feat')) {
-          categories.push('feature')
-          tags.push('feature')
-        } else if (message.startsWith('fix')) {
-          categories.push('fix')
-          tags.push('bugfix')
-        } else if (message.startsWith('docs')) {
-          categories.push('docs')
-          tags.push('documentation')
-        }
-
-        // Analyze files if available
-        if (commit.files && commit.files.length > 0) {
-          commit.files.forEach((file) => {
-            const semantic = analyzeSemanticChanges('', file.path)
-            if (semantic.frameworks) {
-              semanticChanges.push(...semantic.frameworks)
-            }
-          })
-        }
-
-        // Determine importance
-        let importance = 'medium'
-        if (breakingChanges.length > 0 || commit.files?.length > 10) {
-          importance = 'high'
-        } else if (categories.includes('docs') || commit.files?.length < 3) {
-          importance = 'low'
-        }
-
-        return {
-          semanticChanges,
-          breakingChanges,
-          categories,
-          importance,
-          tags,
-        }
-      },
-    }
-  }
-
   async createPromptEngine() {
-    const { buildEnhancedPrompt } = await import('../../shared/utils/utils.js')
-
     return {
       systemPrompts: {
         master:
@@ -400,9 +211,7 @@ export class ChangelogOrchestrator {
   async runInteractive() {
     await this.ensureInitialized()
 
-    const { runInteractiveMode, selectSpecificCommits } = await import(
-      '../../shared/utils/utils.js'
-    )
+    const { runInteractiveMode } = await import('../../shared/utils/utils.js')
     const { confirm } = await this._getCachedImport('@clack/prompts')
 
     console.log(colors.processingMessage('🎮 Starting interactive mode...'))

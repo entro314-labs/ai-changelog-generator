@@ -3,8 +3,9 @@
  * Fallback provider when no other providers are available
  */
 
-import { ProviderError } from '../../../shared/utils/utils.js'
+import { ProviderError } from '../../../shared/utils/error-classes.js'
 import { BaseProvider } from '../core/base-provider.js'
+import { applyMixins } from '../utils/base-provider-helpers.js'
 
 class DummyProvider extends BaseProvider {
   constructor(config = {}) {
@@ -12,20 +13,20 @@ class DummyProvider extends BaseProvider {
     this.name = 'dummy'
   }
 
-  /**
-   * Get provider name
-   * @returns {string} Provider name
-   */
   getName() {
     return this.name
   }
 
-  /**
-   * Check if provider is available
-   * @returns {boolean} Always true for dummy provider
-   */
   isAvailable() {
     return true
+  }
+
+  getRequiredEnvVars() {
+    return []
+  }
+
+  getDefaultModel() {
+    return 'rule-based'
   }
 
   /**
@@ -93,20 +94,16 @@ class DummyProvider extends BaseProvider {
     }
   }
 
-  getAvailableModels() {
+  async getAvailableModels() {
     return [
       {
         id: 'rule-based',
         name: 'Rule-based Fallback',
-        contextWindow: 0,
-        maxOutput: 0,
-        inputCost: 0,
-        outputCost: 0,
-        features: [],
         description: 'No AI model available - configure a provider',
       },
     ]
   }
 }
 
-export default DummyProvider
+// Apply minimal mixins (error handling only - dummy provider doesn't need full functionality)
+export default applyMixins ? applyMixins(DummyProvider, 'dummy', []) : DummyProvider

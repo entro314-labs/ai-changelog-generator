@@ -2,7 +2,7 @@
  * Abstract Base Provider for AI models.
  * Defines the interface that all provider plugins must implement.
  */
-import { AbstractMethodError } from '../../../shared/utils/utils.js'
+import { AbstractMethodError } from '../../../shared/utils/error-classes.js'
 
 export class BaseProvider {
   constructor(config) {

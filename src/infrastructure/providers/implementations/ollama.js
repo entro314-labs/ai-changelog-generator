@@ -2,10 +2,9 @@ import process from 'node:process'
 
 import { Ollama } from 'ollama'
 
-import { ProviderError } from '../../../shared/utils/utils.js'
+import { ProviderError } from '../../../shared/utils/error-classes.js'
 import { BaseProvider } from '../core/base-provider.js'
 import { applyMixins } from '../utils/base-provider-helpers.js'
-import { buildClientOptions } from '../utils/provider-utils.js'
 
 class OllamaProvider extends BaseProvider {
   constructor(config) {
@@ -17,12 +16,12 @@ class OllamaProvider extends BaseProvider {
   }
 
   initializeClient() {
-    const clientOptions = buildClientOptions(this.getProviderConfig(), {
+    const clientOptions = this.buildClientOptions({
       host: 'http://localhost:11434',
     })
 
     this.client = new Ollama({
-      host: clientOptions.host,
+      host: clientOptions.OLLAMA_HOST || clientOptions.host,
     })
   }
 
@@ -32,6 +31,15 @@ class OllamaProvider extends BaseProvider {
 
   isAvailable() {
     return !!this.config.OLLAMA_HOST
+  }
+
+  getRequiredEnvVars() {
+    return ['OLLAMA_HOST']
+  }
+
+  getDefaultModel() {
+    const modelConfig = this.getProviderModelConfig()
+    return modelConfig.standardModel
   }
 
   async generateCompletion(messages, options = {}) {

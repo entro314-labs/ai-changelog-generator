@@ -350,17 +350,17 @@ class ValidateCommand extends BaseCommand {
     const validation = await appService.validateConfiguration()
 
     if (validation.valid) {
-      console.log(colors.successMessage('✅ Configuration is valid'))
+      EnhancedConsole.success('✅ Configuration is valid')
     } else {
-      console.log(colors.errorMessage('❌ Configuration has issues:'))
+      EnhancedConsole.error('❌ Configuration has issues:')
       validation.issues.forEach((issue) => {
-        console.log(`  - ${issue}`)
+        EnhancedConsole.log(`  - ${issue}`)
       })
 
       if (validation.recommendations.length > 0) {
-        console.log(colors.infoMessage('\n💡 Recommendations:'))
+        EnhancedConsole.info('\n💡 Recommendations:')
         validation.recommendations.forEach((rec) => {
-          console.log(`  - ${rec}`)
+          EnhancedConsole.log(`  - ${rec}`)
         })
       }
     }
@@ -559,7 +559,7 @@ class ProvidersCommand extends BaseCommand {
         colors.dim('\nUse "ai-changelog providers configure <provider>" to set up a provider')
       )
     } catch (error) {
-      console.error(colors.errorMessage(`Error listing providers: ${error.message}`))
+      EnhancedConsole.error(`Error listing providers: ${error.message}`)
     }
   }
 
@@ -582,7 +582,7 @@ class ProvidersCommand extends BaseCommand {
         )
       }
     } catch (error) {
-      console.error(colors.errorMessage(`Error switching provider: ${error.message}`))
+      EnhancedConsole.error(`Error switching provider: ${error.message}`)
     }
   }
 
@@ -642,7 +642,7 @@ class ProvidersCommand extends BaseCommand {
       console.log(colors.infoMessage('\nAfter adding the configuration, run:'))
       console.log(colors.highlight(`ai-changelog providers validate ${providerName}`))
     } catch (error) {
-      console.error(colors.errorMessage(`Error configuring provider: ${error.message}`))
+      EnhancedConsole.error(`Error configuring provider: ${error.message}`)
     }
   }
 
@@ -681,7 +681,7 @@ class ProvidersCommand extends BaseCommand {
         }
       }
     } catch (error) {
-      console.error(colors.errorMessage(`Error validating provider: ${error.message}`))
+      EnhancedConsole.error(`Error validating provider: ${error.message}`)
     }
   }
 }

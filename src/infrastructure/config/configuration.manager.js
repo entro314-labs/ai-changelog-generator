@@ -579,4 +579,12 @@ export class ConfigurationManager {
     const pattern = this.changelogConfig.changelog.commitIgnoreRegexPattern
     return pattern ? new RegExp(pattern) : /^WIP /
   }
+
+  /**
+   * Get the complete configuration object
+   * @returns {Object} Configuration object
+   */
+  getConfig() {
+    return this.config || {}
+  }
 }

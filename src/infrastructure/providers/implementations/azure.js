@@ -3,6 +3,7 @@ import { AzureOpenAI } from 'openai'
 
 import { BaseProvider } from '../core/base-provider.js'
 import { applyMixins, ProviderResponseHandler } from '../utils/base-provider-helpers.js'
+import { getProviderModelConfig } from '../utils/model-config.js'
 
 class AzureOpenAIProvider extends BaseProvider {
   constructor(config) {
@@ -168,59 +169,11 @@ class AzureOpenAIProvider extends BaseProvider {
 
   // Azure-specific helper methods
   getDeploymentName() {
-    return this.config.AZURE_OPENAI_DEPLOYMENT_NAME || this.getProviderModelConfig().standardModel
+    const modelConfig = this.getProviderModelConfig()
+    return this.config.AZURE_OPENAI_DEPLOYMENT_NAME || modelConfig.standardModel
   }
 
-  getModelContextWindow(modelName) {
-    const contextWindows = {
-      // Latest 2025 models (Azure exclusive)
-      o4: 500000,
-      'o4-mini': 200000,
-      o3: 300000,
-      'o3-mini': 150000,
-      // Standard 2025 models
-      'gpt-4o': 128000,
-      'gpt-4o-mini': 128000,
-      o1: 200000,
-      'o1-mini': 128000,
-      'gpt-4.1': 200000,
-      'gpt-4.1-mini': 200000,
-      'gpt-4.1-nano': 200000,
-      // Legacy models
-      'gpt-4': 8192,
-      'gpt-4-32k': 32768,
-      'gpt-4-turbo': 128000,
-      'gpt-35-turbo': 4096,
-      'gpt-35-turbo-16k': 16384,
-    }
-    return contextWindows[modelName] || 128000
-  }
-
-  getModelCapabilities(modelName) {
-    return {
-      reasoning:
-        modelName.includes('o1') ||
-        modelName.includes('o3') ||
-        modelName.includes('o4') ||
-        modelName.includes('gpt-4'),
-      function_calling: !(
-        modelName.includes('o1') ||
-        modelName.includes('o3') ||
-        modelName.includes('o4')
-      ), // o-series models don't support function calling
-      json_mode: true,
-      multimodal: modelName.includes('gpt-4o') || modelName.includes('gpt-4.1'),
-      largeContext:
-        modelName.includes('4.1') ||
-        modelName.includes('o1') ||
-        modelName.includes('o3') ||
-        modelName.includes('o4') ||
-        modelName.includes('4o'),
-      promptCaching: modelName.includes('4.1'),
-      advancedReasoning: modelName.includes('o3') || modelName.includes('o4'),
-      azureExclusive: modelName.includes('o3') || modelName.includes('o4'),
-    }
-  }
+  // Model capabilities now handled by centralized CapabilitiesMixin
 
   // Azure-specific method for testing deployment availability
   async testDeployment(deploymentName) {
@@ -257,19 +210,19 @@ class AzureOpenAIProvider extends BaseProvider {
       return this._cachedDeployments
     }
 
-    // Get base config directly to avoid recursion
-    const baseConfig = {
-      commonDeployments: ['o4', 'o3', 'gpt-4.1', 'gpt-4o', 'gpt-35-turbo', 'o1'],
-      fallbacks: ['gpt-4.1', 'gpt-4o', 'o1', 'gpt-35-turbo'],
-    }
+    // Get model config from centralized system (avoiding circular dependency)
+    const modelConfig = getProviderModelConfig('azure', this.config)
 
     const potentialDeployments = [
       // User configured deployment
       this.config.AZURE_OPENAI_DEPLOYMENT_NAME,
-      // Common deployment names
-      ...baseConfig.commonDeployments,
+      // Models from config
+      modelConfig.complexModel,
+      modelConfig.standardModel,
+      modelConfig.mediumModel,
+      modelConfig.smallModel,
       // Fallback models
-      ...baseConfig.fallbacks,
+      ...modelConfig.fallbacks,
     ]
       .filter(Boolean)
       .filter((v, i, a) => a.indexOf(v) === i) // Remove duplicates
@@ -294,16 +247,16 @@ class AzureOpenAIProvider extends BaseProvider {
 
       if (availableDeployments.length === 0) {
         console.warn('⚠️  No Azure deployments found. Using configured deployment name as fallback.')
-        // Fallback to configured deployment even if untested, preferring latest models
-        const fallback = this.config.AZURE_OPENAI_DEPLOYMENT_NAME || 'o4' || 'gpt-4.1'
+        // Fallback to configured deployment even if untested
+        const fallback = this.config.AZURE_OPENAI_DEPLOYMENT_NAME || modelConfig.standardModel
         return [fallback]
       }
 
       return availableDeployments
     } catch (error) {
       console.warn('⚠️  Failed to detect Azure deployments:', error.message)
-      // Return common deployments as fallback
-      return baseConfig.commonDeployments
+      // Return fallback models from config
+      return modelConfig.fallbacks
     }
   }
 

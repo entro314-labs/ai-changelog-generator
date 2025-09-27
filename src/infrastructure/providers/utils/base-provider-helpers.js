@@ -446,6 +446,17 @@ export function ConfigurationMixin(providerName, defaults = {}) {
       return buildClientOptions(providerConfig, { ...defaults, ...extraDefaults })
     },
 
+    getRequiredEnvVars() {
+      // Default implementation - providers should override if needed
+      const baseKey = `${providerName.toUpperCase()}_API_KEY`
+      return [baseKey]
+    },
+
+    getDefaultModel() {
+      const modelConfig = this.getProviderModelConfig()
+      return modelConfig.standardModel || 'unknown'
+    },
+
     getProviderInfo() {
       const providerConfig = this.getProviderConfig()
       const availableModels = this.getAvailableModels ? this.getAvailableModels() : []

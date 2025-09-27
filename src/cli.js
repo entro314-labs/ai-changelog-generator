@@ -11,7 +11,6 @@ import { hideBin } from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 
 import { AIChangelogGenerator } from './ai-changelog-generator.js'
-import colors from './shared/constants/colors.js'
 import { EnhancedConsole, SimpleSpinner } from './shared/utils/cli-ui.js'
 
 async function runCLI() {
@@ -91,14 +90,14 @@ async function runCLI() {
     }
 
     if (argv.validate) {
-      console.log(colors.infoMessage('🔧 Validating configuration...'))
+      EnhancedConsole.info('🔧 Validating configuration...')
       await generator.validateConfiguration()
-      console.log(colors.successMessage('✅ Configuration is valid'))
+      EnhancedConsole.success('✅ Configuration is valid')
       return
     }
 
     if (argv.interactive) {
-      console.log(colors.infoMessage('🎮 Starting interactive mode...'))
+      EnhancedConsole.info('🎮 Starting interactive mode...')
       await generator.runInteractive()
       return
     }
@@ -170,7 +169,7 @@ export { runCLI }
 // If this file is run directly, execute CLI
 if (import.meta.url === `file://${process.argv[1]}`) {
   runCLI().catch((error) => {
-    console.error('CLI Error:', error.message)
+    EnhancedConsole.error('CLI Error:', error.message)
     process.exit(1)
   })
 }

@@ -3,8 +3,9 @@
  * Used for testing without real API credentials
  */
 
-import { ProviderError } from '../../../shared/utils/utils.js'
+import { ProviderError } from '../../../shared/utils/error-classes.js'
 import { BaseProvider } from '../core/base-provider.js'
+import { applyMixins } from '../utils/base-provider-helpers.js'
 
 class MockProvider extends BaseProvider {
   constructor(config = {}) {
@@ -17,20 +18,20 @@ class MockProvider extends BaseProvider {
     this.models = ['mock-basic', 'mock-standard', 'mock-advanced']
   }
 
-  /**
-   * Get provider name
-   * @returns {string} Provider name
-   */
   getName() {
     return this.name
   }
 
-  /**
-   * Check if provider is available
-   * @returns {boolean} Always true for mock provider
-   */
   isAvailable() {
     return true
+  }
+
+  getRequiredEnvVars() {
+    return []
+  }
+
+  getDefaultModel() {
+    return 'mock-standard'
   }
 
   /**
@@ -232,40 +233,26 @@ class MockProvider extends BaseProvider {
     }
   }
 
-  getAvailableModels() {
+  async getAvailableModels() {
     return [
       {
         id: 'mock-basic',
         name: 'Mock Basic Model',
-        contextWindow: 2048,
-        maxOutput: 1000,
-        inputCost: 0,
-        outputCost: 0,
-        features: ['text', 'testing'],
         description: 'Basic mock model for simple testing',
       },
       {
         id: 'mock-standard',
         name: 'Mock Standard Model',
-        contextWindow: 4096,
-        maxOutput: 2000,
-        inputCost: 0,
-        outputCost: 0,
-        features: ['text', 'tools', 'testing'],
         description: 'Standard mock model for moderate testing',
       },
       {
         id: 'mock-advanced',
         name: 'Mock Advanced Model',
-        contextWindow: 8192,
-        maxOutput: 4000,
-        inputCost: 0,
-        outputCost: 0,
-        features: ['text', 'tools', 'json', 'testing'],
         description: 'Advanced mock model for complex testing scenarios',
       },
     ]
   }
 }
 
-export default MockProvider
+// Apply mixins for enhanced functionality
+export default applyMixins ? applyMixins(MockProvider, 'mock') : MockProvider

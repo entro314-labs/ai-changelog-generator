@@ -385,7 +385,7 @@ export class GitService {
         // Create a meaningful diff summary for the AI
         const diff = this.createMergeCommitDiffSummary(
           filePath,
-          parseInt(changes),
+          parseInt(changes, 10),
           additions,
           deletions,
           commitHash
@@ -404,7 +404,7 @@ export class GitService {
           semanticChanges: { patterns: ['merge-commit'] },
           functionalImpact: { level: changes > 50 ? 'high' : 'medium' },
           isMergeCommit: true,
-          changeCount: parseInt(changes),
+          changeCount: parseInt(changes, 10),
           additions,
           deletions,
         })
@@ -642,7 +642,7 @@ export class GitService {
             details.push(techDetail)
           }
         }
-      } catch (error) {}
+      } catch (_error) {}
     }
 
     return details
@@ -708,8 +708,7 @@ export class GitService {
           change += `removed ${removedPatterns.slice(0, 3).join(', ')} patterns`
         }
         if (addedPatterns.length > 0) {
-          change +=
-            (change ? ' and ' : '') + `added ${addedPatterns.slice(0, 3).join(', ')} patterns`
+          change += `${change ? ' and ' : ''}added ${addedPatterns.slice(0, 3).join(', ')} patterns`
         }
         return `Updated .gitignore: ${change}`
       }
@@ -734,5 +733,439 @@ export class GitService {
     }
 
     return null
+  }
+
+  // Repository analysis methods (formerly in GitRepositoryAnalyzer)
+  async assessRepositoryHealth(config = {}) {
+    try {
+      const health = {
+        healthy: true,
+        score: 100,
+        issues: [],
+        recommendations: [],
+        metrics: {
+          branches: 0,
+          commits: 0,
+          untrackedFiles: 0,
+          staleBranches: 0,
+          largeBinaryFiles: 0,
+          commitFrequency: 0,
+        },
+      }
+
+      // Get basic repository statistics
+      try {
+        const branchesOutput = this.gitManager.execGitSafe('git branch -a')
+        health.metrics.branches = branchesOutput.split('\n').filter((line) => line.trim()).length
+
+        const commitsOutput = this.gitManager.execGitSafe('git rev-list --all --count')
+        health.metrics.commits = parseInt(commitsOutput.trim(), 10) || 0
+
+        const untrackedOutput = this.gitManager.execGitSafe(
+          'git ls-files --others --exclude-standard'
+        )
+        health.metrics.untrackedFiles = untrackedOutput
+          .split('\n')
+          .filter((line) => line.trim()).length
+      } catch (error) {
+        health.issues.push(`Failed to collect basic metrics: ${error.message}`)
+        health.score -= 10
+      }
+
+      // Check for stale branches (no commits in last 90 days)
+      try {
+        const staleBranchesOutput = this.gitManager.execGitSafe(
+          'git for-each-ref --format="%(refname:short) %(committerdate:iso)" refs/heads'
+        )
+        const staleThreshold = new Date()
+        staleThreshold.setDate(staleThreshold.getDate() - 90)
+
+        health.metrics.staleBranches = staleBranchesOutput.split('\n').filter((line) => {
+          const parts = line.trim().split(' ')
+          if (parts.length < 2) return false
+          const commitDate = new Date(parts[1])
+          return commitDate < staleThreshold
+        }).length
+
+        if (health.metrics.staleBranches > 5) {
+          health.issues.push(
+            `${health.metrics.staleBranches} stale branches found (no commits in 90+ days)`
+          )
+          health.recommendations.push(
+            'Consider cleaning up old branches with: git branch -d <branch-name>'
+          )
+          health.score -= Math.min(20, health.metrics.staleBranches * 2)
+        }
+      } catch (error) {
+        console.warn(`Warning: Could not check for stale branches: ${error.message}`)
+      }
+
+      // Check for large binary files in repository
+      try {
+        const largeFilesOutput = this.gitManager.execGitSafe(
+          'git rev-list --objects --all | git cat-file --batch-check="%(objecttype) %(objectsize) %(rest)" | grep "^blob" | sort -nr -k2 | head -10'
+        )
+        const largeFiles = largeFilesOutput
+          .split('\n')
+          .filter((line) => line.trim())
+          .map((line) => {
+            const parts = line.split(' ')
+            return { size: parseInt(parts[1], 10), path: parts.slice(2).join(' ') }
+          })
+          .filter((file) => file.size > 10 * 1024 * 1024) // 10MB threshold
+
+        health.metrics.largeBinaryFiles = largeFiles.length
+        if (largeFiles.length > 0) {
+          health.issues.push(`${largeFiles.length} large files found (>10MB)`)
+          health.recommendations.push('Consider using Git LFS for large binary files')
+          health.score -= Math.min(15, largeFiles.length * 5)
+        }
+      } catch (error) {
+        console.warn(`Warning: Could not check for large files: ${error.message}`)
+      }
+
+      // Calculate commit frequency (commits per week over last month)
+      try {
+        const oneMonthAgo = new Date()
+        oneMonthAgo.setDate(oneMonthAgo.getDate() - 30)
+        const recentCommitsOutput = this.gitManager.execGitSafe(
+          `git rev-list --count --since="${oneMonthAgo.toISOString()}" HEAD`
+        )
+        const recentCommits = parseInt(recentCommitsOutput.trim(), 10) || 0
+        health.metrics.commitFrequency = Math.round((recentCommits / 4) * 10) / 10 // commits per week
+
+        if (health.metrics.commitFrequency < 1) {
+          health.issues.push('Low commit frequency (less than 1 commit per week)')
+          health.recommendations.push('Consider more frequent commits for better project tracking')
+          health.score -= 5
+        }
+      } catch (error) {
+        console.warn(`Warning: Could not calculate commit frequency: ${error.message}`)
+      }
+
+      // Check if working directory is clean
+      try {
+        const statusOutput = this.gitManager.execGitSafe('git status --porcelain')
+        if (statusOutput.trim()) {
+          health.issues.push('Working directory has uncommitted changes')
+          health.recommendations.push('Commit or stash working directory changes')
+          health.score -= 5
+        }
+      } catch (error) {
+        health.issues.push(`Could not check working directory status: ${error.message}`)
+        health.score -= 5
+      }
+
+      // Check for .gitignore file
+      try {
+        const gitignoreExists = this.gitManager.execGitSafe('test -f .gitignore && echo "exists"')
+        if (!gitignoreExists.includes('exists')) {
+          health.issues.push('No .gitignore file found')
+          health.recommendations.push('Add a .gitignore file to exclude unwanted files')
+          health.score -= 10
+        }
+      } catch (error) {
+        console.warn(`Warning: Could not check .gitignore: ${error.message}`)
+      }
+
+      // Determine overall health
+      health.healthy = health.score >= 70
+      health.score = Math.max(0, health.score)
+
+      return health
+    } catch (error) {
+      console.error(`Repository health assessment failed: ${error.message}`)
+      return {
+        healthy: false,
+        score: 0,
+        issues: [`Health assessment failed: ${error.message}`],
+        recommendations: ['Ensure you are in a valid Git repository'],
+        metrics: { branches: 0, commits: 0, untrackedFiles: 0 },
+      }
+    }
+  }
+
+  async analyzeBranches(format = 'markdown') {
+    try {
+      const analysis = {
+        branches: [],
+        unmergedCommits: [],
+        danglingCommits: [],
+        analysis: '',
+      }
+
+      // Get all branches with their last commit info
+      const branchesOutput = this.gitManager.execGitSafe(
+        'git for-each-ref --format="%(refname:short)|%(committerdate:iso)|%(authorname)|%(subject)" refs/heads refs/remotes'
+      )
+
+      analysis.branches = branchesOutput
+        .split('\n')
+        .filter((line) => line.trim())
+        .map((line) => {
+          const [name, date, author, subject] = line.split('|')
+          const isRemote = name.startsWith('origin/')
+          const isStale = new Date() - new Date(date) > 90 * 24 * 60 * 60 * 1000 // 90 days
+
+          return {
+            name: name.trim(),
+            lastCommitDate: date,
+            lastCommitAuthor: author,
+            lastCommitSubject: subject,
+            isRemote,
+            isStale,
+            type: isRemote ? 'remote' : 'local',
+          }
+        })
+
+      // Find unmerged commits (commits in feature branches not in main/master)
+      try {
+        const mainBranch = this.findMainBranch()
+        if (mainBranch) {
+          const localBranches = analysis.branches.filter(
+            (b) => !b.isRemote && b.name !== mainBranch
+          )
+
+          for (const branch of localBranches) {
+            try {
+              const unmergedOutput = this.gitManager.execGitSafe(
+                `git log ${mainBranch}..${branch.name} --oneline`
+              )
+              const unmergedCommits = unmergedOutput
+                .split('\n')
+                .filter((line) => line.trim())
+                .map((line) => {
+                  const [hash, ...messageParts] = line.split(' ')
+                  return {
+                    hash: hash.trim(),
+                    message: messageParts.join(' '),
+                    branch: branch.name,
+                  }
+                })
+
+              analysis.unmergedCommits.push(...unmergedCommits)
+            } catch (error) {
+              console.warn(`Could not check unmerged commits for ${branch.name}: ${error.message}`)
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(`Could not analyze unmerged commits: ${error.message}`)
+      }
+
+      // Find dangling commits (unreachable commits)
+      try {
+        const danglingOutput = this.gitManager.execGitSafe('git fsck --unreachable --no-reflogs')
+        analysis.danglingCommits = danglingOutput
+          .split('\n')
+          .filter((line) => line.includes('unreachable commit'))
+          .map((line) => {
+            const hash = line.split(' ').pop()
+            return { hash, type: 'dangling' }
+          })
+      } catch (error) {
+        console.warn(`Could not check for dangling commits: ${error.message}`)
+      }
+
+      // Generate analysis summary
+      const totalBranches = analysis.branches.length
+      const localBranches = analysis.branches.filter((b) => !b.isRemote).length
+      const staleBranches = analysis.branches.filter((b) => b.isStale).length
+      const unmergedCount = analysis.unmergedCommits.length
+      const danglingCount = analysis.danglingCommits.length
+
+      if (format === 'markdown') {
+        analysis.analysis = `# Branch Analysis
+
+## Summary
+- **Total branches**: ${totalBranches} (${localBranches} local, ${totalBranches - localBranches} remote)
+- **Stale branches**: ${staleBranches} (no commits in 90+ days)
+- **Unmerged commits**: ${unmergedCount}
+- **Dangling commits**: ${danglingCount}
+
+## Branch Details
+${analysis.branches
+  .map(
+    (b) =>
+      `- **${b.name}** ${b.isStale ? '(stale)' : ''}\n  - Last commit: ${b.lastCommitDate} by ${b.lastCommitAuthor}\n  - Subject: ${b.lastCommitSubject}`
+  )
+  .join('\n')}
+
+${
+  unmergedCount > 0
+    ? `\n## Unmerged Commits\n${analysis.unmergedCommits
+        .slice(0, 10)
+        .map((c) => `- ${c.hash}: ${c.message} (${c.branch})`)
+        .join('\n')}${unmergedCount > 10 ? `\n... and ${unmergedCount - 10} more` : ''}`
+    : ''
+}
+
+${
+  danglingCount > 0
+    ? `\n## Dangling Commits\n${analysis.danglingCommits
+        .slice(0, 5)
+        .map((c) => `- ${c.hash}`)
+        .join('\n')}${danglingCount > 5 ? `\n... and ${danglingCount - 5} more` : ''}`
+    : ''
+}
+`
+      } else {
+        analysis.analysis = `Found ${totalBranches} branches (${staleBranches} stale), ${unmergedCount} unmerged commits, ${danglingCount} dangling commits`
+      }
+
+      return analysis
+    } catch (error) {
+      console.error(`Branch analysis failed: ${error.message}`)
+      return {
+        branches: [],
+        unmergedCommits: [],
+        danglingCommits: [],
+        analysis: `Branch analysis failed: ${error.message}`,
+      }
+    }
+  }
+
+  async analyzeComprehensive(includeRecommendations = true) {
+    try {
+      console.log('🔍 Performing comprehensive repository analysis...')
+
+      const analysis = {
+        analysis: '',
+        recommendations: includeRecommendations ? [] : undefined,
+        metrics: {},
+        health: {},
+      }
+
+      // Get repository health
+      analysis.health = await this.assessRepositoryHealth()
+
+      // Get branch analysis
+      const branchAnalysis = await this.analyzeBranches('object')
+
+      // Get repository statistics
+      analysis.metrics = {
+        ...analysis.health.metrics,
+        totalCommits: analysis.health.metrics.commits,
+        totalBranches: branchAnalysis.branches.length,
+        unmergedCommits: branchAnalysis.unmergedCommits.length,
+        danglingCommits: branchAnalysis.danglingCommits.length,
+      }
+
+      // Analyze commit patterns
+      try {
+        const commitHistory = this.gitManager.execGitSafe('git log --oneline --since="30 days ago"')
+        const recentCommits = commitHistory.split('\n').filter((line) => line.trim())
+
+        const conventionalCommits = recentCommits.filter((commit) =>
+          /^[a-f0-9]+\s+(feat|fix|docs|style|refactor|test|chore|perf|build|ci)(\(.+\))?:/.test(
+            commit
+          )
+        )
+
+        analysis.metrics.conventionalCommitRatio =
+          recentCommits.length > 0
+            ? Math.round((conventionalCommits.length / recentCommits.length) * 100)
+            : 0
+
+        analysis.metrics.recentCommitsCount = recentCommits.length
+      } catch (error) {
+        console.warn(`Could not analyze commit patterns: ${error.message}`)
+        analysis.metrics.conventionalCommitRatio = 0
+        analysis.metrics.recentCommitsCount = 0
+      }
+
+      // Calculate repository age
+      try {
+        const firstCommitOutput = this.gitManager.execGitSafe(
+          'git log --reverse --format="%ci" | head -1'
+        )
+        if (firstCommitOutput.trim()) {
+          const firstCommitDate = new Date(firstCommitOutput.trim())
+          const ageInDays = Math.floor((new Date() - firstCommitDate) / (1000 * 60 * 60 * 24))
+          analysis.metrics.repositoryAgeInDays = ageInDays
+        }
+      } catch (error) {
+        console.warn(`Could not determine repository age: ${error.message}`)
+      }
+
+      // Generate comprehensive analysis
+      const healthScore = analysis.health.score
+      const isHealthy = analysis.health.healthy
+      const staleBranches = branchAnalysis.branches.filter((b) => b.isStale).length
+      const conventionalRatio = analysis.metrics.conventionalCommitRatio
+
+      analysis.analysis = `# Comprehensive Repository Analysis
+
+## Overall Health: ${healthScore}/100 ${isHealthy ? '✅' : '⚠️'}
+
+### Repository Metrics
+- **Age**: ${analysis.metrics.repositoryAgeInDays || 'Unknown'} days
+- **Total Commits**: ${analysis.metrics.totalCommits}
+- **Branches**: ${analysis.metrics.totalBranches} (${staleBranches} stale)
+- **Recent Activity**: ${analysis.metrics.recentCommitsCount} commits in last 30 days
+- **Commit Convention**: ${conventionalRatio}% following conventional commits
+
+### Issues Found
+${analysis.health.issues.length > 0 ? analysis.health.issues.map((issue) => `- ${issue}`).join('\n') : '- No major issues detected'}
+
+### Branch Health
+- **Unmerged commits**: ${analysis.metrics.unmergedCommits}
+- **Dangling commits**: ${analysis.metrics.danglingCommits}
+- **Stale branches**: ${staleBranches}
+`
+
+      // Add recommendations if requested
+      if (includeRecommendations && analysis.health.recommendations.length > 0) {
+        analysis.recommendations = [
+          ...analysis.health.recommendations,
+          ...(staleBranches > 3
+            ? ['Clean up stale branches to improve repository organization']
+            : []),
+          ...(conventionalRatio < 50
+            ? ['Consider adopting conventional commit format for better changelog generation']
+            : []),
+          ...(analysis.metrics.unmergedCommits > 10
+            ? ['Review and merge or clean up unmerged commits']
+            : []),
+        ]
+      }
+
+      return analysis
+    } catch (error) {
+      console.error(`Comprehensive analysis failed: ${error.message}`)
+      return {
+        analysis: `Comprehensive analysis failed: ${error.message}`,
+        recommendations: includeRecommendations
+          ? ['Ensure you are in a valid Git repository']
+          : undefined,
+        metrics: {},
+        health: { healthy: false, score: 0 },
+      }
+    }
+  }
+
+  // Helper method to find the main branch (master/main)
+  findMainBranch() {
+    try {
+      const branches = this.gitManager.execGitSafe('git branch -l')
+      const branchNames = branches
+        .split('\n')
+        .map((b) => b.replace('*', '').trim())
+        .filter(Boolean)
+
+      // Check for common main branch names in order of preference
+      const mainBranchCandidates = ['main', 'master', 'develop', 'dev']
+      for (const candidate of mainBranchCandidates) {
+        if (branchNames.includes(candidate)) {
+          return candidate
+        }
+      }
+
+      // Fallback to first branch if no standard main branch found
+      return branchNames[0] || 'main'
+    } catch (error) {
+      console.warn(`Could not determine main branch: ${error.message}`)
+      return 'main'
+    }
   }
 }

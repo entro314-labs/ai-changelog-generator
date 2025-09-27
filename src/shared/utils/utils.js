@@ -17,57 +17,12 @@ import fs from 'node:fs'
 
 import colors from '../constants/colors.js'
 import { DiffProcessor } from './diff-processor.js'
+import { AbstractMethodError, AIChangelogError, ProviderError } from './error-classes.js'
 import JsonUtils from './json-utils.js'
 
-// ========================================
-// ERROR HANDLING UTILITIES
-// ========================================
-
-/**
- * Base error class for domain-specific errors
- */
-export class AIChangelogError extends Error {
-  constructor(message, type, context = {}, originalError = null) {
-    super(message)
-    this.name = this.constructor.name
-    this.type = type
-    this.context = context
-    this.originalError = originalError
-    this.timestamp = new Date().toISOString()
-  }
-
-  toJSON() {
-    return {
-      name: this.name,
-      message: this.message,
-      type: this.type,
-      context: this.context,
-      timestamp: this.timestamp,
-      stack: this.stack,
-    }
-  }
-}
-
-/**
- * Abstract method error for base classes
- */
-export class AbstractMethodError extends AIChangelogError {
-  constructor(message, className, methodName, context = {}) {
-    super(message, 'abstract', { className, methodName, ...context })
-    this.className = className
-    this.methodName = methodName
-  }
-}
-
-/**
- * Provider-specific error
- */
-export class ProviderError extends AIChangelogError {
-  constructor(message, providerName, context = {}, originalError = null) {
-    super(message, 'provider', { providerName, ...context }, originalError)
-    this.providerName = providerName
-  }
-}
+// Note: Error classes have been moved to './error-classes.js' to avoid duplication
+// and provide better organization. Import them from there instead of defining here.
+export { AbstractMethodError, AIChangelogError, ProviderError }
 
 // ========================================
 // DATA MANIPULATION UTILITIES

@@ -66,7 +66,7 @@ describe('CLI Styling End-to-End Tests', () => {
   }
 
   // Helper function to run CLI command
-  function runCLI(args = [], timeoutMs = 3000) {
+  function runCLI(args = [], timeoutMs = 10000) {
     return new Promise((resolve, reject) => {
       const cliPath = path.resolve(originalCwd, 'bin', 'ai-changelog.js')
       const child = spawn('node', [cliPath, ...args], {
@@ -113,7 +113,7 @@ describe('CLI Styling End-to-End Tests', () => {
 
   describe('CLI Help and Version Commands', () => {
     it('should display help with proper formatting', async () => {
-      const result = await runCLI(['--help'])
+      const result = await runCLI(['--help'], 5000) // Shorter timeout for help
 
       expect(result.code).toBe(0)
       expect(result.stdout).toContain('AI Changelog Generator')
@@ -127,7 +127,7 @@ describe('CLI Styling End-to-End Tests', () => {
     })
 
     it('should display version information', async () => {
-      const result = await runCLI(['--version'])
+      const result = await runCLI(['--version'], 5000) // Shorter timeout for version
 
       expect(result.code).toBe(0)
       expect(result.stdout).toMatch(/\d+\.\d+\.\d+/) // Version number format

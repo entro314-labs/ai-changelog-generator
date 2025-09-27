@@ -18,9 +18,9 @@ import { ChangelogOrchestrator } from '../../application/orchestrators/changelog
 // Import application services
 import { ApplicationService } from '../../application/services/application.service.js'
 import { AnalysisEngine } from '../../domains/analysis/analysis.engine.js'
-import { GitRepositoryAnalyzer } from '../../domains/git/git-repository.analyzer.js'
+import { GitService } from '../../domains/git/git.service.js'
 import { ConfigurationManager } from '../config/configuration.manager.js'
-import { ProviderManagementService } from '../providers/provider-management.service.js'
+import { ProviderManagerService } from '../providers/provider-manager.service.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -64,9 +64,9 @@ class AIChangelogMCPServer {
       this.configManager = new ConfigurationManager()
       this.applicationService = new ApplicationService()
       this.changelogOrchestrator = new ChangelogOrchestrator(this.configManager)
-      this.gitAnalyzer = new GitRepositoryAnalyzer()
+      this.gitAnalyzer = new GitService()
       this.analysisEngine = new AnalysisEngine()
-      this.providerService = new ProviderManagementService()
+      this.providerService = new ProviderManagerService(this.configManager.getConfig())
 
       // Log available configuration
       const hasProvider = process.env.AI_PROVIDER
@@ -419,15 +419,39 @@ class AIChangelogMCPServer {
             result += `\n${testResult}`
           }
           break
-        case 'test':
-          result = await this.providerService.testCurrentProvider()
+        case 'test': {
+          const activeProvider = this.providerService.getActiveProvider()
+          if (!activeProvider) {
+            throw new Error('No active provider found')
+          }
+          result = await this.providerService.testProvider(activeProvider.getName())
           break
-        case 'configure':
-          result = await this.providerService.configureProvider(provider)
+        }
+        case 'configure': {
+          if (!provider) {
+            throw new Error('Provider required for configure action')
+          }
+          const providerData = this.providerService.findProviderByName(provider)
+          if (!providerData) {
+            throw new Error(`Provider '${provider}' not found`)
+          }
+          result = {
+            name: provider,
+            available: providerData.available,
+            configuration: providerData.instance.getConfiguration
+              ? providerData.instance.getConfiguration()
+              : {},
+            requiredVars: providerData.instance.getRequiredEnvVars
+              ? providerData.instance.getRequiredEnvVars()
+              : [],
+          }
           break
-        case 'validate':
-          result = await this.providerService.validateModels(provider)
+        }
+        case 'validate': {
+          const validationResults = await this.providerService.validateAll()
+          result = validationResults
           break
+        }
         default:
           throw new Error(`Unknown action: ${action}`)
       }
@@ -436,7 +460,7 @@ class AIChangelogMCPServer {
         content: [
           {
             type: 'text',
-            text: result,
+            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
           },
         ],
       }
