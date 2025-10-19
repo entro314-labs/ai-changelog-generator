@@ -1,7 +1,7 @@
 {
   "name": "@entro314labs/ai-changelog-generator",
   "displayName": "AI Changelog Generator",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "type": "module",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
   "main": "src/ai-changelog-generator.js",
@@ -64,40 +64,36 @@
     "git:info": "node src/domains/git/git.service.js info",
     "git:commits": "node src/domains/git/git.service.js commits 10",
     "git:stats": "node src/domains/git/git.service.js stats 5",
-    "dxt:init": "npx @anthropic-ai/dxt init",
-    "dxt:pack": "npm run dxt:prepack && npx @anthropic-ai/dxt pack",
-    "dxt:prepack": "node -e \"const fs=require('fs'),path=require('path'); const src='node_modules/@modelcontextprotocol/sdk/dist', dest='node_modules/@modelcontextprotocol/sdk/dist'; if(fs.existsSync(src)) console.log('MCP SDK dist exists'); else console.error('MCP SDK dist missing');\"",
-    "dxt:validate": "npx @anthropic-ai/dxt validate",
     "postinstall": "node -e \"console.log('\\n🎉 AI Changelog Generator installed!\\n\\n⚡ Quick Start:\\n  ai-changelog                 - Generate changelog\\n  ai-changelog --detailed      - Detailed analysis\\n  ai-changelog --interactive   - Interactive mode\\n  ai-changelog-mcp            - Start MCP server\\n\\n🤖 AI Models Supported:\\n  • GPT-4.1 series (1M context, 75% cost reduction)\\n  • o3/o4 reasoning models (Azure-only)\\n  • Automatic model selection\\n\\n📖 Docs: https://github.com/entro314-labs/AI-changelog-generator\\n\\n© All trademarks belong to their respective owners.\\n')\""
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.63.1",
-    "@aws-sdk/client-bedrock-runtime": "^3.895.0",
-    "@azure/identity": "^4.12.0",
+    "@anthropic-ai/sdk": "^0.67.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.913.0",
+    "@azure/identity": "^4.13.0",
     "@clack/prompts": "^0.11.0",
-    "@google/genai": "^1.20.0",
+    "@google/genai": "^1.25.0",
     "@google/generative-ai": "^0.24.1",
-    "@huggingface/hub": "^2.6.5",
-    "@huggingface/inference": "^4.8.0",
+    "@huggingface/hub": "^2.6.12",
+    "@huggingface/inference": "^4.11.3",
     "@lmstudio/sdk": "^1.5.0",
-    "@modelcontextprotocol/sdk": "^1.18.1",
+    "@modelcontextprotocol/sdk": "^1.20.1",
     "@modelcontextprotocol/server-filesystem": "2025.8.21",
     "boxen": "^8.0.1",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
-    "dotenv": "^17.2.2",
+    "dotenv": "^17.2.3",
     "figures": "^6.1.0",
-    "google-auth-library": "^10.3.0",
+    "google-auth-library": "^10.4.1",
     "gradient-string": "^3.0.0",
     "js-yaml": "^4.1.0",
-    "ollama": "^0.5.18",
-    "openai": "^5.23.0",
+    "ollama": "^0.6.0",
+    "openai": "^6.5.0",
     "ora": "^9.0.0",
     "yargs": "^18.0.0"
   },
   "devDependencies": {
-    "@anthropic-ai/dxt": "^0.2.6",
-    "@types/node": "24.5.2",
+    "@anthropic-ai/mcpb": "^1.1.1",
+    "@types/node": "24.8.1",
     "@vitest/browser": "beta",
     "@vitest/coverage-v8": "beta",
     "@vitest/ui": "beta",
@@ -144,8 +140,8 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=22.18.0",
-    "pnpm": ">=10.15.0"
+    "node": ">=22.20.0",
+    "pnpm": ">=10.18.3"
   },
   "funding": {
     "type": "github",
@@ -157,8 +153,8 @@
     }
   },
   "volta": {
-    "node": "22.18.0",
-    "pnpm": "10.15.0"
+    "node": "22.20.0",
+    "pnpm": "10.18.3"
   },
   "pnpm": {
     "overrides": {
