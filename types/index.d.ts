@@ -310,51 +310,42 @@ export class AIChangelogGenerator {
   constructor(constructorOptions?: {
     repositoryPath?: string
     configPath?: string
+    analysisMode?: AnalysisMode
+    modelOverride?: AIModel
+    dryRun?: boolean
+    silent?: boolean
   })
 
-  // Core methods
-  run(): Promise<void>
-  generateChangelog(changelogOptions?: ChangelogOptions): Promise<string>
-  analyzeCommits(commitOptions?: {
-    since?: string
-    limit?: number
-    repositoryPath?: string
-  }): Promise<CommitAnalysis>
+  // Core methods (these actually exist in the implementation)
+  generateChangelog(version?: string | null, since?: string | null): Promise<string>
 
-  // Enhanced analysis methods
-  analyzeCurrentChanges(analysisOptions?: {
-    includeAIAnalysis?: boolean
-    repositoryPath?: string
-  }): Promise<CurrentChangesAnalysis>
+  // Analysis methods
+  analyzeRepository(config?: { type?: string }): Promise<any>
+  analyzeCurrentChanges(): Promise<CurrentChangesAnalysis>
+  analyzeRecentCommits(limit?: number): Promise<CommitAnalysis>
+  analyzeBranches(config?: any): Promise<BranchAnalysis>
+  analyzeComprehensive(config?: any): Promise<RepositoryHealthCheck>
 
-  analyzeBranches(branchOptions?: {
-    includeAllBranches?: boolean
-    repositoryPath?: string
-  }): Promise<BranchAnalysis>
+  // Repository health
+  assessRepositoryHealth(includeRecommendations?: boolean): Promise<any>
 
-  analyzeRepository(repoOptions?: { repositoryPath?: string }): Promise<RepositoryHealthCheck>
+  // Interactive mode
+  runInteractive(): Promise<void>
 
-  // Configuration and validation
-  validateConfig(): Promise<{
-    success: boolean
-    provider?: AIProvider
-    model?: AIModel
-    capabilities?: ModelCapabilities
-    error?: string
-  }>
+  // Configuration
+  setAnalysisMode(mode: AnalysisMode): void
+  setModelOverride(model: AIModel): void
 
-  validateModels(): Promise<{
-    success: boolean
-    models?: Array<{
-      name: AIModel
-      available: boolean
-      capabilities?: ModelCapabilities
-    }>
-    error?: string
-  }>
+  // Validation
+  validateConfiguration(): Promise<void>
 
-  // Git operations
-  getGitInfo(gitOptions?: { includeStats?: boolean; repositoryPath?: string }): Promise<GitInfo>
+  // Metrics
+  getMetrics(): {
+    startTime: number
+    commitsProcessed: number
+    apiCalls: number
+    errors: number
+  }
 }
 
 export class AIChangelogMCPServer {
@@ -362,53 +353,55 @@ export class AIChangelogMCPServer {
 
   run(): Promise<void>
 
-  // MCP Tools
+  // MCP Tools (these match the actual implementation)
   generateChangelog(params: {
     repositoryPath?: string
+    source?: 'commits' | 'working-dir' | 'auto'
     analysisMode?: AnalysisMode
-    outputFormat?: OutputFormat
     since?: string
     version?: string
-    includeUnreleased?: boolean
-    model?: AIModel
-  }): Promise<string>
+    includeAttribution?: boolean
+    writeFile?: boolean
+  }): Promise<{
+    content: Array<{
+      type: 'text'
+      text: string
+    }>
+    metadata?: any
+  }>
 
-  analyzeCommits(params: {
+  analyzeRepository(params: {
     repositoryPath?: string
-    limit?: number
-    since?: string
-  }): Promise<CommitAnalysis>
+    analysisType?: 'health' | 'commits' | 'branches' | 'working-dir' | 'comprehensive'
+    includeRecommendations?: boolean
+    commitLimit?: number
+  }): Promise<{
+    content: Array<{
+      type: 'text'
+      text: string
+    }>
+  }>
 
   analyzeCurrentChanges(params: {
     repositoryPath?: string
     includeAIAnalysis?: boolean
-  }): Promise<CurrentChangesAnalysis>
-
-  getGitInfo(params: { repositoryPath?: string; includeStats?: boolean }): Promise<GitInfo>
-
-  configureAIProvider(params: {
-    provider?: AIProvider
-    showModels?: boolean
-    testConnection?: boolean
+    includeAttribution?: boolean
   }): Promise<{
-    success: boolean
-    provider?: AIProvider
-    models?: AIModel[]
-    error?: string
+    content: Array<{
+      type: 'text'
+      text: string
+    }>
   }>
 
-  validateModels(params: {
-    provider?: AIProvider
-    checkCapabilities?: boolean
-    testModels?: boolean
+  configureProviders(params: {
+    action?: 'list' | 'switch' | 'test' | 'configure' | 'validate'
+    provider?: string
+    testConnection?: boolean
   }): Promise<{
-    success: boolean
-    models?: Array<{
-      name: AIModel
-      available: boolean
-      capabilities?: ModelCapabilities
+    content: Array<{
+      type: 'text'
+      text: string
     }>
-    error?: string
   }>
 }
 

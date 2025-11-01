@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * AI Changelog Generator DXT Extension Entry Point
- * Simplified MCP Server for Claude Desktop Extensions
+ * AI Changelog Generator Desktop Extension Entry Point
+ * Legacy server for backward compatibility with old DXT format
+ *
+ * Note: This is deprecated. New installations should use bin/ai-changelog-mcp.js
+ * which is referenced in manifest.json
  */
 
 // Import node modules
@@ -16,7 +19,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 const server = new Server(
   {
     name: 'ai-changelog-generator',
-    version: '3.0.2',
+    version: '3.5.0',
   },
   {
     capabilities: {

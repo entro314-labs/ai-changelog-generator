@@ -1,6 +1,18 @@
 #!/usr/bin/env node
 
 /**
+ * DEPRECATED: Legacy CLI Entry Point
+ *
+ * This file is deprecated and maintained only for backward compatibility.
+ * Please use bin/ai-changelog.js which delegates to CLIController instead.
+ *
+ * @deprecated Use bin/ai-changelog.js with CLIController
+ */
+
+console.warn('\n⚠️  WARNING: This CLI entry point is deprecated.')
+console.warn('Please use the main CLI: ai-changelog (or bin/ai-changelog.js)\n')
+
+/**
  * CLI Entry Point for AI Changelog Generator
  * Provides command-line interface for changelog generation functionality
  */

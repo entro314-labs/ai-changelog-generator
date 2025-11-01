@@ -61,12 +61,17 @@ class AIChangelogMCPServer {
       // Set MCP server mode to suppress verbose logging
       process.env.MCP_SERVER_MODE = 'true'
 
+      // Initialize configuration
       this.configManager = new ConfigurationManager()
+
+      // Initialize application service
       this.applicationService = new ApplicationService()
+
+      // Initialize orchestrator with proper dependencies (it will create its own services)
       this.changelogOrchestrator = new ChangelogOrchestrator(this.configManager)
-      this.gitAnalyzer = new GitService()
-      this.analysisEngine = new AnalysisEngine()
-      this.providerService = new ProviderManagerService(this.configManager.getConfig())
+
+      // Initialize provider service
+      this.providerService = new ProviderManagerService(this.configManager.getAll())
 
       // Log available configuration
       const hasProvider = process.env.AI_PROVIDER
@@ -80,6 +85,9 @@ class AIChangelogMCPServer {
       } else {
         console.error(`[MCP] Configured with provider: ${process.env.AI_PROVIDER}`)
       }
+
+      // Wait for orchestrator to initialize its services
+      this.initPromise = this.changelogOrchestrator.ensureInitialized()
     } catch (error) {
       console.error('[MCP] Failed to initialize services:', error.message)
       console.error('[MCP] Server will start but tools may require configuration')
@@ -296,27 +304,55 @@ class AIChangelogMCPServer {
     } = args
 
     try {
+      // Ensure services are initialized
+      if (this.initPromise) {
+        await this.initPromise
+      }
+
       let result
 
       if (source === 'working-dir' || (source === 'auto' && this.hasWorkingDirectoryChanges())) {
-        // Generate from working directory changes
-        result = await this.changelogOrchestrator.generateWorkspaceChangelog({
-          version,
+        // Generate from working directory changes using ChangelogService
+        // Access the changelogService through the orchestrator
+        await this.changelogOrchestrator.ensureInitialized()
+        const changelogService = this.changelogOrchestrator.changelogService
+
+        result = await changelogService.generateWorkspaceChangelog(version, {
           analysisMode,
           includeAttribution,
         })
+
+        // Format result to match expected structure
+        if (result && result.changelog) {
+          result = {
+            content: result.changelog,
+            metadata: {
+              version,
+              source: 'working-directory',
+              filesProcessed: result.filesProcessed,
+              filesSkipped: result.filesSkipped,
+            }
+          }
+        }
       } else {
-        // Generate from commits
-        result = await this.changelogOrchestrator.generateChangelog({
-          version,
-          since,
-          analysisMode,
-          includeAttribution,
-        })
+        // Generate from commits - use orchestrator's generateChangelog(version, since)
+        result = await this.changelogOrchestrator.generateChangelog(version, since)
+
+        // Wrap result if needed
+        if (result && typeof result === 'string') {
+          result = {
+            content: result,
+            metadata: {
+              version,
+              since,
+              source: 'commits'
+            }
+          }
+        }
       }
 
       // Write file if requested
-      if (writeFile && result.content) {
+      if (writeFile && result && result.content) {
         const changelogPath = path.join(process.cwd(), 'AI_CHANGELOG.md')
         try {
           fs.writeFileSync(changelogPath, result.content, 'utf8')
@@ -330,10 +366,10 @@ class AIChangelogMCPServer {
         content: [
           {
             type: 'text',
-            text: result.content || 'No changelog content generated',
+            text: result?.content || 'No changelog content generated',
           },
         ],
-        metadata: result.metadata,
+        metadata: result?.metadata,
       }
     } catch (error) {
       throw new Error(`Changelog generation failed: ${error.message}`)
@@ -344,23 +380,30 @@ class AIChangelogMCPServer {
     const { analysisType = 'comprehensive', includeRecommendations = true, commitLimit = 50 } = args
 
     try {
+      // Ensure services are initialized
+      if (this.initPromise) {
+        await this.initPromise
+      }
+      await this.changelogOrchestrator.ensureInitialized()
+
       let result
 
       switch (analysisType) {
         case 'health':
-          result = await this.gitAnalyzer.assessRepositoryHealth(includeRecommendations)
+          result = await this.changelogOrchestrator.gitService.assessRepositoryHealth(includeRecommendations)
           break
         case 'commits':
-          result = await this.analysisEngine.analyzeRecentCommits(commitLimit)
+          result = await this.changelogOrchestrator.analysisEngine.analyzeRecentCommits(commitLimit)
           break
         case 'branches':
-          result = await this.gitAnalyzer.analyzeBranches()
+          result = await this.changelogOrchestrator.gitService.analyzeBranches()
           break
         case 'working-dir':
-          result = await this.analysisEngine.analyzeCurrentChanges()
+          result = await this.changelogOrchestrator.analysisEngine.analyzeCurrentChanges()
           break
         default:
-          result = await this.gitAnalyzer.analyzeComprehensive(includeRecommendations)
+          // Comprehensive analysis
+          result = await this.changelogOrchestrator.analyzeRepository({ type: analysisType })
           break
       }
 
@@ -381,7 +424,13 @@ class AIChangelogMCPServer {
     const { includeAIAnalysis = true, includeAttribution = true } = args
 
     try {
-      const result = await this.analysisEngine.analyzeCurrentChanges({
+      // Ensure services are initialized
+      if (this.initPromise) {
+        await this.initPromise
+      }
+      await this.changelogOrchestrator.ensureInitialized()
+
+      const result = await this.changelogOrchestrator.analysisEngine.analyzeCurrentChanges({
         includeAIAnalysis,
         includeAttribution,
       })

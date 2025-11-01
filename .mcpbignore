@@ -1,0 +1,62 @@
+# MCPB Ignore File
+# Files and directories to exclude from the .mcpb bundle
+
+# Test files
+test/
+*.test.js
+*.spec.js
+test-*.js
+vitest.config.js
+
+# Development files
+.git/
+.github/
+.vscode/
+.idea/
+*.log
+*.tmp
+
+# Build artifacts
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Documentation (keep only essentials)
+docs/media/*.gif
+docs/media/*.mp4
+CONTRIBUTING.md
+TODO.md
+ARCHITECTURE_FIXES_SUMMARY.md
+development-notes.md
+
+# Configuration examples (keep actual config)
+.env.local.example
+*.config.example
+
+# Scripts
+scripts/
+ai-changelog.sh
+ai-changelog-mcp.sh
+
+# Legacy files
+server/index.js
+bin/ai-changelog-dxt.js
+
+# Node modules (will be bundled separately)
+node_modules/
+
+# Package manager files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# CI/CD
+.travis.yml
+.circleci/
+.gitlab-ci.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

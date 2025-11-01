@@ -1144,7 +1144,7 @@ ${enhancedMergeSummary}
         'ENHANCED MERGE SUMMARY:\n' + (enhancedMergeSummary || 'None') + '\n\n' +
         'FILES SECTION (first 3000 chars):\n' + filesSection.substring(0, 3000) + '\n\n' +
         'FULL PROMPT PREVIEW:\n' + prompt.substring(0, 2000) + '\n=== END DEBUG ==='
-      
+
       fs.writeFileSync('AI_INPUT_DEBUG.txt', debugContent)
       console.log('*** AI INPUT SAVED TO AI_INPUT_DEBUG.txt ***')
     } catch (error) {
@@ -1439,6 +1439,15 @@ function extractCategoryFromText(content) {
  */
 /**
  * Get raw working directory changes from git status
+ *
+ * Note: This is a lightweight utility function that shells out to git directly
+ * for simple status checks. For comprehensive git operations, services should
+ * use GitService/GitManager, but this utility is kept for:
+ * - Performance (avoids service initialization overhead)
+ * - Simplicity (standalone function for basic status checks)
+ * - Backward compatibility (widely used across codebase)
+ *
+ * @returns {Array} Array of change objects with status and filePath
  */
 export function getWorkingDirectoryChanges() {
   try {

@@ -133,7 +133,7 @@ ai-changelog --help
 # Generate changelog from recent commits
 ./ai-changelog.sh
 
-# Interactive mode with guided setup  
+# Interactive mode with guided setup
 ./ai-changelog.sh --interactive
 
 # Analyze working directory changes
@@ -351,8 +351,28 @@ ai-changelog health --detailed
 - **[AI Provider Setup](./docs/providers.md)** - Configure OpenAI, Claude, and other providers
 - **[Configuration Reference](./docs/configuration.md)** - All YAML and environment options
 - **[MCP Integration](./docs/mcp-integration.md)** - Claude Desktop and MCP server setup
+- **[Desktop Extension (MCPB)](./MCPB_BUILD.md)** - Build and package as Claude Desktop Extension
 - **[API Reference](./docs/api-reference.md)** - All commands, options, and programmatic usage
 - **[Demo Media](./docs/media/)** - Interactive demos, GIFs, and video walkthroughs
+
+### Claude Desktop Extension
+
+Install AI Changelog Generator in Claude Desktop with **one click** using the MCPB (MCP Bundle) format:
+
+1. Download the latest `.mcpb` file from [Releases](https://github.com/entro314-labs/AI-changelog-generator/releases)
+2. Open Claude Desktop → Settings → Extensions
+3. Drag and drop the `.mcpb` file
+4. Click "Install"
+
+No configuration files, no terminal commands - just drag, drop, and start generating changelogs!
+
+**For developers:** Learn how to build and package the extension in [MCPB_BUILD.md](./MCPB_BUILD.md)
+
+```bash
+# Build Desktop Extension
+pnpm mcpb:validate  # Validate manifest
+pnpm mcpb:pack      # Create .mcpb file
+```
 
 ## Contributing
 

@@ -5,15 +5,7 @@ import process from 'node:process'
 import yaml from 'js-yaml'
 
 import colors from '../../shared/constants/colors.js'
-
-// Model configurations - moved from lib/utils/model-config.js
-const MODEL_CONFIGS = {
-  'gpt-4': { maxTokens: 8192, cost: 0.03 },
-  'gpt-3.5-turbo': { maxTokens: 4096, cost: 0.002 },
-  'claude-3-opus': { maxTokens: 200000, cost: 0.015 },
-  'claude-3-sonnet': { maxTokens: 200000, cost: 0.003 },
-  'claude-3-haiku': { maxTokens: 200000, cost: 0.00025 },
-}
+import { MODEL_CONFIGS } from '../providers/utils/model-config.js'
 
 /**
  * Unified Configuration Manager

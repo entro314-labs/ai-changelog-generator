@@ -1,13 +1,18 @@
 {
-  "dxt_version": "0.1",
+  "manifest_version": "0.2",
   "name": "ai-changelog-generator",
   "display_name": "AI Changelog Generator",
-  "version": "3.2.2",
+  "version": "3.5.0",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
-  "long_description": "Generate intelligent changelogs  from git commits using AI. Supports multiple  providers including OpenAI, Claude, Gemini, Ollama,  and LM Studio. Perfect for automating release  documentation with smart commit analysis and  categorization.",
+  "long_description": "Generate intelligent changelogs from git commits using AI. Supports multiple providers including OpenAI, Claude, Gemini, Ollama, and LM Studio. Perfect for automating release documentation with smart commit analysis and categorization.\n\nFeatures:\n- Automatic changelog generation from git commits\n- Working directory change analysis\n- Multiple AI provider support (OpenAI, Azure, Claude, Gemini, Ollama, LM Studio)\n- Interactive and batch modes\n- Repository health analysis\n- Branch analysis and recommendations\n- Commit categorization and impact assessment",
   "author": {
     "name": "entro314-labs",
+    "email": "contact@entro314labs.com",
     "url": "https://github.com/entro314-labs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/entro314-labs/AI-changelog-generator.git"
   },
   "homepage": "https://github.com/entro314-labs/AI-changelog-generator",
   "documentation": "https://github.com/entro314-labs/AI-changelog-generator#readme",
@@ -15,10 +20,10 @@
   "icon": "icon.png",
   "server": {
     "type": "node",
-    "entry_point": "server/index.js",
+    "entry_point": "bin/ai-changelog-mcp.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/server/index.js"],
+      "args": ["${__dirname}/bin/ai-changelog-mcp.js"],
       "env": {
         "AI_PROVIDER": "${user_config.AI_PROVIDER}",
         "OPENAI_API_KEY": "${user_config.OPENAI_API_KEY}",
@@ -38,17 +43,22 @@
   "tools": [
     {
       "name": "generate_changelog",
-      "description": "Generate changelog from git commits with basic categorization and formatting"
+      "description": "Generate AI-powered changelog from git commits or working directory changes"
     },
     {
       "name": "analyze_repository",
-      "description": "Analyze git repository structure, branch info, and current status"
+      "description": "Comprehensive repository analysis including health, commits, and branches"
     },
     {
-      "name": "get_working_directory_changes",
-      "description": "Get current working directory changes including staged, unstaged, and untracked files"
+      "name": "analyze_current_changes",
+      "description": "Analyze staged and unstaged changes in working directory with AI-powered insights"
+    },
+    {
+      "name": "configure_providers",
+      "description": "Manage AI providers - list, switch, test, and configure"
     }
   ],
+  "tools_generated": false,
   "user_config": {
     "AI_PROVIDER": {
       "type": "string",
@@ -147,16 +157,18 @@
     "mcp",
     "openai",
     "claude",
+    "anthropic",
     "gemini",
-    "ollama"
+    "azure",
+    "ollama",
+    "lmstudio",
+    "devops",
+    "release-notes",
+    "commit-analysis"
   ],
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/entro314-labs/AI-changelog-generator.git"
-  },
   "compatibility": {
-    "claude_desktop": ">=0.10.0",
+    "claude_desktop": ">=1.0.0",
     "platforms": ["darwin", "win32", "linux"],
     "runtimes": {
       "node": ">=22.18.0"

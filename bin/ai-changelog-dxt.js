@@ -2,16 +2,19 @@
 
 /**
  * AI Changelog Generator - Claude Desktop Extension Entry Point
- * Optimized for DXT packaging and Claude Desktop integration
+ * Optimized for MCPB (MCP Bundle) packaging and Claude Desktop integration
+ *
+ * Note: This file is maintained for backward compatibility.
+ * The main MCP server entry point is bin/ai-changelog-mcp.js
  */
 
 import AIChangelogMCPServer from '../src/infrastructure/mcp/mcp-server.service.js'
 import { runMCPServer, setupProcessErrorHandlers } from '../src/shared/utils/cli-entry-utils.js'
 
-// Setup error handlers for DXT environment
+// Setup error handlers for MCPB environment
 setupProcessErrorHandlers('AI Changelog Generator - Claude Desktop Extension')
 
-// DXT-specific initialization
+// MCPB-specific initialization (legacy DXT compatibility)
 async function initializeDXTServer() {
   await runMCPServer(
     'AI Changelog Generator - Claude Desktop Extension',

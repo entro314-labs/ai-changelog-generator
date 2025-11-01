@@ -1,7 +1,7 @@
 {
   "name": "@entro314labs/ai-changelog-generator",
   "displayName": "AI Changelog Generator",
-  "version": "3.3.0",
+  "version": "3.5.0",
   "type": "module",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
   "main": "src/ai-changelog-generator.js",
@@ -14,6 +14,7 @@
     "bin/",
     "src/",
     "types/",
+    "manifest.json",
     "ai-changelog.sh",
     "ai-changelog-mcp.sh",
     "README.md",
@@ -56,49 +57,51 @@
     "test:legacy": "node test/test-runner.js comprehensive",
     "test:git": "node src/domains/git/git.service.js info",
     "setup": "node scripts/setup-azure-openai.js",
-    "config:create": "node src/infrastructure/config/configuration.manager.js create-sample",
-    "config:validate": "node src/infrastructure/config/configuration.manager.js validate",
-    "config:test-models": "node src/infrastructure/config/configuration.manager.js model-test",
     "providers:test": "node test/test-providers.js",
     "providers:validate": "node test/test-provider-switching.js",
     "git:info": "node src/domains/git/git.service.js info",
     "git:commits": "node src/domains/git/git.service.js commits 10",
     "git:stats": "node src/domains/git/git.service.js stats 5",
-    "postinstall": "node -e \"console.log('\\n🎉 AI Changelog Generator installed!\\n\\n⚡ Quick Start:\\n  ai-changelog                 - Generate changelog\\n  ai-changelog --detailed      - Detailed analysis\\n  ai-changelog --interactive   - Interactive mode\\n  ai-changelog-mcp            - Start MCP server\\n\\n🤖 AI Models Supported:\\n  • GPT-4.1 series (1M context, 75% cost reduction)\\n  • o3/o4 reasoning models (Azure-only)\\n  • Automatic model selection\\n\\n📖 Docs: https://github.com/entro314-labs/AI-changelog-generator\\n\\n© All trademarks belong to their respective owners.\\n')\""
+    "mcpb:init": "mcpb init .",
+    "mcpb:validate": "mcpb validate manifest.json",
+    "mcpb:pack": "mcpb pack . ai-changelog-generator.mcpb",
+    "mcpb:build": "pnpm mcpb:validate && pnpm mcpb:pack",
+    "mcpb:info": "mcpb info ai-changelog-generator.mcpb",
+    "postinstall": "node -e \"console.log('🎉 AI Changelog Generator installed!⚡ Quick Start:  ai-changelog                 - Generate changelog  ai-changelog --detailed      - Detailed analysis  ai-changelog --interactive   - Interactive mode  ai-changelog-mcp            - Start MCP server🤖 AI Models Supported:  • GPT-4.1 series (1M context, 75% cost reduction)  • o3/o4 reasoning models (Azure-only)  • Automatic model selection📖 Docs: https://github.com/entro314-labs/AI-changelog-generator© All trademarks belong to their respective owners.')\""
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.67.0",
-    "@aws-sdk/client-bedrock-runtime": "^3.913.0",
+    "@anthropic-ai/sdk": "^0.68.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.920.0",
     "@azure/identity": "^4.13.0",
     "@clack/prompts": "^0.11.0",
-    "@google/genai": "^1.25.0",
+    "@google/genai": "^1.28.0",
     "@google/generative-ai": "^0.24.1",
     "@huggingface/hub": "^2.6.12",
-    "@huggingface/inference": "^4.11.3",
+    "@huggingface/inference": "^4.13.0",
     "@lmstudio/sdk": "^1.5.0",
-    "@modelcontextprotocol/sdk": "^1.20.1",
+    "@modelcontextprotocol/sdk": "^1.20.2",
     "@modelcontextprotocol/server-filesystem": "2025.8.21",
     "boxen": "^8.0.1",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
     "dotenv": "^17.2.3",
     "figures": "^6.1.0",
-    "google-auth-library": "^10.4.1",
+    "google-auth-library": "^10.4.2",
     "gradient-string": "^3.0.0",
     "js-yaml": "^4.1.0",
     "ollama": "^0.6.0",
-    "openai": "^6.5.0",
+    "openai": "^6.7.0",
     "ora": "^9.0.0",
     "yargs": "^18.0.0"
   },
   "devDependencies": {
-    "@anthropic-ai/mcpb": "^1.1.1",
-    "@types/node": "24.8.1",
-    "@vitest/browser": "beta",
-    "@vitest/coverage-v8": "beta",
-    "@vitest/ui": "beta",
+    "@anthropic-ai/mcpb": "^1.1.3",
+    "@types/node": "24.9.2",
+    "@vitest/browser": "latest",
+    "@vitest/coverage-v8": "latest",
+    "@vitest/ui": "latest",
     "tempy": "^3.1.0",
-    "vitest": "beta"
+    "vitest": "latest"
   },
   "keywords": [
     "changelog",
@@ -140,8 +143,8 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=22.20.0",
-    "pnpm": ">=10.18.3"
+    "node": ">=22.21.1",
+    "pnpm": ">=10.20.0"
   },
   "funding": {
     "type": "github",
@@ -153,8 +156,8 @@
     }
   },
   "volta": {
-    "node": "22.20.0",
-    "pnpm": "10.18.3"
+    "node": "22.21.0",
+    "pnpm": "10.19.0"
   },
   "pnpm": {
     "overrides": {
