@@ -5,11 +5,11 @@
  * Provides Model Context Protocol interface for changelog generation
  */
 
+import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path, { dirname } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { execSync } from 'node:child_process'
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -332,7 +332,7 @@ class AIChangelogMCPServer {
               source: 'working-directory',
               filesProcessed: result.filesProcessed,
               filesSkipped: result.filesSkipped,
-            }
+            },
           }
         }
       } else {
@@ -346,8 +346,8 @@ class AIChangelogMCPServer {
             metadata: {
               version,
               since,
-              source: 'commits'
-            }
+              source: 'commits',
+            },
           }
         }
       }
@@ -391,7 +391,10 @@ class AIChangelogMCPServer {
 
       switch (analysisType) {
         case 'health':
-          result = await this.changelogOrchestrator.gitService.assessRepositoryHealth(includeRecommendations)
+          result =
+            await this.changelogOrchestrator.gitService.assessRepositoryHealth(
+              includeRecommendations
+            )
           break
         case 'commits':
           result = await this.changelogOrchestrator.analysisEngine.analyzeRecentCommits(commitLimit)

@@ -1854,7 +1854,9 @@ export function handleUnifiedOutput(data, config) {
       }
     } else if (!silent) {
       if (dryRun && outputFile) {
-        console.log(colors.infoMessage(`[DRY RUN] Would save changelog to: ${colors.file(outputFile)}`))
+        console.log(
+          colors.infoMessage(`[DRY RUN] Would save changelog to: ${colors.file(outputFile)}`)
+        )
       }
       console.log(jsonOutput)
     }
@@ -1876,7 +1878,9 @@ export function handleUnifiedOutput(data, config) {
       }
     } else if (!silent) {
       if (dryRun && outputFile) {
-        console.log(colors.infoMessage(`[DRY RUN] Would save changelog to: ${colors.file(outputFile)}`))
+        console.log(
+          colors.infoMessage(`[DRY RUN] Would save changelog to: ${colors.file(outputFile)}`)
+        )
       }
       console.log(markdownOutput)
     }

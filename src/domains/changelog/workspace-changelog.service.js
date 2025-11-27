@@ -36,10 +36,10 @@ export class WorkspaceChangelogService extends ChangelogService {
       const status = {
         staged: [],
         unstaged: [],
-        untracked: []
+        untracked: [],
       }
 
-      changes.forEach(change => {
+      changes.forEach((change) => {
         const statusCode = change.status || '??'
         if (statusCode.startsWith('??')) {
           status.untracked.push(change.filePath)

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.3.7/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -84,8 +84,7 @@
         "useAwait": "off"
       },
       "nursery": {
-        "noFloatingPromises": "off",
-        "noSecrets": "off"
+        "noFloatingPromises": "off"
       }
     }
   },
@@ -173,7 +172,6 @@
             "noUnusedVariables": "off"
           },
           "nursery": {
-            "noSecrets": "off"
           }
         }
       }

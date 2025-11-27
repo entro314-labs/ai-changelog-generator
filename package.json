@@ -1,7 +1,7 @@
 {
   "name": "@entro314labs/ai-changelog-generator",
   "displayName": "AI Changelog Generator",
-  "version": "3.6.0",
+  "version": "3.6.1",
   "type": "module",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
   "main": "src/ai-changelog-generator.js",
@@ -54,7 +54,6 @@
     "test:mcp": "vitest run test/mcp.test.js",
     "test:styling": "vitest run test/cli-ui.test.js test/colors.test.js test/styling-integration.test.js",
     "test:styling-e2e": "vitest run test/cli-styling-e2e.test.js --testTimeout=60000",
-    "test:legacy": "node test/test-runner.js comprehensive",
     "test:git": "node src/domains/git/git.service.js info",
     "setup": "node scripts/setup-azure-openai.js",
     "providers:test": "node test/test-providers.js",
