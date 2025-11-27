@@ -78,10 +78,7 @@ Thumbs.db
 pnpm-lock.yaml
 yarn.lock
 package-lock.json
-
-# Generated files
-AI_PROMPTS_EXPORT.md
-PUBLISHING.md
+test/vitest-results
 
 # Test files (temporary/generated)
 test-*.js
@@ -103,12 +100,9 @@ OpenAI API Models (*
 
 .github/copilot-instructions.md
 AI_CHANGELOG.md
-test/vitest-results/assets/index-CCvbyxW7.css
-test/vitest-results/assets/index-CYIziQD6.js
-test/vitest-results/html.meta.json.gz
-test/vitest-results/index.html
-MCPB_BUILD.md
-test/vitest-results/assets/index-COTh6lXR.css
-test/vitest-results/assets/index-DOkKC3NI.js
-test/vitest-results/html.meta.json.gz
-test/vitest-results/index.html
+ai-changelog-generator.mcpb
+docs/AI-Providers-Troubleshooting.md
+docs/Provider-Examples.md
+docs/development-notes.md
+docs/provider-setup-guide.md
+docs/use case scenarios.md

@@ -38,4 +38,10 @@ package-lock.json
 yarn.lock
 
 # Example config (but keep in examples/)
-claude_desktop_config.json
+test/vitest-results
+ai-changelog-generator.mcpb
+docs/AI-Providers-Troubleshooting.md
+docs/Provider-Examples.md
+docs/development-notes.md
+docs/provider-setup-guide.md
+docs/use case scenarios.md

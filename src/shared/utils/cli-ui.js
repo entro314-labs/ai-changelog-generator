@@ -223,8 +223,13 @@ export class EnhancedConsole {
     EnhancedConsole.log(message, 'ai')
   }
 
-  static metrics(message) {
-    EnhancedConsole.log(message, 'metrics')
+  static metrics(data, title = 'Metrics') {
+    if (typeof data === 'string') {
+      EnhancedConsole.log(data, 'metrics')
+    } else if (data && Object.keys(data).length > 0) {
+      EnhancedConsole.section(title)
+      console.log(colors.formatMetrics(data))
+    }
   }
 
   static section(title, content = '') {
@@ -249,13 +254,6 @@ export class EnhancedConsole {
     if (files && files.length > 0) {
       EnhancedConsole.section(title)
       console.log(colors.formatFileList(files))
-    }
-  }
-
-  static metrics(metrics, title = 'Metrics') {
-    if (metrics && Object.keys(metrics).length > 0) {
-      EnhancedConsole.section(title)
-      console.log(colors.formatMetrics(metrics))
     }
   }
 

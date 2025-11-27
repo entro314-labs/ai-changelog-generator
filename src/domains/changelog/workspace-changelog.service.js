@@ -146,15 +146,22 @@ export class WorkspaceChangelogService extends ChangelogService {
    */
   async validateWorkspace() {
     try {
-      // Check if we're in a git repository (simple check)
-      const changes = getWorkingDirectoryChanges()
+      // Check if we're in a git repository
+      let isGitRepo = false
+      try {
+        const { execSync } = await import('node:child_process')
+        execSync('git rev-parse --is-inside-work-tree', { stdio: 'ignore' })
+        isGitRepo = true
+      } catch {
+        isGitRepo = false
+      }
 
-      // If we got changes back without error, we're in a git repo
-      const isGitRepo = true
       if (!isGitRepo) {
         console.error(colors.errorMessage('Not in a git repository'))
         return false
       }
+
+      const changes = getWorkingDirectoryChanges()
 
       // Check if workspace has changes
       if (!this.hasWorkspaceChanges() && changes.length === 0) {

@@ -1,13 +1,13 @@
 {
-  "manifest_version": "0.2",
+  "manifest_version": "0.3",
   "name": "ai-changelog-generator",
   "display_name": "AI Changelog Generator",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
   "long_description": "Generate intelligent changelogs from git commits using AI. Supports multiple providers including OpenAI, Claude, Gemini, Ollama, and LM Studio. Perfect for automating release documentation with smart commit analysis and categorization.\n\nFeatures:\n- Automatic changelog generation from git commits\n- Working directory change analysis\n- Multiple AI provider support (OpenAI, Azure, Claude, Gemini, Ollama, LM Studio)\n- Interactive and batch modes\n- Repository health analysis\n- Branch analysis and recommendations\n- Commit categorization and impact assessment",
   "author": {
     "name": "entro314-labs",
-    "email": "contact@entro314labs.com",
+    "email": "hey@entro314.com",
     "url": "https://github.com/entro314-labs"
   },
   "repository": {
@@ -171,7 +171,7 @@
     "claude_desktop": ">=1.0.0",
     "platforms": ["darwin", "win32", "linux"],
     "runtimes": {
-      "node": ">=22.18.0"
+      "node": ">=22.x"
     }
   }
 }

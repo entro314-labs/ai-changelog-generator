@@ -1835,11 +1835,11 @@ function assessWorkspaceComplexity(categorizedChanges, totalFiles) {
  * Handle unified output for analysis commands
  */
 export function handleUnifiedOutput(data, config) {
-  const { format = 'markdown', outputFile, silent } = config
+  const { format = 'markdown', outputFile, silent, dryRun } = config
   if (format === 'json') {
     const jsonOutput = safeJsonStringify(data)
 
-    if (outputFile) {
+    if (outputFile && !dryRun) {
       // Write to file
       try {
         fs.writeFileSync(outputFile, jsonOutput, 'utf8')
@@ -1853,13 +1853,16 @@ export function handleUnifiedOutput(data, config) {
         }
       }
     } else if (!silent) {
+      if (dryRun && outputFile) {
+        console.log(colors.infoMessage(`[DRY RUN] Would save changelog to: ${colors.file(outputFile)}`))
+      }
       console.log(jsonOutput)
     }
   } else {
     // Markdown format (default)
     const markdownOutput = typeof data === 'string' ? data : safeJsonStringify(data)
 
-    if (outputFile) {
+    if (outputFile && !dryRun) {
       try {
         fs.writeFileSync(outputFile, markdownOutput, 'utf8')
         if (!silent) {
@@ -1872,6 +1875,9 @@ export function handleUnifiedOutput(data, config) {
         }
       }
     } else if (!silent) {
+      if (dryRun && outputFile) {
+        console.log(colors.infoMessage(`[DRY RUN] Would save changelog to: ${colors.file(outputFile)}`))
+      }
       console.log(markdownOutput)
     }
   }

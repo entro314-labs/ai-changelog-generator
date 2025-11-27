@@ -31,9 +31,10 @@ export class ChangelogService {
    * Generates a changelog from committed changes (git history)
    * @param {string} version - Version number for the release
    * @param {string} since - Generate changelog since this date/commit
+   * @param {Object} options - Additional options (dryRun, etc.)
    * @returns {Promise<string>} Complete changelog content
    */
-  async generateChangelog(version = null, since = null) {
+  async generateChangelog(version = null, since = null, options = {}) {
     console.log(colors.processingMessage('🤖 Analyzing changes with AI...'))
 
     // Get committed changes
@@ -95,7 +96,12 @@ export class ChangelogService {
     // Write changelog to file using existing utility
     const filename = version && version !== 'latest' ? `CHANGELOG-${version}.md` : 'AI_CHANGELOG.md'
     const outputFile = path.join(process.cwd(), filename)
-    handleUnifiedOutput(changelog, { format: 'markdown', outputFile, silent: false })
+    handleUnifiedOutput(changelog, {
+      format: 'markdown',
+      outputFile,
+      silent: false,
+      dryRun: options.dryRun,
+    })
 
     return {
       changelog,

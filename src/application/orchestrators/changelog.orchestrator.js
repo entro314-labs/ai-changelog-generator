@@ -168,7 +168,7 @@ export class ChangelogOrchestrator {
       }
 
       // Generate changelog using the service
-      const result = await this.changelogService.generateChangelog(version, since)
+      const result = await this.changelogService.generateChangelog(version, since, this.options)
 
       if (!result) {
         console.log(colors.warningMessage('No changelog generated'))
@@ -210,6 +210,12 @@ export class ChangelogOrchestrator {
 
   async runInteractive() {
     await this.ensureInitialized()
+
+    // Check for interactive environment
+    if (!process.stdin.isTTY && !process.env.CI) {
+      console.log(colors.warningMessage('Interactive mode requires a TTY terminal.'))
+      return { interactive: false, status: 'skipped' }
+    }
 
     const { runInteractiveMode } = await import('../../shared/utils/utils.js')
     const { confirm } = await this._getCachedImport('@clack/prompts')

@@ -9,6 +9,7 @@ import fs from 'node:fs'
 import path, { dirname } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { execSync } from 'node:child_process'
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -521,7 +522,6 @@ class AIChangelogMCPServer {
   hasWorkingDirectoryChanges() {
     try {
       // Simple check for working directory changes
-      const { execSync } = require('node:child_process')
       const result = execSync('git status --porcelain', { encoding: 'utf8' })
       return result.trim().length > 0
     } catch (_error) {

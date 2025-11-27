@@ -10,6 +10,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Next Release
 - TBD
 
+## [3.6.0] - 2025-11-27
+
+### Feat
+- **MCPB Support**: Added full support for Model Context Protocol Bundle (MCPB) extension format.
+- **Packaging**: Updated manifest and packaging for seamless MCP server integration.
+
+### Fix
+- **Dry Run**: Fixed `dry-run` mode to correctly skip file writing while preserving output preview.
+- **CLI**: Fixed interactive mode timeouts in non-TTY/CI environments.
+- **MCP Server**: Fixed `ReferenceError` by using dynamic imports for `child_process` in ESM environment.
+- **Validation**: Fixed `WorkspaceChangelogService` validation to correctly detect git repositories.
+- **UI**: Fixed `EnhancedConsole.metrics` method shadowing in CLI UI utilities.
+- **Tests**: Fixed integration test failures in styling and workspace services.
+
+### Test
+- **Coverage**: Validated full test suite with 696 passing tests.
+- **Mocking**: Fixed mocking strategies in styling integration tests.
+
+### Chore
+- **Dependencies**: Updated project dependencies and type definitions.
+- **Audit**: Verified project robustness and MCP tool integration.
+
+## [3.3.0] - 2025-10-19
+
+### Refactor
+- **Architecture**: Major refactor of git management with new `GitManager` and `CommitTagger` domains.
+- **Services**: Re-architected `AnalysisEngine`, `ChangelogService`, and `WorkspaceChangelogService` for better separation of concerns.
+- **Config**: Modernized `biome.json` and `package.json` configurations.
+
+### Feat
+- **Git Analysis**: Enhanced merge commit analysis and processing.
+- **Configuration**: Added support for `merge` commit type in configuration.
+
+### Fix
+- **Reliability**: Resolved intermittent test failures and improved test suite reliability.
+- **Error Handling**: Added comprehensive error classes and improved exception handling.
+
+### Test
+- **New Tests**: Added `missing-functionality.test.js` covering edge cases and new architectural components.
+
 ## [3.2.1] - 2025-08-10
 
 ### feat
@@ -22,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add professional documentation and provider setup guides
 
 ### fix
-- fix AI provider initialization and isAvailable method calls  
+- fix AI provider initialization and isAvailable method calls
 - fix configuration manager null safety with proper error handling
 - fix CLI test timeouts and hanging commands
 - fix missing boolean getters (hasAI, gitExists) in main facade
@@ -31,7 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix Node.js version consistency across all configurations
 - fix Vitest reporter deprecation warnings
 
-### test  
+### test
 - add 658 comprehensive tests with 100% pass rate
 - add missing service method implementations for test compatibility
 - add resilient CLI end-to-end testing with proper timeouts

@@ -27,9 +27,7 @@ docs/media/*.gif
 docs/media/*.mp4
 CONTRIBUTING.md
 TODO.md
-ARCHITECTURE_FIXES_SUMMARY.md
-development-notes.md
-
+test/vitest-results
 # Configuration examples (keep actual config)
 .env.local.example
 *.config.example
@@ -60,3 +58,9 @@ yarn.lock
 .DS_Store
 Thumbs.db
 desktop.ini
+ai-changelog-generator.mcpb
+docs/AI-Providers-Troubleshooting.md
+docs/Provider-Examples.md
+docs/development-notes.md
+docs/provider-setup-guide.md
+docs/use case scenarios.md
