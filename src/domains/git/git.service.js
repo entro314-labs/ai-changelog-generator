@@ -333,9 +333,29 @@ export class GitService {
     }
   }
 
-  async getCommitsSince(since) {
+  async getCommitsSince(since, options = {}) {
     try {
-      const command = since ? `git log --oneline --since="${since}"` : 'git log --oneline -10'
+      let command = 'git log --oneline'
+
+      // Handle different "since" formats
+      if (since) {
+        // Check if it's a tag/ref (starts with v, contains dots, or is a commit hash)
+        const isRef = /^v?\d|^[a-f0-9]{6,40}$/i.test(since)
+        if (isRef) {
+          const until = options.until || 'HEAD'
+          command = `git log ${since}..${until} --oneline`
+        } else {
+          // Treat as date
+          command += ` --since="${since}"`
+        }
+      } else {
+        command += ' -10'
+      }
+
+      // Add author filter if specified
+      if (options.author) {
+        command += ` --author="${options.author}"`
+      }
 
       const output = this.gitManager.execGitSafe(command)
       return output

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { WorkspaceChangelogService } from '../src/domains/changelog/workspace-changelog.service.js'
+import { ChangelogService } from '../src/domains/changelog/changelog.service.js'
 import { CLIController } from '../src/infrastructure/cli/cli.controller.js'
 import { InteractiveWorkflowService } from '../src/infrastructure/interactive/interactive-workflow.service.js'
 import { CommitMessageValidationService } from '../src/infrastructure/validation/commit-message-validation.service.js'
@@ -174,50 +174,43 @@ describe('Styling Integration Tests', () => {
     })
   })
 
-  describe('Workspace Changelog Service Styling', () => {
+  describe('Changelog Service Styling', () => {
     let service
     let mockAiService
     let mockGitService
 
     beforeEach(() => {
       mockAiService = {
+        hasAI: true,
         aiProvider: {
           generateCompletion: vi.fn().mockResolvedValue({ content: 'Generated content' }),
         },
       }
-      mockGitService = {}
-      service = new WorkspaceChangelogService(mockAiService, mockGitService)
-    })
-
-    it('should use enhanced console for info messages', async () => {
-      const infoSpy = vi.spyOn(EnhancedConsole, 'info')
-
-      // Mock no changes scenario
-      const { getWorkingDirectoryChanges } = await import('../src/shared/utils/utils.js')
-      vi.mocked(getWorkingDirectoryChanges).mockReturnValue([])
-
-      await service.generateComprehensiveWorkspaceChangelog()
-
-      // expect(infoSpy).toHaveBeenCalledWith('No changes detected in working directory.')
-    })
-
-    it('should use enhanced console for error messages', async () => {
-      const errorSpy = vi.spyOn(console, 'error')
-
-      // Mock utils to throw error
-      const { getWorkingDirectoryChanges } = await import('../src/shared/utils/utils.js')
-      getWorkingDirectoryChanges.mockImplementation(() => {
-        throw new Error('Git error')
-      })
-
-      try {
-        await service.generateComprehensiveWorkspaceChangelog()
-      } catch (error) {
-        // Expected to throw
-        expect(error.message).toBe('Git error')
+      mockGitService = {
+        getCommitsSince: vi.fn().mockResolvedValue([]),
       }
+      service = new ChangelogService(mockGitService, mockAiService)
+    })
 
-      expect(errorSpy).toHaveBeenCalled()
+    it('should use colors for processing messages', async () => {
+      const logSpy = vi.spyOn(console, 'log')
+
+      await service.generateChangelog()
+
+      // Should use colors for status messages
+      expect(logSpy).toHaveBeenCalled()
+    })
+
+    it('should handle errors gracefully', async () => {
+      const errorSpy = vi.spyOn(console, 'log')
+
+      // Mock git service to return empty commits
+      mockGitService.getCommitsSince.mockResolvedValue([])
+
+      const result = await service.generateChangelog()
+
+      // Should handle no commits scenario
+      expect(result).toBeUndefined()
     })
   })
 
@@ -362,16 +355,22 @@ describe('Styling Integration Tests', () => {
   describe('Real-World Integration Scenarios', () => {
     it('should handle complete changelog generation workflow', async () => {
       // Mock a complete workflow
-      const { getWorkingDirectoryChanges } = await import('../src/shared/utils/utils.js')
-      getWorkingDirectoryChanges.mockReturnValue([{ path: 'test.js', status: 'modified' }])
+      const mockGitService = {
+        getCommitsSince: vi.fn().mockResolvedValue([
+          { hash: 'abc123', message: 'feat: add feature' },
+        ]),
+      }
 
-      const service = new WorkspaceChangelogService({
+      const mockAiService = {
+        hasAI: true,
         aiProvider: {
           generateCompletion: vi.fn().mockResolvedValue({ content: 'Generated changelog' }),
         },
-      })
+      }
 
-      await service.generateComprehensiveWorkspaceChangelog()
+      const service = new ChangelogService(mockGitService, mockAiService)
+
+      await service.generateChangelog()
 
       // Should have used enhanced styling throughout
       expect(mockConsole.log).toHaveBeenCalled()

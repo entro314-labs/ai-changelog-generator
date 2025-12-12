@@ -107,7 +107,25 @@ jobs:
             tar -czf ai-changelog-generator-v${{ steps.get-info.outputs.version }}.tar.gz \
               bin/ src/ types/ *.md *.json *.js *.sh LICENSE
           fi
-          
+
+      - name: Build MCPB Package
+        id: mcpb
+        uses: entro314-labs/mcpb-build-action@v1
+        with:
+          manifest: 'manifest.json'
+          output: 'ai-changelog-generator'
+          package-manager: 'pnpm'
+          node-version: '22'
+          upload-artifact: 'false'
+
+      - name: Display MCPB Build Info
+        run: |
+          echo "📦 MCPB Package Built Successfully"
+          echo "   Name: ${{ steps.mcpb.outputs.package-name }}"
+          echo "   Version: ${{ steps.mcpb.outputs.package-version }}"
+          echo "   Size: ${{ steps.mcpb.outputs.package-size }}"
+          echo "   SHA256: ${{ steps.mcpb.outputs.shasum }}"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -118,3 +136,4 @@ jobs:
           prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           files: |
             ai-changelog-generator-v${{ steps.get-info.outputs.version }}.tar.gz
+            ai-changelog-generator.mcpb

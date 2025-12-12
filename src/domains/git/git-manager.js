@@ -205,11 +205,17 @@ export class GitManager {
    * Get commits between two references
    * @param {string} from - Starting reference (commit, tag, branch)
    * @param {string} to - Ending reference (default: 'HEAD')
+   * @param {Object} options - Optional filters
+   * @param {string} options.author - Filter by author name or email
    * @returns {Array<Object>} Array of commit objects
    */
-  getCommitsBetween(from, to = 'HEAD') {
+  getCommitsBetween(from, to = 'HEAD', options = {}) {
     try {
-      const output = this.execGitSafe(`git log ${from}..${to} --oneline`)
+      let command = `git log ${from}..${to} --oneline`
+      if (options.author) {
+        command += ` --author="${options.author}"`
+      }
+      const output = this.execGitSafe(command)
       return output
         .split('\n')
         .filter((line) => line.trim())
@@ -223,6 +229,142 @@ export class GitManager {
     } catch {
       return []
     }
+  }
+
+  /**
+   * Get commits filtered by author
+   * @param {string} author - Author name or email to filter by
+   * @param {number} limit - Maximum number of commits to return
+   * @returns {Array<Object>} Array of commit objects by this author
+   */
+  getCommitsByAuthor(author, limit = 50) {
+    try {
+      const output = this.execGitSafe(
+        `git log --author="${author}" --oneline -n ${limit}`
+      )
+      return output
+        .split('\n')
+        .filter((line) => line.trim())
+        .map((line) => {
+          const [hash, ...messageParts] = line.split(' ')
+          return {
+            hash: hash.trim(),
+            message: messageParts.join(' '),
+          }
+        })
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * Get commits between two tags
+   * @param {string} fromTag - Starting tag
+   * @param {string} toTag - Ending tag (default: 'HEAD')
+   * @param {Object} options - Optional filters
+   * @returns {Array<Object>} Array of commit objects between tags
+   */
+  getCommitsBetweenTags(fromTag, toTag = 'HEAD', options = {}) {
+    return this.getCommitsBetween(fromTag, toTag, options)
+  }
+
+  /**
+   * Get list of all authors in repository
+   * @returns {Array<string>} Array of unique author names
+   */
+  getAllAuthors() {
+    try {
+      const output = this.execGitSafe('git log --format="%an" | sort -u')
+      return output
+        .split('\n')
+        .filter((name) => name.trim())
+        .sort()
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * Get list of stashed changes
+   * @returns {Array<Object>} Array of stash entries with index, message, and date
+   */
+  getStashList() {
+    try {
+      const output = this.execGitSafe('git stash list --format="%gd|%gs|%ci"')
+      if (!output.trim()) {
+        return []
+      }
+      return output
+        .split('\n')
+        .filter((line) => line.trim())
+        .map((line) => {
+          const [index, message, date] = line.split('|')
+          return {
+            index: index.trim(),
+            message: message.trim(),
+            date: date.trim(),
+          }
+        })
+    } catch {
+      return []
+    }
+  }
+
+  /**
+   * Get detailed information about a specific stash entry
+   * @param {string} stashRef - Stash reference (e.g., 'stash@{0}')
+   * @returns {Object|null} Stash details including files changed
+   */
+  getStashDetails(stashRef = 'stash@{0}') {
+    try {
+      // Get stash message
+      const message = this.execGitSafe(`git stash list --format="%gs" -1 ${stashRef}`).trim()
+
+      // Get files changed in stash
+      const statOutput = this.execGitSafe(`git stash show ${stashRef} --stat`)
+      const diffOutput = this.execGitSafe(`git stash show ${stashRef} -p`)
+
+      // Parse stat output for files
+      const files = statOutput
+        .split('\n')
+        .filter((line) => line.includes('|'))
+        .map((line) => {
+          const match = line.match(/^\s*(.+?)\s*\|\s*(\d+)/)
+          if (match) {
+            return {
+              path: match[1].trim(),
+              changes: parseInt(match[2], 10),
+            }
+          }
+          return null
+        })
+        .filter(Boolean)
+
+      // Get summary stats
+      const summaryMatch = statOutput.match(/(\d+) files? changed(?:, (\d+) insertions?)?(?:, (\d+) deletions?)?/)
+
+      return {
+        ref: stashRef,
+        message,
+        files,
+        diff: diffOutput,
+        stats: {
+          filesChanged: summaryMatch ? parseInt(summaryMatch[1], 10) : files.length,
+          insertions: summaryMatch && summaryMatch[2] ? parseInt(summaryMatch[2], 10) : 0,
+          deletions: summaryMatch && summaryMatch[3] ? parseInt(summaryMatch[3], 10) : 0,
+        },
+      }
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Check if there are any stashed changes
+   * @returns {boolean} True if stash has entries
+   */
+  hasStashedChanges() {
+    return this.getStashList().length > 0
   }
 
   /**

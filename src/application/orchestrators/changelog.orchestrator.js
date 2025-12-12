@@ -154,7 +154,7 @@ export class ChangelogOrchestrator {
     }
   }
 
-  async generateChangelog(version, since) {
+  async generateChangelog(version, since, extraOptions = {}) {
     try {
       await this.ensureInitialized()
 
@@ -167,8 +167,34 @@ export class ChangelogOrchestrator {
         throw new Error('Not a git repository')
       }
 
+      // Handle tag range option (e.g., v1.0.0..v2.0.0)
+      let effectiveSince = since
+      let effectiveUntil = 'HEAD'
+      if (extraOptions.tagRange) {
+        const [fromTag, toTag] = extraOptions.tagRange.split('..')
+        if (fromTag) {
+          effectiveSince = fromTag
+        }
+        if (toTag) {
+          effectiveUntil = toTag
+        }
+        console.log(colors.infoMessage(`📦 Generating changelog between tags: ${fromTag} → ${toTag || 'HEAD'}`))
+      }
+
+      // Display author filter if specified
+      if (extraOptions.author) {
+        console.log(colors.infoMessage(`👤 Filtering commits by author: ${extraOptions.author}`))
+      }
+
+      // Merge options
+      const mergedOptions = {
+        ...this.options,
+        author: extraOptions.author,
+        until: effectiveUntil,
+      }
+
       // Generate changelog using the service
-      const result = await this.changelogService.generateChangelog(version, since, this.options)
+      const result = await this.changelogService.generateChangelog(version, effectiveSince, mergedOptions)
 
       if (!result) {
         console.log(colors.warningMessage('No changelog generated'))

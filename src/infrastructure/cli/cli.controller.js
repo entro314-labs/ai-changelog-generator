@@ -44,6 +44,7 @@ export class CLIController {
     this.commands.set('commit-message', new CommitMessageCommand())
     this.commands.set('commit', new CommitCommand())
     this.commands.set('providers', new ProvidersCommand())
+    this.commands.set('stash', new StashCommand())
   }
 
   async runCLI() {
@@ -122,6 +123,22 @@ export class CLIController {
               type: 'string',
               description: 'Generate changelog since a specific git ref (tag/commit).',
             })
+            .option('author', {
+              alias: 'a',
+              type: 'string',
+              description: 'Filter commits by author name or email.',
+            })
+            .option('tag-range', {
+              type: 'string',
+              description: 'Generate changelog between two tags (format: v1.0.0..v2.0.0).',
+            })
+            .option('format', {
+              alias: 'f',
+              type: 'string',
+              choices: ['markdown', 'json', 'html'],
+              default: 'markdown',
+              description: 'Output format for the changelog.',
+            })
             .option('model', {
               alias: 'm',
               type: 'string',
@@ -136,6 +153,11 @@ export class CLIController {
             .option('no-attribution', {
               type: 'boolean',
               description: 'Disable the attribution footer.',
+            })
+            .option('output', {
+              alias: 'o',
+              type: 'string',
+              description: 'Output file path.',
             })
         })
 
@@ -223,12 +245,38 @@ export class CLIController {
             })
             .option('model', { type: 'string', description: 'Override the default AI model.' })
         })
+        .command('stash', 'Analyze stashed changes.', (yargs) => {
+          yargs
+            .command('list', 'List all stashed changes.')
+            .command('analyze [stash]', 'Analyze a specific stash entry.', (y) => {
+              y.positional('stash', {
+                describe: 'Stash reference (e.g., stash@{0})',
+                default: 'stash@{0}',
+                type: 'string',
+              })
+            })
+            .command('changelog [stash]', 'Generate changelog from stashed changes.', (y) => {
+              y.positional('stash', {
+                describe: 'Stash reference (e.g., stash@{0})',
+                default: 'stash@{0}',
+                type: 'string',
+              })
+            })
+            .demandCommand(1, 'Please specify a stash subcommand.')
+        })
         .command('providers', 'Manage AI providers.', (yargs) => {
           yargs
             .command('list', 'List available providers.')
             .command('switch <provider>', 'Switch to a different provider.')
             .command('configure [provider]', 'Configure AI provider settings.')
             .command('validate [provider]', 'Validate provider models and capabilities.')
+            .command('status', 'Check health status of all providers.')
+            .command('models [provider]', 'List available models for a provider.', (y) => {
+              y.positional('provider', {
+                describe: 'Provider name (optional, shows all if not specified)',
+                type: 'string',
+              })
+            })
             .demandCommand(1, 'Please specify a provider subcommand.')
         })
 
@@ -251,12 +299,14 @@ export class CLIController {
       .option('format', {
         alias: 'f',
         type: 'string',
-        choices: ['markdown', 'json'],
+        choices: ['markdown', 'json', 'html'],
         default: 'markdown',
         description: 'Output format',
       })
       .option('output', { alias: 'o', type: 'string', description: 'Output file path' })
       .option('since', { type: 'string', description: 'Analyze changes since this git ref' })
+      .option('author', { alias: 'a', type: 'string', description: 'Filter commits by author' })
+      .option('tag-range', { type: 'string', description: 'Generate changelog between tags (v1.0..v2.0)' })
       .option('silent', { type: 'boolean', description: 'Suppress non-essential output' })
       .option('dry-run', { type: 'boolean', description: 'Preview without writing files' })
       .option('detailed', { type: 'boolean', description: 'Use detailed analysis mode' })
@@ -304,6 +354,8 @@ class BaseCommand {
       format: argv.format || 'markdown',
       output: argv.output,
       since: argv.since,
+      author: argv.author,
+      tagRange: argv.tagRange,
       silent: argv.silent,
       dryRun: argv.dryRun,
     }
@@ -326,16 +378,82 @@ class BaseCommand {
 // Command implementations
 class DefaultCommand extends BaseCommand {
   async execute(argv, appService) {
-    const _config = this.processStandardFlags(argv, appService)
+    const config = this.processStandardFlags(argv, appService)
 
     if (argv.interactive) {
       await appService.runInteractive()
     } else {
-      await appService.generateChangelog({
+      const result = await appService.generateChangelog({
         version: argv.releaseVersion,
         since: argv.since,
+        author: argv.author,
+        tagRange: argv.tagRange,
+        format: config.format,
+        output: config.output,
+        dryRun: config.dryRun,
       })
+
+      // Handle output formatting
+      if (result?.changelog && config.format !== 'markdown') {
+        const formattedOutput = this.formatOutput(result.changelog, config.format)
+        if (config.dryRun || !config.output) {
+          console.log(formattedOutput)
+        }
+      }
     }
+  }
+
+  formatOutput(changelog, format) {
+    if (format === 'json') {
+      return JSON.stringify({ changelog, generatedAt: new Date().toISOString() }, null, 2)
+    }
+    if (format === 'html') {
+      return this.convertToHtml(changelog)
+    }
+    return changelog
+  }
+
+  convertToHtml(markdown) {
+    // Simple markdown to HTML conversion
+    let html = markdown
+      // Headers
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      // Bold
+      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+      // Italic
+      .replace(/\*(.*)\*/gim, '<em>$1</em>')
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2">$1</a>')
+      // List items
+      .replace(/^\s*-\s+(.*$)/gim, '<li>$1</li>')
+      // Inline code
+      .replace(/`([^`]+)`/gim, '<code>$1</code>')
+      // Paragraphs
+      .replace(/\n\n/gim, '</p><p>')
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
+    h1, h2, h3 { color: #333; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+    ul { padding-left: 2em; }
+    li { margin: 0.5em 0; }
+    code { background: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; }
+    a { color: #0066cc; }
+    .generated { color: #666; font-size: 0.9em; margin-top: 2em; border-top: 1px solid #eee; padding-top: 1em; }
+  </style>
+</head>
+<body>
+  <p>${html}</p>
+  <div class="generated">Generated by AI Changelog Generator on ${new Date().toLocaleString()}</div>
+</body>
+</html>`
   }
 }
 
@@ -426,8 +544,21 @@ class WorkingDirCommand extends BaseCommand {
 class FromCommitsCommand extends BaseCommand {
   async execute(argv, appService) {
     const _config = this.processStandardFlags(argv, appService)
-    // Implementation would generate changelog from specific commits
-    console.log(colors.infoMessage(`Generating changelog from commits: ${argv.commits.join(', ')}`))
+    console.log(colors.processingMessage(`🔍 Generating changelog from commits: ${argv.commits.join(', ')}`))
+
+    try {
+      const result = await appService.generateChangelogFromCommits(argv.commits)
+
+      if (result?.changelog) {
+        console.log(colors.successMessage('\n✅ Changelog generated successfully!'))
+        console.log(colors.dim('─'.repeat(50)))
+        console.log(result.changelog)
+      } else {
+        console.log(colors.warningMessage('No changelog could be generated from the specified commits.'))
+      }
+    } catch (error) {
+      console.error(colors.errorMessage(`Error generating changelog: ${error.message}`))
+    }
   }
 }
 
@@ -526,9 +657,15 @@ class ProvidersCommand extends BaseCommand {
       case 'validate':
         await this.validateProvider(appService, argv.provider)
         break
+      case 'status':
+        await this.checkProviderStatus(appService)
+        break
+      case 'models':
+        await this.listModels(appService, argv.provider)
+        break
       default:
         console.log(colors.errorMessage('Unknown provider subcommand'))
-        console.log(colors.infoMessage('Available subcommands: list, switch, configure, validate'))
+        console.log(colors.infoMessage('Available subcommands: list, switch, configure, validate, status, models'))
     }
   }
 
@@ -682,6 +819,305 @@ class ProvidersCommand extends BaseCommand {
       }
     } catch (error) {
       EnhancedConsole.error(`Error validating provider: ${error.message}`)
+    }
+  }
+
+  async checkProviderStatus(appService) {
+    console.log(colors.processingMessage('🏥 Checking provider health status...'))
+
+    try {
+      const providers = await appService.listProviders()
+      const healthResults = []
+
+      for (const provider of providers) {
+        if (provider.available) {
+          const startTime = Date.now()
+          try {
+            const validation = await appService.validateProvider(provider.name)
+            const responseTime = Date.now() - startTime
+
+            healthResults.push({
+              name: provider.name,
+              status: validation.success ? 'healthy' : 'unhealthy',
+              responseTime,
+              model: validation.model || 'N/A',
+              error: validation.error || null,
+              active: provider.active,
+            })
+          } catch (error) {
+            healthResults.push({
+              name: provider.name,
+              status: 'error',
+              responseTime: Date.now() - startTime,
+              error: error.message,
+              active: provider.active,
+            })
+          }
+        } else {
+          healthResults.push({
+            name: provider.name,
+            status: 'unconfigured',
+            responseTime: null,
+            error: 'Not configured',
+            active: false,
+          })
+        }
+      }
+
+      // Display results
+      console.log(colors.header('\n🏥 Provider Health Status:\n'))
+
+      const statusIcons = {
+        healthy: '🟢',
+        unhealthy: '🔴',
+        error: '🔴',
+        unconfigured: '⚪',
+      }
+
+      healthResults.forEach((result) => {
+        const icon = statusIcons[result.status] || '⚪'
+        const activeMarker = result.active ? ' 🎯' : ''
+        const responseInfo = result.responseTime ? ` (${result.responseTime}ms)` : ''
+
+        console.log(`  ${icon} ${colors.highlight(result.name)}${activeMarker}`)
+        console.log(`     Status: ${result.status}${responseInfo}`)
+
+        if (result.model && result.status === 'healthy') {
+          console.log(`     Model: ${colors.dim(result.model)}`)
+        }
+
+        if (result.error && result.status !== 'unconfigured') {
+          console.log(`     Error: ${colors.errorMessage(result.error)}`)
+        }
+
+        console.log('')
+      })
+
+      // Summary
+      const healthy = healthResults.filter((r) => r.status === 'healthy').length
+      const unhealthy = healthResults.filter((r) => ['unhealthy', 'error'].includes(r.status)).length
+      const unconfigured = healthResults.filter((r) => r.status === 'unconfigured').length
+
+      console.log(colors.dim('─'.repeat(40)))
+      console.log(
+        `Summary: ${colors.successMessage(`${healthy} healthy`)}, ${unhealthy > 0 ? colors.errorMessage(`${unhealthy} unhealthy`) : `${unhealthy} unhealthy`}, ${unconfigured} unconfigured`
+      )
+    } catch (error) {
+      EnhancedConsole.error(`Error checking provider status: ${error.message}`)
+    }
+  }
+
+  async listModels(appService, providerName) {
+    console.log(colors.processingMessage('🔍 Discovering available models...'))
+
+    try {
+      const providers = await appService.listProviders()
+
+      if (providerName) {
+        // List models for specific provider
+        const provider = providers.find((p) => p.name.toLowerCase() === providerName.toLowerCase())
+        if (!provider) {
+          console.log(colors.errorMessage(`Provider '${providerName}' not found.`))
+          console.log(colors.infoMessage('Use "ai-changelog providers list" to see available providers.'))
+          return
+        }
+
+        console.log(colors.header(`\n📦 Models for ${provider.name}:\n`))
+
+        if (provider.models && provider.models.length > 0) {
+          provider.models.forEach((model) => {
+            const isDefault = model === provider.defaultModel ? ' 🎯 (default)' : ''
+            console.log(`  ${colors.highlight(model)}${isDefault}`)
+          })
+        } else {
+          // Show known models from config
+          const knownModels = this.getKnownModelsForProvider(provider.name)
+          if (knownModels.length > 0) {
+            console.log(colors.dim('  Known models (from configuration):'))
+            knownModels.forEach((model) => {
+              console.log(`  ${colors.highlight(model)}`)
+            })
+          } else {
+            console.log(colors.infoMessage('  No model information available.'))
+          }
+        }
+      } else {
+        // List models for all available providers
+        console.log(colors.header('\n📦 Available Models by Provider:\n'))
+
+        for (const provider of providers) {
+          if (!provider.available) continue
+
+          console.log(`${colors.highlight(provider.name)}:`)
+
+          if (provider.models && provider.models.length > 0) {
+            provider.models.slice(0, 5).forEach((model) => {
+              const isDefault = model === provider.defaultModel ? ' 🎯' : ''
+              console.log(`  ${colors.dim('•')} ${model}${isDefault}`)
+            })
+            if (provider.models.length > 5) {
+              console.log(`  ${colors.dim(`... and ${provider.models.length - 5} more`)}`)
+            }
+          } else {
+            const knownModels = this.getKnownModelsForProvider(provider.name)
+            knownModels.slice(0, 3).forEach((model) => {
+              console.log(`  ${colors.dim('•')} ${model}`)
+            })
+          }
+          console.log('')
+        }
+      }
+    } catch (error) {
+      EnhancedConsole.error(`Error listing models: ${error.message}`)
+    }
+  }
+
+  getKnownModelsForProvider(providerName) {
+    const knownModels = {
+      openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', 'o1', 'o1-mini', 'o3-mini'],
+      anthropic: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
+      google: ['gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
+      azure: ['gpt-4o', 'gpt-4-turbo', 'gpt-35-turbo'],
+      ollama: ['llama3.2', 'llama3.1', 'mistral', 'codellama', 'deepseek-coder'],
+      lmstudio: ['local-model'],
+      bedrock: ['anthropic.claude-3-sonnet', 'anthropic.claude-3-haiku', 'amazon.titan-text-express'],
+      vertex: ['gemini-1.5-pro', 'gemini-1.5-flash'],
+      huggingface: ['mistralai/Mistral-7B-Instruct-v0.2', 'google/flan-t5-xxl'],
+    }
+    return knownModels[providerName.toLowerCase()] || []
+  }
+}
+
+class StashCommand extends BaseCommand {
+  async execute(argv, appService) {
+    const subcommand = argv._[1]
+
+    switch (subcommand) {
+      case 'list':
+        await this.listStashes(appService)
+        break
+      case 'analyze':
+        await this.analyzeStash(appService, argv.stash)
+        break
+      case 'changelog':
+        await this.generateStashChangelog(appService, argv.stash)
+        break
+      default:
+        console.log(colors.errorMessage('Unknown stash subcommand'))
+        console.log(colors.infoMessage('Available subcommands: list, analyze, changelog'))
+    }
+  }
+
+  async listStashes(appService) {
+    try {
+      const stashes = appService.orchestrator.gitManager.getStashList()
+
+      if (stashes.length === 0) {
+        console.log(colors.infoMessage('No stashed changes found.'))
+        return
+      }
+
+      console.log(colors.header(`\n📦 Stashed Changes (${stashes.length}):\n`))
+
+      stashes.forEach((stash, index) => {
+        console.log(`  ${colors.highlight(stash.index)}`)
+        console.log(`    ${colors.dim('Message:')} ${stash.message}`)
+        console.log(`    ${colors.dim('Date:')} ${stash.date}`)
+        if (index < stashes.length - 1) console.log('')
+      })
+
+      console.log(colors.dim('\nUse "ai-changelog stash analyze <stash>" to see details'))
+    } catch (error) {
+      EnhancedConsole.error(`Error listing stashes: ${error.message}`)
+    }
+  }
+
+  async analyzeStash(appService, stashRef = 'stash@{0}') {
+    console.log(colors.processingMessage(`🔍 Analyzing ${stashRef}...`))
+
+    try {
+      const details = appService.orchestrator.gitManager.getStashDetails(stashRef)
+
+      if (!details) {
+        console.log(colors.errorMessage(`Stash '${stashRef}' not found.`))
+        return
+      }
+
+      console.log(colors.header(`\n📦 Stash Analysis: ${stashRef}\n`))
+      console.log(`${colors.dim('Message:')} ${details.message}`)
+      console.log(`${colors.dim('Files changed:')} ${details.stats.filesChanged}`)
+      console.log(`${colors.dim('Insertions:')} ${colors.success(`+${details.stats.insertions}`)}`)
+      console.log(`${colors.dim('Deletions:')} ${colors.error(`-${details.stats.deletions}`)}`)
+
+      console.log(colors.header('\n📁 Files:\n'))
+      details.files.forEach((file) => {
+        console.log(`  ${colors.highlight(file.path)} (${file.changes} changes)`)
+      })
+
+      console.log(colors.dim('\nUse "ai-changelog stash changelog" to generate changelog'))
+    } catch (error) {
+      EnhancedConsole.error(`Error analyzing stash: ${error.message}`)
+    }
+  }
+
+  async generateStashChangelog(appService, stashRef = 'stash@{0}') {
+    console.log(colors.processingMessage(`📝 Generating changelog from ${stashRef}...`))
+
+    try {
+      const details = appService.orchestrator.gitManager.getStashDetails(stashRef)
+
+      if (!details) {
+        console.log(colors.errorMessage(`Stash '${stashRef}' not found.`))
+        return
+      }
+
+      // Create pseudo-commit data for AI analysis
+      const stashData = {
+        hash: stashRef.replace(/[{}@]/g, ''),
+        message: details.message || 'Stashed changes',
+        files: details.files.map((f) => ({
+          filePath: f.path,
+          status: 'modified',
+          diff: '',
+        })),
+        diff: details.diff,
+        stats: details.stats,
+      }
+
+      // Analyze with AI if available
+      if (appService.orchestrator.aiAnalysisService?.hasAI) {
+        console.log(colors.processingMessage('🤖 Analyzing stashed changes with AI...'))
+
+        const analysis = await appService.orchestrator.aiAnalysisService.analyzeCommit(stashData)
+
+        console.log(colors.header('\n📋 Stash Changelog:\n'))
+        console.log(`## Stashed Changes\n`)
+        console.log(`**Summary:** ${analysis?.summary || details.message}`)
+        console.log(`**Impact:** ${analysis?.impact || 'medium'}`)
+        console.log(`**Category:** ${analysis?.category || 'chore'}`)
+
+        if (analysis?.description) {
+          console.log(`\n${analysis.description}`)
+        }
+
+        console.log(`\n**Files affected:** ${details.files.length}`)
+        details.files.forEach((f) => {
+          console.log(`- ${f.path}`)
+        })
+      } else {
+        // Basic changelog without AI
+        console.log(colors.header('\n📋 Stash Changelog:\n'))
+        console.log(`## Stashed Changes\n`)
+        console.log(`**Message:** ${details.message}`)
+        console.log(`**Stats:** ${details.stats.filesChanged} files, +${details.stats.insertions}/-${details.stats.deletions}`)
+
+        console.log(`\n**Files affected:**`)
+        details.files.forEach((f) => {
+          console.log(`- ${f.path}`)
+        })
+      }
+    } catch (error) {
+      EnhancedConsole.error(`Error generating stash changelog: ${error.message}`)
     }
   }
 }

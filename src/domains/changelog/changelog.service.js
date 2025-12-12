@@ -37,8 +37,11 @@ export class ChangelogService {
   async generateChangelog(version = null, since = null, options = {}) {
     console.log(colors.processingMessage('🤖 Analyzing changes with AI...'))
 
-    // Get committed changes
-    const commits = await this.gitService.getCommitsSince(since)
+    // Get committed changes with optional filters
+    const commits = await this.gitService.getCommitsSince(since, {
+      author: options.author,
+      until: options.until,
+    })
 
     // Get working directory changes using analysis engine
     let workingDirAnalysis = null

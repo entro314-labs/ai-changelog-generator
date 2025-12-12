@@ -1134,24 +1134,6 @@ ${enhancedMergeSummary}
       : ''
   }
 
-  // Debug logging for merge commits with "pull request"
-  if (isMergeCommit && subject.includes('pull request')) {
-    try {
-      const fs = require('fs')
-      const debugContent = '=== EXACT AI INPUT FOR fd97ab7 ===\n' +
-        'SUBJECT: ' + subject + '\n' +
-        'FILES COUNT: ' + files.length + '\n' +
-        'ENHANCED MERGE SUMMARY:\n' + (enhancedMergeSummary || 'None') + '\n\n' +
-        'FILES SECTION (first 3000 chars):\n' + filesSection.substring(0, 3000) + '\n\n' +
-        'FULL PROMPT PREVIEW:\n' + prompt.substring(0, 2000) + '\n=== END DEBUG ==='
-
-      fs.writeFileSync('AI_INPUT_DEBUG.txt', debugContent)
-      console.log('*** AI INPUT SAVED TO AI_INPUT_DEBUG.txt ***')
-    } catch (error) {
-      console.log('DEBUG ERROR:', error.message)
-    }
-  }
-
 **TARGET AUDIENCE:** End users and project stakeholders who need to understand what changed and why it matters.
 
 **YOUR ROLE:** You are a release manager translating technical changes into clear, user-focused release notes.

@@ -41,8 +41,14 @@ export class ApplicationService {
 
   async generateChangelog(options = {}) {
     try {
-      const { version, since } = options
-      return await this.orchestrator.generateChangelog(version, since)
+      const { version, since, author, tagRange, format, output, dryRun } = options
+      return await this.orchestrator.generateChangelog(version, since, {
+        author,
+        tagRange,
+        format,
+        output,
+        dryRun,
+      })
     } catch (error) {
       console.error(colors.errorMessage('Application service error:'), error.message)
       throw error
