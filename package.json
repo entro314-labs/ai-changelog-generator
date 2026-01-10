@@ -98,7 +98,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "^2.1.2",
-    "@types/node": "25.0.3",
+    "@types/node": "25.0.5",
     "@vitest/browser": "latest",
     "@vitest/coverage-v8": "latest",
     "@vitest/ui": "latest",
