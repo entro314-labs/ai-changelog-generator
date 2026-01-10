@@ -29,7 +29,9 @@ export function handleCLIError(error, context = 'application', options = {}) {
   if (showTips) {
     const tips = getContextualTips(error, context)
     if (tips.length > 0) {
-      tips.forEach((tip) => console.error(colors.infoMessage(`💡 Tip: ${tip}`)))
+      tips.forEach((tip) => {
+        console.error(colors.infoMessage(`💡 Tip: ${tip}`))
+      })
     }
   }
 

@@ -288,9 +288,13 @@ export class JsonUtils {
     if (typeof obj === 'string') {
       strings.push(obj)
     } else if (Array.isArray(obj)) {
-      obj.forEach((item) => JsonUtils.extractStrings(item, strings))
+      obj.forEach((item) => {
+        JsonUtils.extractStrings(item, strings)
+      })
     } else if (obj && typeof obj === 'object') {
-      Object.values(obj).forEach((value) => JsonUtils.extractStrings(value, strings))
+      Object.values(obj).forEach((value) => {
+        JsonUtils.extractStrings(value, strings)
+      })
     }
     return strings
   }

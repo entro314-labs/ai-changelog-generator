@@ -7,8 +7,16 @@ import { ChangelogOrchestrator } from '../orchestrators/changelog.orchestrator.j
 export class ApplicationService {
   constructor(options = {}) {
     this.options = options
-    this.configManager = new ConfigurationManager()
-    this.orchestrator = new ChangelogOrchestrator(this.configManager, options)
+
+    // Normalize repositoryPath option (can be cwd or repositoryPath)
+    const repositoryPath = options.repositoryPath || options.cwd
+    if (repositoryPath) {
+      this.options.repositoryPath = repositoryPath
+      this.options.cwd = repositoryPath
+    }
+
+    this.configManager = new ConfigurationManager(options.configPath)
+    this.orchestrator = new ChangelogOrchestrator(this.configManager, this.options)
     this.initialized = false
 
     // Apply options

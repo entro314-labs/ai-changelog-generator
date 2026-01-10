@@ -87,7 +87,8 @@ export class BaseProvider {
   async selectOptimalModel(commitInfo) {
     try {
       return this.getModelRecommendation(commitInfo)
-    } catch (_error) {
+    } catch (error) {
+      console.warn(`Warning: Model selection failed: ${error.message}. Using default model.`)
       return { model: this.getDefaultModel(), reason: 'fallback' }
     }
   }

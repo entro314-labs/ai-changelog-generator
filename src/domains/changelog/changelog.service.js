@@ -1805,11 +1805,12 @@ export class ChangelogService {
     ]
 
     patterns.forEach((pattern) => {
-      let match
-      while ((match = pattern.exec(content)) !== null) {
+      let match = pattern.exec(content)
+      while (match !== null) {
         if (match[1] && !functions.includes(match[1])) {
           functions.push(match[1])
         }
+        match = pattern.exec(content)
       }
     })
 
@@ -2186,7 +2187,7 @@ export class ChangelogService {
 
     // Add context information for detailed modes
     if (options.analysisMode === 'detailed' || options.analysisMode === 'enterprise') {
-      changelog += this.generateContextSection(result.context)
+      changelog += this.generateContextSection(result.summary)
     }
 
     return {
@@ -2209,6 +2210,8 @@ export class ChangelogService {
       // Enhanced analysis of changes with diff content for AI analysis
       const enhancedChanges = await this.enhanceChangesWithDiff(rawChanges)
       const changesSummary = summarizeFileChanges(enhancedChanges)
+      
+      console.log('DEBUG generateComprehensiveWorkspaceChangelog changesSummary:', JSON.stringify(changesSummary))
 
       // Use DiffProcessor for intelligent processing
       const analysisMode = options.analysisMode || 'standard'
@@ -2244,6 +2247,9 @@ export class ChangelogService {
   }
 
   async generateCommitStyleWorkingDirectoryEntries(options = {}) {
+    console.log('DEBUG: generateCommitStyleWorkingDirectoryEntries called')
+    console.log('DEBUG: summarizeFileChanges type:', typeof summarizeFileChanges)
+
     // Use provided working directory analysis or get current changes
     let rawChanges
     if (options.workingDirAnalysis?.changes) {
@@ -2260,6 +2266,9 @@ export class ChangelogService {
       // Enhanced analysis of changes with diff content for AI analysis
       const enhancedChanges = await this.enhanceChangesWithDiff(rawChanges)
       const changesSummary = summarizeFileChanges(enhancedChanges)
+      
+      console.log('DEBUG: enhancedChanges length:', enhancedChanges.length)
+      console.log('DEBUG: changesSummary:', changesSummary)
 
       // Use DiffProcessor for intelligent diff processing
       const analysisMode =
@@ -2272,6 +2281,10 @@ export class ChangelogService {
 
       const processedResult = diffProcessor.processFiles(enhancedChanges)
       const { processedFiles, patterns } = processedResult
+      
+      console.log('DEBUG: changesSummary type:', typeof changesSummary)
+      console.log('DEBUG: changesSummary:', JSON.stringify(changesSummary))
+      console.log('DEBUG: processedResult:', JSON.stringify(processedResult))
 
       // Build pattern summary if patterns were detected
       const patternSummary =
@@ -2507,6 +2520,8 @@ Generate one entry per file or logical change group. Only describe what you can 
   }
 
   async generateAIChangelogContentFromChanges(changes, changesSummary, analysisMode = 'standard') {
+    console.log('DEBUG generateAIChangelogContentFromChanges changesSummary:', JSON.stringify(changesSummary))
+    
     if (!this.aiAnalysisService.hasAI) {
       console.log(colors.infoMessage('AI not available, using rule-based analysis...'))
       return this.generateBasicChangelogContentFromChanges(changes, changesSummary)
@@ -2548,6 +2563,7 @@ Generate one entry per file or logical change group. Only describe what you can 
         .join('\n')
 
       // Build comprehensive prompt with processed changes
+      console.log('DEBUG before prompt, changesSummary:', changesSummary ? 'defined' : 'undefined', 'totalFiles:', changesSummary?.totalFiles)
       const prompt = `Generate a comprehensive AI changelog for the following working directory changes:
 
 **Analysis Mode**: ${analysisMode}
@@ -2727,13 +2743,55 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
   }
 
   generateContextSection(context) {
+    if (!context) {
+      return ''
+    }
+    
     let section = '## Context Analysis\n\n'
-    section += `- **Total Files:** ${context.totalFiles}\n`
-    section += `- **Primary Category:** ${context.primaryCategory}\n`
-    section += `- **Risk Level:** ${context.riskLevel}\n`
-    section += `- **Complexity:** ${context.complexity}\n\n`
+    
+    // Handle totalFiles from either structure
+    if (context.totalFiles !== undefined) {
+      section += `- **Total Files:** ${context.totalFiles}\n`
+    }
+    
+    // Handle categories from summarizeFileChanges structure
+    if (context.categories && typeof context.categories === 'object') {
+      const categoryNames = Object.keys(context.categories)
+      if (categoryNames.length > 0) {
+        section += `- **Affected Areas:** ${categoryNames.join(', ')}\n`
+      }
+    }
+    
+    // Handle stats if available
+    if (context.stats) {
+      const statParts = []
+      if (context.stats.added > 0) statParts.push(`${context.stats.added} added`)
+      if (context.stats.modified > 0) statParts.push(`${context.stats.modified} modified`)
+      if (context.stats.deleted > 0) statParts.push(`${context.stats.deleted} deleted`)
+      if (statParts.length > 0) {
+        section += `- **Changes:** ${statParts.join(', ')}\n`
+      }
+    }
+    
+    // Handle languages if available
+    if (context.languages && Array.isArray(context.languages) && context.languages.length > 0) {
+      section += `- **Languages:** ${context.languages.join(', ')}\n`
+    }
+    
+    // Legacy properties for backward compatibility
+    if (context.primaryCategory) {
+      section += `- **Primary Category:** ${context.primaryCategory}\n`
+    }
+    if (context.riskLevel) {
+      section += `- **Risk Level:** ${context.riskLevel}\n`
+    }
+    if (context.complexity) {
+      section += `- **Complexity:** ${context.complexity}\n`
+    }
+    
+    section += '\n'
 
-    if (context.recommendations.length > 0) {
+    if (context.recommendations && Array.isArray(context.recommendations) && context.recommendations.length > 0) {
       section += '### Recommendations\n\n'
       context.recommendations.forEach((rec) => {
         section += `- ${rec}\n`

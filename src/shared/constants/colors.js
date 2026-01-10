@@ -285,6 +285,7 @@ class Colors {
   // Helper to get actual visible length of string (without ANSI codes)
   getVisibleLength(str) {
     // Remove ANSI escape sequences to get actual visible length
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: Needed for ANSI codes
     return str.replace(/\x1b\[[0-9;]*m/g, '').length
   }
 
@@ -616,7 +617,7 @@ class Colors {
       return ''
     }
 
-    const { headers = Object.keys(data[0]), align = 'left', padding = 1 } = options
+    const { headers = Object.keys(data[0]), align = 'left' } = options
     const rows = data.map((row) => headers.map((header) => String(row[header] || '')))
 
     // Calculate column widths

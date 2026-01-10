@@ -111,9 +111,11 @@ export class ConfigurationManager {
         const content = fs.readFileSync(this.configPath, 'utf8')
         const envVars = this.parseEnvFile(content)
         Object.assign(defaults, envVars)
-      } catch (_error) {
+      } catch (error) {
         console.warn(
-          colors.warningMessage(`Warning: Could not load config from ${this.configPath}`)
+          colors.warningMessage(
+            `Warning: Could not load config from ${this.configPath}: ${error.message}`
+          )
         )
       }
     }
@@ -179,10 +181,10 @@ export class ConfigurationManager {
 
       // Deep merge with defaults
       return this.deepMergeConfig(defaultConfig, yamlConfig)
-    } catch (_error) {
+    } catch (error) {
       console.warn(
         colors.warningMessage(
-          `Warning: Could not load changelog config from ${this.changelogConfigPath}, using defaults`
+          `Warning: Could not load changelog config from ${this.changelogConfigPath}: ${error.message}, using defaults`
         )
       )
       return defaultConfig

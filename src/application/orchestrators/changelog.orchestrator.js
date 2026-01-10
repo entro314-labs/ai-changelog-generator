@@ -61,7 +61,12 @@ export class ChangelogOrchestrator {
       this.aiProvider = this.providerManager.getActiveProvider()
 
       // Create proper implementations using the new classes
-      this.gitManager = new GitManager()
+      // Pass cwd/repositoryPath to GitManager so it runs commands in correct directory
+      const gitOptions = {}
+      if (this.options.cwd || this.options.repositoryPath) {
+        gitOptions.cwd = this.options.cwd || this.options.repositoryPath
+      }
+      this.gitManager = new GitManager(gitOptions)
       this.tagger = new CommitTagger()
       this.promptEngine = await this.createPromptEngine()
 
@@ -178,7 +183,11 @@ export class ChangelogOrchestrator {
         if (toTag) {
           effectiveUntil = toTag
         }
-        console.log(colors.infoMessage(`📦 Generating changelog between tags: ${fromTag} → ${toTag || 'HEAD'}`))
+        console.log(
+          colors.infoMessage(
+            `📦 Generating changelog between tags: ${fromTag} → ${toTag || 'HEAD'}`
+          )
+        )
       }
 
       // Display author filter if specified
@@ -194,7 +203,11 @@ export class ChangelogOrchestrator {
       }
 
       // Generate changelog using the service
-      const result = await this.changelogService.generateChangelog(version, effectiveSince, mergedOptions)
+      const result = await this.changelogService.generateChangelog(
+        version,
+        effectiveSince,
+        mergedOptions
+      )
 
       if (!result) {
         console.log(colors.warningMessage('No changelog generated'))
@@ -882,13 +895,6 @@ export class ChangelogOrchestrator {
           stagedFiles: finalStatus.staged.length,
           filesStaged: true,
         }
-      }
-
-      return {
-        success: true,
-        commitMessage,
-        stagedFiles: finalStatus.staged.length,
-        phase: 'staging-complete',
       }
     } catch (error) {
       console.error(colors.errorMessage(`Commit workflow error: ${error.message}`))

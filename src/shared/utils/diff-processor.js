@@ -101,7 +101,7 @@ export class DiffProcessor {
    * Process a single file's diff with intelligent compression
    */
   processFileDiff(file, options = {}) {
-    const { budget = 4000, patterns = {}, isHighPriority = false } = options // Increased from 1500
+    const { budget = 4000, _patterns = {}, isHighPriority = false } = options // Increased from 1500
 
     if (!file.diff || file.diff === 'No diff available') {
       return {
@@ -120,17 +120,7 @@ export class DiffProcessor {
     }
 
     // Temporarily disable bulk pattern matching to preserve more detail
-    // TODO: Make this smarter - only apply to truly repetitive patterns
-    // const patternMatch = this.matchesBulkPattern(file, patterns)
-    // if (patternMatch) {
-    //   return {
-    //     ...file,
-    //     diff: `[Bulk ${patternMatch.type}]: ${patternMatch.description}`,
-    //     processed: true,
-    //     compressionApplied: true,
-    //     bulkPattern: patternMatch.type,
-    //   }
-    // }
+    // Pattern matching logic removed for cleanup
 
     // Apply intelligent truncation if still too large
     if (processedDiff.length > budget) {
@@ -370,7 +360,7 @@ export class DiffProcessor {
    * Apply intelligent truncation that preserves structure
    */
   intelligentTruncation(diff, budget, options = {}) {
-    const { preserveStructure = false, filePath = '' } = options
+    const { preserveStructure = false, _filePath = '' } = options
 
     if (diff.length <= budget) {
       return diff

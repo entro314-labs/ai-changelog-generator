@@ -9,7 +9,11 @@ import { CLIController } from '../src/infrastructure/cli/cli.controller.js'
 
 // Run the CLI with new refactored architecture using proper CLI controller
 const cliController = new CLIController()
-cliController.runCLI().catch((error) => {
+cliController.runCLI().then(() => {
+  if (process.exitCode !== undefined) {
+    process.exit(process.exitCode)
+  }
+}).catch((error) => {
   console.error('❌ CLI Error:', error.message)
   if (process.env.DEBUG) {
     console.error(error.stack)

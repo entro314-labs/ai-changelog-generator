@@ -306,7 +306,10 @@ export class CLIController {
       .option('output', { alias: 'o', type: 'string', description: 'Output file path' })
       .option('since', { type: 'string', description: 'Analyze changes since this git ref' })
       .option('author', { alias: 'a', type: 'string', description: 'Filter commits by author' })
-      .option('tag-range', { type: 'string', description: 'Generate changelog between tags (v1.0..v2.0)' })
+      .option('tag-range', {
+        type: 'string',
+        description: 'Generate changelog between tags (v1.0..v2.0)',
+      })
       .option('silent', { type: 'boolean', description: 'Suppress non-essential output' })
       .option('dry-run', { type: 'boolean', description: 'Preview without writing files' })
       .option('detailed', { type: 'boolean', description: 'Use detailed analysis mode' })
@@ -544,35 +547,33 @@ class WorkingDirCommand extends BaseCommand {
 class FromCommitsCommand extends BaseCommand {
   async execute(argv, appService) {
     const _config = this.processStandardFlags(argv, appService)
-    console.log(colors.processingMessage(`🔍 Generating changelog from commits: ${argv.commits.join(', ')}`))
+    EnhancedConsole.processing(`Generating changelog from commits: ${argv.commits.join(', ')}`)
 
     try {
       const result = await appService.generateChangelogFromCommits(argv.commits)
 
       if (result?.changelog) {
-        console.log(colors.successMessage('\n✅ Changelog generated successfully!'))
-        console.log(colors.dim('─'.repeat(50)))
+        EnhancedConsole.success('Changelog generated successfully!')
+        EnhancedConsole.divider()
         console.log(result.changelog)
       } else {
-        console.log(colors.warningMessage('No changelog could be generated from the specified commits.'))
+        EnhancedConsole.warn('No changelog could be generated from the specified commits.')
       }
     } catch (error) {
-      console.error(colors.errorMessage(`Error generating changelog: ${error.message}`))
+      EnhancedConsole.error(`Error generating changelog: ${error.message}`)
     }
   }
 }
 
 class CommitMessageCommand extends BaseCommand {
   async execute(_argv, appService) {
-    console.log(
-      colors.processingMessage('🤖 Analyzing current changes for commit message suggestions...')
-    )
+    EnhancedConsole.processing('Analyzing current changes for commit message suggestions...')
 
     try {
       const result = await appService.generateCommitMessage()
 
       if (result?.suggestions && result.suggestions.length > 0) {
-        console.log(colors.successMessage('\n✅ Generated commit message suggestions:'))
+        EnhancedConsole.success('Generated commit message suggestions:')
         result.suggestions.forEach((suggestion, index) => {
           console.log(`${colors.number(index + 1)}. ${colors.highlight(suggestion)}`)
         })
@@ -581,18 +582,18 @@ class CommitMessageCommand extends BaseCommand {
           console.log(colors.dim(`\nContext: ${result.context}`))
         }
       } else {
-        console.log(colors.warningMessage('No commit message suggestions could be generated.'))
-        console.log(colors.infoMessage('Make sure you have uncommitted changes.'))
+        EnhancedConsole.warn('No commit message suggestions could be generated.')
+        EnhancedConsole.info('Make sure you have uncommitted changes.')
       }
     } catch (error) {
-      console.error(colors.errorMessage(`Error generating commit message: ${error.message}`))
+      EnhancedConsole.error(`Error generating commit message: ${error.message}`)
     }
   }
 }
 
 class CommitCommand extends BaseCommand {
   async execute(argv, appService) {
-    console.log(colors.processingMessage('🚀 Starting interactive commit workflow...'))
+    EnhancedConsole.processing('Starting interactive commit workflow...')
 
     try {
       // Process flags and model override
@@ -611,29 +612,25 @@ class CommitCommand extends BaseCommand {
 
       if (result?.success) {
         if (argv.dryRun) {
-          console.log(colors.successMessage('✅ Commit workflow completed (dry-run mode)'))
+          EnhancedConsole.success('Commit workflow completed (dry-run mode)')
           console.log(colors.highlight(`Proposed commit message:\n${result.commitMessage}`))
         } else {
-          console.log(colors.successMessage('✅ Changes committed successfully!'))
+          EnhancedConsole.success('Changes committed successfully!')
           console.log(colors.highlight(`Commit: ${result.commitHash}`))
           console.log(colors.dim(`Message: ${result.commitMessage}`))
         }
       } else {
-        console.log(colors.warningMessage('Commit workflow cancelled or no changes to commit.'))
+        EnhancedConsole.warn('Commit workflow cancelled or no changes to commit.')
       }
     } catch (error) {
-      console.error(colors.errorMessage(`Commit workflow failed: ${error.message}`))
+      EnhancedConsole.error(`Commit workflow failed: ${error.message}`)
 
       // Provide helpful suggestions based on error type
       if (error.message.includes('No changes')) {
-        console.log(
-          colors.infoMessage('💡 Try making some changes first, then run the commit command.')
-        )
+        EnhancedConsole.info('Try making some changes first, then run the commit command.')
       } else if (error.message.includes('git')) {
-        console.log(
-          colors.infoMessage(
-            '💡 Make sure you are in a git repository and git is properly configured.'
-          )
+        EnhancedConsole.info(
+          'Make sure you have uncommitted changes.'
         )
       }
     }
@@ -664,8 +661,8 @@ class ProvidersCommand extends BaseCommand {
         await this.listModels(appService, argv.provider)
         break
       default:
-        console.log(colors.errorMessage('Unknown provider subcommand'))
-        console.log(colors.infoMessage('Available subcommands: list, switch, configure, validate, status, models'))
+        EnhancedConsole.error('Unknown provider subcommand')
+        EnhancedConsole.info('Available subcommands: list, switch, configure, validate, status, models')
     }
   }
 
@@ -702,8 +699,8 @@ class ProvidersCommand extends BaseCommand {
 
   async switchProvider(appService, providerName) {
     if (!providerName) {
-      console.log(colors.errorMessage('Please specify a provider name'))
-      console.log(colors.infoMessage('Usage: ai-changelog providers switch <provider>'))
+      EnhancedConsole.error('Please specify a provider name')
+      EnhancedConsole.info('Usage: ai-changelog providers switch <provider>')
       return
     }
 
@@ -711,12 +708,10 @@ class ProvidersCommand extends BaseCommand {
       const result = await appService.switchProvider(providerName)
 
       if (result.success) {
-        console.log(colors.successMessage(`✅ Switched to ${providerName} provider`))
+        EnhancedConsole.success(`Switched to ${providerName} provider`)
       } else {
-        console.log(colors.errorMessage(`❌ Failed to switch provider: ${result.error}`))
-        console.log(
-          colors.infoMessage('Use "ai-changelog providers list" to see available providers')
-        )
+        EnhancedConsole.error(`Failed to switch provider: ${result.error}`)
+        EnhancedConsole.info('Use "ai-changelog providers list" to see available providers')
       }
     } catch (error) {
       EnhancedConsole.error(`Error switching provider: ${error.message}`)
@@ -743,7 +738,7 @@ class ProvidersCommand extends BaseCommand {
       }
 
       console.log(colors.header(`\n🔧 Configuring ${providerName.toUpperCase()} Provider`))
-      console.log(colors.infoMessage('Please add the following to your .env.local file:\n'))
+      EnhancedConsole.info('Please add the following to your .env.local file:\n')
 
       switch (providerName.toLowerCase()) {
         case 'openai':
@@ -776,7 +771,7 @@ class ProvidersCommand extends BaseCommand {
           console.log(colors.code(`${providerName.toUpperCase()}_API_KEY=your_api_key_here`))
       }
 
-      console.log(colors.infoMessage('\nAfter adding the configuration, run:'))
+      EnhancedConsole.info('\nAfter adding the configuration, run:')
       console.log(colors.highlight(`ai-changelog providers validate ${providerName}`))
     } catch (error) {
       EnhancedConsole.error(`Error configuring provider: ${error.message}`)
@@ -895,7 +890,9 @@ class ProvidersCommand extends BaseCommand {
 
       // Summary
       const healthy = healthResults.filter((r) => r.status === 'healthy').length
-      const unhealthy = healthResults.filter((r) => ['unhealthy', 'error'].includes(r.status)).length
+      const unhealthy = healthResults.filter((r) =>
+        ['unhealthy', 'error'].includes(r.status)
+      ).length
       const unconfigured = healthResults.filter((r) => r.status === 'unconfigured').length
 
       console.log(colors.dim('─'.repeat(40)))
@@ -918,7 +915,9 @@ class ProvidersCommand extends BaseCommand {
         const provider = providers.find((p) => p.name.toLowerCase() === providerName.toLowerCase())
         if (!provider) {
           console.log(colors.errorMessage(`Provider '${providerName}' not found.`))
-          console.log(colors.infoMessage('Use "ai-changelog providers list" to see available providers.'))
+          console.log(
+            colors.infoMessage('Use "ai-changelog providers list" to see available providers.')
+          )
           return
         }
 
@@ -974,13 +973,31 @@ class ProvidersCommand extends BaseCommand {
 
   getKnownModelsForProvider(providerName) {
     const knownModels = {
-      openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo', 'o1', 'o1-mini', 'o3-mini'],
-      anthropic: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
+      openai: [
+        'gpt-4o',
+        'gpt-4o-mini',
+        'gpt-4-turbo',
+        'gpt-4',
+        'gpt-3.5-turbo',
+        'o1',
+        'o1-mini',
+        'o3-mini',
+      ],
+      anthropic: [
+        'claude-sonnet-4-20250514',
+        'claude-3-5-sonnet-20241022',
+        'claude-3-opus-20240229',
+        'claude-3-haiku-20240307',
+      ],
       google: ['gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro'],
       azure: ['gpt-4o', 'gpt-4-turbo', 'gpt-35-turbo'],
       ollama: ['llama3.2', 'llama3.1', 'mistral', 'codellama', 'deepseek-coder'],
       lmstudio: ['local-model'],
-      bedrock: ['anthropic.claude-3-sonnet', 'anthropic.claude-3-haiku', 'amazon.titan-text-express'],
+      bedrock: [
+        'anthropic.claude-3-sonnet',
+        'anthropic.claude-3-haiku',
+        'amazon.titan-text-express',
+      ],
       vertex: ['gemini-1.5-pro', 'gemini-1.5-flash'],
       huggingface: ['mistralai/Mistral-7B-Instruct-v0.2', 'google/flan-t5-xxl'],
     }
@@ -1109,7 +1126,9 @@ class StashCommand extends BaseCommand {
         console.log(colors.header('\n📋 Stash Changelog:\n'))
         console.log(`## Stashed Changes\n`)
         console.log(`**Message:** ${details.message}`)
-        console.log(`**Stats:** ${details.stats.filesChanged} files, +${details.stats.insertions}/-${details.stats.deletions}`)
+        console.log(
+          `**Stats:** ${details.stats.filesChanged} files, +${details.stats.insertions}/-${details.stats.deletions}`
+        )
 
         console.log(`\n**Files affected:**`)
         details.files.forEach((f) => {

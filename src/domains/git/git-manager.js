@@ -14,6 +14,7 @@ export class GitManager {
       encoding: 'utf8',
       timeout: 30000,
       stdio: 'pipe',
+      cwd: undefined, // Will use process.cwd() if not specified
       ...options,
     }
 
@@ -56,11 +57,18 @@ export class GitManager {
    */
   execGit(command) {
     try {
-      return execSync(command, {
+      const execOptions = {
         encoding: this.options.encoding,
         stdio: this.options.stdio,
         timeout: this.options.timeout,
-      })
+      }
+
+      // Add cwd if specified
+      if (this.options.cwd) {
+        execOptions.cwd = this.options.cwd
+      }
+
+      return execSync(command, execOptions)
     } catch (error) {
       throw this._createGitError(command, error)
     }
@@ -239,9 +247,7 @@ export class GitManager {
    */
   getCommitsByAuthor(author, limit = 50) {
     try {
-      const output = this.execGitSafe(
-        `git log --author="${author}" --oneline -n ${limit}`
-      )
+      const output = this.execGitSafe(`git log --author="${author}" --oneline -n ${limit}`)
       return output
         .split('\n')
         .filter((line) => line.trim())
@@ -341,7 +347,9 @@ export class GitManager {
         .filter(Boolean)
 
       // Get summary stats
-      const summaryMatch = statOutput.match(/(\d+) files? changed(?:, (\d+) insertions?)?(?:, (\d+) deletions?)?/)
+      const summaryMatch = statOutput.match(
+        /(\d+) files? changed(?:, (\d+) insertions?)?(?:, (\d+) deletions?)?/
+      )
 
       return {
         ref: stashRef,
@@ -351,7 +359,7 @@ export class GitManager {
         stats: {
           filesChanged: summaryMatch ? parseInt(summaryMatch[1], 10) : files.length,
           insertions: summaryMatch && summaryMatch[2] ? parseInt(summaryMatch[2], 10) : 0,
-          deletions: summaryMatch && summaryMatch[3] ? parseInt(summaryMatch[3], 10) : 0,
+          deletions: summaryMatch?.[3] ? parseInt(summaryMatch[3], 10) : 0,
         },
       }
     } catch {

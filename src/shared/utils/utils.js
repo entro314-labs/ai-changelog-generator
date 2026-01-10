@@ -720,7 +720,9 @@ export function throttle(func, limit) {
     if (!inThrottle) {
       func.apply(this, args)
       inThrottle = true
-      setTimeout(() => (inThrottle = false), limit)
+      setTimeout(() => {
+        inThrottle = false
+      }, limit)
     }
   }
 }
@@ -814,7 +816,9 @@ export function analyzeSemanticChanges(diff, filePath) {
     const matches = [...diff.matchAll(regex)]
     if (matches.length > 0) {
       analysis.patterns.add(pattern)
-      matches.forEach((match) => analysis.codeElements.add(match[1]))
+      matches.forEach((match) => {
+        analysis.codeElements.add(match[1])
+      })
     }
   })
 
@@ -1059,14 +1063,11 @@ export function buildEnhancedPrompt(commitAnalysis, analysisMode = 'standard') {
   const {
     subject,
     files = [],
-    semanticAnalysis = {},
-    diffStats = {},
-    complexity = {},
-    riskAssessment = {},
+    // semanticAnalysis, diffStats, complexity, riskAssessment - unused
   } = commitAnalysis
 
   // Detect merge commits and upgrade analysis mode for better specificity
-  const isMergeCommit = subject && subject.toLowerCase().includes('merge')
+  const isMergeCommit = subject?.toLowerCase().includes('merge')
   const effectiveAnalysisMode = isMergeCommit && files.length > 10 ? 'detailed' : analysisMode
 
   // Debug logging for merge commits (disabled)
@@ -1185,7 +1186,7 @@ Provide a JSON response with ONLY these fields (use definitive language - NO "li
  * Validate and correct AI categorization and impact assessment based on commit characteristics
  */
 export function validateCommitCategory(category, commitAnalysis) {
-  const { files = [], diffStats = {}, subject = '' } = commitAnalysis
+  const { files = [] } = commitAnalysis
   const fileCount = files.length
   const addedFiles = files.filter((f) => f.status === 'A' || f.status === '??').length
   const { insertions = 0, deletions = 0 } = diffStats
@@ -1431,9 +1432,13 @@ function extractCategoryFromText(content) {
  *
  * @returns {Array} Array of change objects with status and filePath
  */
-export function getWorkingDirectoryChanges() {
+export function getWorkingDirectoryChanges(cwd = undefined) {
   try {
-    const result = execSync('git status --porcelain', { encoding: 'utf8' })
+    const execOptions = { encoding: 'utf8' }
+    if (cwd) {
+      execOptions.cwd = cwd
+    }
+    const result = execSync('git status --porcelain', execOptions)
 
     if (!result.trim()) {
       return []
@@ -1621,6 +1626,7 @@ export function summarizeFileChanges(changes) {
     summary,
     categories,
     stats,
+    totalFiles: changes.length,
     languages: Array.from(languages),
   }
 }

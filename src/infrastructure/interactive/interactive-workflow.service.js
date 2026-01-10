@@ -1,4 +1,5 @@
 import process from 'node:process'
+import { execSync } from 'node:child_process'
 
 import colors from '../../shared/constants/colors.js'
 import { EnhancedConsole, SimpleSpinner } from '../../shared/utils/cli-ui.js'
@@ -101,28 +102,40 @@ export class InteractiveWorkflowService {
       // Use AI to suggest better commit message
       if (this.aiAnalysisService.hasAI) {
         const prompt = message
-          ? `Improve this commit message following conventional commit format and best practices:
+          ? `Improve this commit message following conventional commit format.
 
 Original: "${message}"
 
+Provide EXACTLY 3 alternative commit messages, one per line, numbered 1-3.
+Do NOT include any other text, explanations, or conversational phrases.
+
 Requirements:
-- Use conventional commit format (type(scope): description)
+- Use conventional commit format: type(scope): description
 - Keep first line under 72 characters
 - Use imperative mood
 - Be specific and descriptive
 
-Provide 3 alternative suggestions.`
-          : `Suggest a commit message for these changes:
+Example output format:
+1. feat(auth): add OAuth2 authentication support
+2. fix(api): resolve timeout in user endpoint
+3. refactor(db): optimize query performance`
+          : `Generate commit messages for these changes:
 
 ${analysisContext}
 
+Provide EXACTLY 3 commit message suggestions, one per line, numbered 1-3.
+Do NOT include any other text, explanations, or conversational phrases.
+
 Requirements:
-- Use conventional commit format (type(scope): description)
+- Use conventional commit format: type(scope): description
 - Keep first line under 72 characters
 - Use imperative mood
 - Be specific and descriptive
 
-Provide 3 suggestions.`
+Example output format:
+1. feat(auth): add OAuth2 authentication support
+2. fix(api): resolve timeout in user endpoint
+3. refactor(db): optimize query performance`
 
         const response = await this.aiAnalysisService.aiProvider.generateCompletion(
           [
@@ -193,6 +206,71 @@ Provide 3 suggestions.`
 
     if (details.length > 0) {
       summary += ` (${details.join(', ')})`
+    }
+
+    // Add actual change summaries from git diff for better context
+    summary += '\n\nKey changes:\n'
+
+    try {
+      // Get a concise summary of actual changes, limiting to top 10 files
+      const filesToAnalyze = changes.slice(0, 10)
+
+      filesToAnalyze.forEach((change) => {
+        const filePath = change.filePath || change.path
+        const status = change.status
+
+        try {
+          if (status === 'M' || status === 'MM') {
+            // For modified files, get a brief diff stat
+            const diffStat = execSync(`git diff HEAD -- "${filePath}" | head -50`, {
+              encoding: 'utf8',
+              maxBuffer: 1024 * 100,
+            })
+
+            if (diffStat) {
+              // Extract some meaningful info from diff
+              const addedLines = (diffStat.match(/^\+(?!\+)/gm) || []).length
+              const removedLines = (diffStat.match(/^-(?!-)/gm) || []).length
+
+              // Try to extract function/class names or key changes
+              const meaningfulLines = diffStat
+                .split('\n')
+                .filter(
+                  (line) =>
+                    line.startsWith('+') &&
+                    (line.includes('function') ||
+                      line.includes('class') ||
+                      line.includes('const') ||
+                      line.includes('export') ||
+                      line.includes('import') ||
+                      line.includes('async') ||
+                      line.includes('//'))
+                )
+                .slice(0, 2)
+                .map((line) => line.substring(1).trim())
+
+              if (meaningfulLines.length > 0) {
+                summary += `- ${filePath}: +${addedLines}/-${removedLines} lines (${meaningfulLines[0].substring(0, 60)}...)\n`
+              } else {
+                summary += `- ${filePath}: +${addedLines}/-${removedLines} lines\n`
+              }
+            }
+          } else if (status === 'A' || status === '??') {
+            summary += `- ${filePath}: New file\n`
+          } else if (status === 'D') {
+            summary += `- ${filePath}: Deleted\n`
+          }
+        } catch (fileError) {
+          // Skip files that can't be diffed
+        }
+      })
+
+      if (changes.length > 10) {
+        summary += `... and ${changes.length - 10} more files\n`
+      }
+    } catch (error) {
+      // If diff analysis fails, fall back to basic summary
+      console.warn('Could not analyze diffs:', error.message)
     }
 
     return summary
@@ -380,17 +458,46 @@ Provide 3 suggestions.`
   }
 
   parseCommitSuggestions(content) {
-    // Parse AI response to extract suggestions
+    // Parse AI response to extract valid commit message suggestions
     const lines = content.split('\n').filter((line) => line.trim())
     const suggestions = []
 
+    // Valid conventional commit types
+    const validTypes = [
+      'feat',
+      'fix',
+      'docs',
+      'style',
+      'refactor',
+      'test',
+      'chore',
+      'perf',
+      'ci',
+      'build',
+      'revert',
+    ]
+
     lines.forEach((line) => {
       // Remove numbering and clean up
-      const cleaned = line
-        .replace(/^\d+\.\s*/, '')
-        .replace(/^-\s*/, '')
-        .trim()
-      if (cleaned && cleaned.length > 10 && cleaned.includes(':')) {
+      const cleaned = line.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').trim()
+
+      // Must be a reasonable length
+      if (!cleaned || cleaned.length < 10 || cleaned.length > 100) {
+        return
+      }
+
+      // Must have a colon (conventional format)
+      if (!cleaned.includes(':')) {
+        return
+      }
+
+      // Must start with a valid conventional commit type
+      const startsWithValidType = validTypes.some((type) => {
+        const pattern = new RegExp(`^${type}(\\(|:)`, 'i')
+        return pattern.test(cleaned)
+      })
+
+      if (startsWithValidType) {
         suggestions.push(cleaned)
       }
     })

@@ -483,7 +483,7 @@ export class CommitMessageValidationService {
    * Display validation results with colors
    */
   displayValidationResults(validationResult) {
-    const { valid, errors, warnings, suggestions, score, summary } = validationResult
+    const { valid, errors, warnings, suggestions, summary } = validationResult
 
     EnhancedConsole.section('🔍 Commit Message Validation')
     console.log(colors.secondary(`${summary}`))

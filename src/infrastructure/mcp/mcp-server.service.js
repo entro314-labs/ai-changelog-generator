@@ -5,7 +5,8 @@
  * Provides Model Context Protocol interface for changelog generation
  */
 
-import { execSync } from 'node:child_process'
+import { exec } from 'node:child_process'
+import { promisify } from 'node:util'
 import fs from 'node:fs'
 import path, { dirname } from 'node:path'
 import process from 'node:process'
@@ -18,8 +19,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { ChangelogOrchestrator } from '../../application/orchestrators/changelog.orchestrator.js'
 // Import application services
 import { ApplicationService } from '../../application/services/application.service.js'
-import { AnalysisEngine } from '../../domains/analysis/analysis.engine.js'
-import { GitService } from '../../domains/git/git.service.js'
+
 import { ConfigurationManager } from '../config/configuration.manager.js'
 import { ProviderManagerService } from '../providers/provider-manager.service.js'
 
@@ -312,7 +312,7 @@ class AIChangelogMCPServer {
 
       let result
 
-      if (source === 'working-dir' || (source === 'auto' && this.hasWorkingDirectoryChanges())) {
+      if (source === 'working-dir' || (source === 'auto' && (await this.hasWorkingDirectoryChanges()))) {
         // Generate from working directory changes using ChangelogService
         // Access the changelogService through the orchestrator
         await this.changelogOrchestrator.ensureInitialized()
@@ -324,7 +324,7 @@ class AIChangelogMCPServer {
         })
 
         // Format result to match expected structure
-        if (result && result.changelog) {
+        if (result?.changelog) {
           result = {
             content: result.changelog,
             metadata: {
@@ -522,12 +522,15 @@ class AIChangelogMCPServer {
     }
   }
 
-  hasWorkingDirectoryChanges() {
+  async hasWorkingDirectoryChanges() {
     try {
-      // Simple check for working directory changes
-      const result = execSync('git status --porcelain', { encoding: 'utf8' })
-      return result.trim().length > 0
-    } catch (_error) {
+      const execAsync = promisify(exec)
+      const { stdout } = await execAsync('git status --porcelain', { encoding: 'utf8' })
+      return stdout.trim().length > 0
+    } catch (error) {
+      // If git is not installed or not a git repo, we can assume no changes for our purpose
+      // but we should log the error for debugging
+      console.warn(`[MCP] Git check warning: ${error.message}`)
       return false
     }
   }

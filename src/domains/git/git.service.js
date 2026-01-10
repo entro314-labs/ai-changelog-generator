@@ -41,7 +41,8 @@ export class GitService {
             .trim()
             .split(' ')
           isMergeCommit = parents.length > 1
-        } catch {
+        } catch (error) {
+          console.warn(colors.warningMessage(`Failed to check parent commits: ${error.message}`))
           isMergeCommit = false
         }
       }
@@ -203,7 +204,8 @@ export class GitService {
           } else {
             diff = 'New empty file created'
           }
-        } catch {
+        } catch (error) {
+          console.warn(colors.warningMessage(`Failed to read new file content: ${error.message}`))
           diff = 'New file created (binary or inaccessible)'
         }
       } else if (status === 'D') {
@@ -217,7 +219,10 @@ export class GitService {
           } else {
             diff = 'File deleted from working directory (content was empty)'
           }
-        } catch {
+        } catch (error) {
+          console.warn(
+            colors.warningMessage(`Failed to read deleted file content: ${error.message}`)
+          )
           diff = 'File deleted from working directory (content unavailable)'
         }
       } else if (status === 'M' || status.includes('M')) {
@@ -230,7 +235,8 @@ export class GitService {
             const stagedDiff = this.gitManager.execGitSafe(`git diff --cached -- "${filePath}"`)
             diff = stagedDiff || 'No diff available (binary or identical)'
           }
-        } catch {
+        } catch (error) {
+          console.warn(colors.warningMessage(`Failed to generate diff: ${error.message}`))
           diff = 'Modified file (diff unavailable)'
         }
       } else if (status === 'R') {
@@ -250,7 +256,8 @@ export class GitService {
         try {
           const headResult = this.gitManager.execGitSafe(`git show HEAD:"${filePath}"`)
           beforeContent = headResult ? headResult.slice(0, 1000) : ''
-        } catch {
+        } catch (error) {
+          console.warn(colors.warningMessage(`Failed to get before content: ${error.message}`))
           beforeContent = ''
         }
         // afterContent stays empty for deleted files
@@ -260,7 +267,10 @@ export class GitService {
           // Get HEAD version
           const headResult = this.gitManager.execGitSafe(`git show HEAD:"${filePath}"`)
           beforeContent = headResult ? headResult.slice(0, 1000) : ''
-        } catch {
+        } catch (error) {
+          console.warn(
+            colors.warningMessage(`Failed to get before content (modified): ${error.message}`)
+          )
           beforeContent = ''
         }
 
@@ -268,7 +278,8 @@ export class GitService {
           // Get current working directory version
           const currentResult = this.gitManager.execGitSafe(`cat "${filePath}"`)
           afterContent = currentResult ? currentResult.slice(0, 1000) : ''
-        } catch {
+        } catch (error) {
+          console.warn(colors.warningMessage(`Failed to get after content: ${error.message}`))
           afterContent = ''
         }
       }
@@ -301,7 +312,11 @@ export class GitService {
         language: 'unknown',
         importance: 'medium',
         complexity: { score: 1 },
-        semanticChanges: { changeType: 'unknown', patterns: [], frameworks: [] },
+        semanticChanges: {
+          changeType: 'unknown',
+          patterns: [],
+          frameworks: [],
+        },
         functionalImpact: { scope: 'local', severity: 'low' },
       }
     }
@@ -328,7 +343,8 @@ export class GitService {
       }
 
       return { files: 0, insertions: 0, deletions: 0 }
-    } catch {
+    } catch (error) {
+      console.warn(colors.warningMessage(`Failed to get diff stats: ${error.message}`))
       return { files: 0, insertions: 0, deletions: 0 }
     }
   }
@@ -420,7 +436,9 @@ export class GitService {
           category: categorizeFile(filePath),
           language: detectLanguage(filePath),
           importance: assessFileImportance(filePath, status),
-          complexity: { level: changes > 100 ? 'high' : changes > 20 ? 'medium' : 'low' },
+          complexity: {
+            level: changes > 100 ? 'high' : changes > 20 ? 'medium' : 'low',
+          },
           semanticChanges: { patterns: ['merge-commit'] },
           functionalImpact: { level: changes > 50 ? 'high' : 'medium' },
           isMergeCommit: true,
@@ -662,7 +680,9 @@ export class GitService {
             details.push(techDetail)
           }
         }
-      } catch (_error) {}
+      } catch (error) {
+        console.warn(colors.warningMessage(`Failed to extract technical details: ${error.message}`))
+      }
     }
 
     return details
@@ -830,7 +850,10 @@ export class GitService {
           .filter((line) => line.trim())
           .map((line) => {
             const parts = line.split(' ')
-            return { size: parseInt(parts[1], 10), path: parts.slice(2).join(' ') }
+            return {
+              size: parseInt(parts[1], 10),
+              path: parts.slice(2).join(' '),
+            }
           })
           .filter((file) => file.size > 10 * 1024 * 1024) // 10MB threshold
 
@@ -1101,7 +1124,7 @@ ${
         )
         if (firstCommitOutput.trim()) {
           const firstCommitDate = new Date(firstCommitOutput.trim())
-          const ageInDays = Math.floor((new Date() - firstCommitDate) / (1000 * 60 * 60 * 24))
+          const ageInDays = Math.floor((Date.now() - firstCommitDate) / (1000 * 60 * 60 * 24))
           analysis.metrics.repositoryAgeInDays = ageInDays
         }
       } catch (error) {

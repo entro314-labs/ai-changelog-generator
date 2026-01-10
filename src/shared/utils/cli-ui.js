@@ -191,41 +191,44 @@ export class MultiProgress {
   }
 }
 
+import { format } from 'node:util'
+
 /**
  * Enhanced console with better formatting
  */
 export class EnhancedConsole {
-  static log(message, type = 'info') {
+  static log(type = 'info', ...args) {
+    const message = format(...args)
     console.log(colors.statusSymbol(type, message))
   }
 
-  static success(message) {
-    EnhancedConsole.log(message, 'success')
+  static success(...args) {
+    EnhancedConsole.log('success', ...args)
   }
 
-  static error(message) {
-    EnhancedConsole.log(message, 'error')
+  static error(...args) {
+    EnhancedConsole.log('error', ...args)
   }
 
-  static warn(message) {
-    EnhancedConsole.log(message, 'warning')
+  static warn(...args) {
+    EnhancedConsole.log('warning', ...args)
   }
 
-  static info(message) {
-    EnhancedConsole.log(message, 'info')
+  static info(...args) {
+    EnhancedConsole.log('info', ...args)
   }
 
-  static processing(message) {
-    EnhancedConsole.log(message, 'processing')
+  static processing(...args) {
+    EnhancedConsole.log('processing', ...args)
   }
 
-  static ai(message) {
-    EnhancedConsole.log(message, 'ai')
+  static ai(...args) {
+    EnhancedConsole.log('ai', ...args)
   }
 
   static metrics(data, title = 'Metrics') {
     if (typeof data === 'string') {
-      EnhancedConsole.log(data, 'metrics')
+      EnhancedConsole.log('metrics', data)
     } else if (data && Object.keys(data).length > 0) {
       EnhancedConsole.section(title)
       console.log(colors.formatMetrics(data))

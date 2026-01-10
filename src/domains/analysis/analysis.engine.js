@@ -13,6 +13,7 @@ import {
   getWorkingDirectoryChanges,
   performSemanticAnalysis,
 } from '../../shared/utils/utils.js'
+import { EnhancedConsole } from '../../shared/utils/cli-ui.js'
 
 export class AnalysisEngine {
   constructor(gitService, aiAnalysisService, gitManager = null) {
@@ -51,16 +52,16 @@ export class AnalysisEngine {
     let enhancedChanges = []
 
     try {
-      const changes = getWorkingDirectoryChanges()
+      // Get cwd from git manager if available
+      const cwd = this.gitService?.gitManager?.options?.cwd
+      const changes = getWorkingDirectoryChanges(cwd)
 
       if (changes.length === 0) {
-        console.log(colors.infoMessage('No changes detected in working directory.'))
+        EnhancedConsole.info('No changes detected in working directory.')
         return { changes: [], analysis: null }
       }
 
-      console.log(
-        colors.processingMessage(`Analyzing ${changes.length} working directory changes...`)
-      )
+      EnhancedConsole.processing(`Analyzing ${changes.length} working directory changes...`)
 
       // Enhanced file analysis with actual diff content
       enhancedChanges = []
@@ -102,9 +103,10 @@ export class AnalysisEngine {
               semanticChanges: { changeType: 'unknown', patterns: [], frameworks: [] },
               functionalImpact: { scope: 'local', severity: 'low' },
             })
+
           }
         } catch (error) {
-          console.error(`Error processing change ${i}:`, change, error.message)
+          EnhancedConsole.error(`Error processing change ${i}:`, change, error.message)
           enhancedChanges.push({
             ...change,
             category: 'other',
@@ -130,7 +132,7 @@ export class AnalysisEngine {
             'working-directory'
           )
         } catch (error) {
-          console.error('Error in AI analysis:', error.message)
+          EnhancedConsole.error('Error in AI analysis:', error.message)
           aiAnalysis = null
         }
       }
@@ -140,7 +142,7 @@ export class AnalysisEngine {
       try {
         ruleBasedAnalysis = this.analyzeChangesRuleBased(enhancedChanges)
       } catch (error) {
-        console.error('Error in rule-based analysis:', error.message)
+        EnhancedConsole.error('Error in rule-based analysis:', error.message)
         ruleBasedAnalysis = {
           summary: 'Analysis failed',
           category: 'other',
@@ -154,7 +156,7 @@ export class AnalysisEngine {
       try {
         finalAnalysis = this.combineAnalyses(aiAnalysis, ruleBasedAnalysis)
       } catch (error) {
-        console.error('Error combining analyses:', error.message)
+        EnhancedConsole.error('Error combining analyses:', error.message)
         finalAnalysis = {
           summary: `${enhancedChanges.length} working directory changes detected`,
           category: 'working-directory',
@@ -169,7 +171,7 @@ export class AnalysisEngine {
         summary: generateAnalysisSummary(enhancedChanges, finalAnalysis),
       }
     } catch (error) {
-      console.error(colors.errorMessage('Error analyzing current changes:'), error.message)
+      EnhancedConsole.error('Error analyzing current changes:', error.message)
       // Return enhanced changes if they were created before the error
       return {
         changes: enhancedChanges,
@@ -189,13 +191,13 @@ export class AnalysisEngine {
 
   async analyzeRecentCommits(limit = 10, _config = {}) {
     try {
-      console.log(colors.processingMessage(`Analyzing recent ${limit} commits...`))
+      EnhancedConsole.processing(`Analyzing recent ${limit} commits...`)
 
       const commits = await this.gitService.getCommitsSince(null)
       const recentCommits = commits.slice(0, limit)
 
       if (recentCommits.length === 0) {
-        console.log(colors.infoMessage('No recent commits found.'))
+        EnhancedConsole.info('No recent commits found.')
         return { commits: [], analysis: null }
       }
 
@@ -219,7 +221,7 @@ export class AnalysisEngine {
         summary: this.generateCommitsSummary(analyzedCommits, overallAnalysis),
       }
     } catch (error) {
-      console.error(colors.errorMessage('Error analyzing recent commits:'), error.message)
+      EnhancedConsole.error('Error analyzing recent commits:', error.message)
       return { commits: [], analysis: null, error: error.message }
     }
   }
@@ -259,11 +261,9 @@ export class AnalysisEngine {
         },
       }
     } catch (error) {
-      console.warn(
-        colors.warningMessage(
-          `Failed to enhance analysis for commit ${commitAnalysis.hash}:`,
-          error.message
-        )
+      EnhancedConsole.warn(
+        `Failed to enhance analysis for commit ${commitAnalysis.hash}:`,
+        error.message
       )
       return commitAnalysis
     }
@@ -552,8 +552,9 @@ export class AnalysisEngine {
         totalCommits: commits.length,
         suggestions,
       }
+
     } catch (error) {
-      console.warn(`Commit pattern analysis failed: ${error.message}`)
+      EnhancedConsole.warn(`Commit pattern analysis failed: ${error.message}`)
       return {
         patterns: [],
         compliance: 0,
@@ -621,8 +622,9 @@ export class AnalysisEngine {
         totalChanges: changes.length,
         details: `Detected ${detectedTypes.size} change types from ${changes.length} changes`,
       }
+
     } catch (error) {
-      console.warn(`Change type detection failed: ${error.message}`)
+      EnhancedConsole.warn(`Change type detection failed: ${error.message}`)
       return {
         types: [],
         confidence: 'low',
@@ -706,8 +708,9 @@ export class AnalysisEngine {
         recommendations,
         filesAnalyzed: files.length,
       }
+
     } catch (error) {
-      console.warn(`Code quality assessment failed: ${error.message}`)
+      EnhancedConsole.warn(`Code quality assessment failed: ${error.message}`)
       return {
         score: 0,
         issues: [`Assessment failed: ${error.message}`],
@@ -775,7 +778,7 @@ export class AnalysisEngine {
 
       return dependencies
     } catch (error) {
-      console.warn(`Dependency analysis failed: ${error.message}`)
+      EnhancedConsole.warn(`Dependency analysis failed: ${error.message}`)
       return {
         added: [],
         removed: [],

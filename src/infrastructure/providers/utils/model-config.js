@@ -14,7 +14,9 @@ function addWarningToCache(key) {
     warningCache.clear()
     // Keep last 80% of entries
     const keepCount = Math.floor(MAX_WARNING_CACHE_SIZE * 0.8)
-    entries.slice(-keepCount).forEach((entry) => warningCache.add(entry))
+    entries.slice(-keepCount).forEach((entry) => {
+      warningCache.add(entry)
+    })
   }
   warningCache.add(key)
 }
