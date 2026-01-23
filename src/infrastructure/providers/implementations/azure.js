@@ -1,9 +1,46 @@
+/**
+ * Azure OpenAI Provider for AI Changelog Generator
+ * Supports both v1 unified API (August 2025+) and legacy API
+ *
+ * Authentication methods (in priority order):
+ *
+ * 1. v1 API with API Key (Recommended):
+ *    OPENAI_API_KEY=your-key
+ *    OPENAI_BASE_URL=https://your-resource.openai.azure.com/openai/v1/
+ *    Uses standard OpenAI client - same code works for OpenAI and Azure
+ *
+ * 2. OAuth Token (from OAuth flow or external auth):
+ *    AZURE_OAUTH_TOKEN=your-bearer-token
+ *    Uses bearer token authentication
+ *
+ * 3. Azure AD Authentication (Managed Identity, Service Principal):
+ *    AZURE_USE_AD_AUTH=true
+ *    Uses DefaultAzureCredential for automatic token acquisition
+ *
+ * 4. Legacy API with API Key:
+ *    AZURE_OPENAI_KEY=your-key
+ *    AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+ *    AZURE_OPENAI_API_VERSION=2025-04-01-preview
+ *    AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4
+ *    Uses AzureOpenAI client with api-version
+ */
+
 import { DefaultAzureCredential, getBearerTokenProvider } from '@azure/identity'
-import { AzureOpenAI } from 'openai'
+import { AzureOpenAI, OpenAI } from 'openai'
 
 import { BaseProvider } from '../core/base-provider.js'
 import { applyMixins, ProviderResponseHandler } from '../utils/base-provider-helpers.js'
 import { getProviderModelConfig } from '../utils/model-config.js'
+
+/**
+ * Authentication types for Azure provider
+ */
+const AzureAuthType = {
+  API_KEY: 'api_key',
+  API_KEY_V1: 'api_key_v1',
+  OAUTH_TOKEN: 'oauth_token',
+  AZURE_AD: 'azure_ad',
+}
 
 class AzureOpenAIProvider extends BaseProvider {
   constructor(config) {
@@ -11,6 +48,8 @@ class AzureOpenAIProvider extends BaseProvider {
     this.azureClient = null
     this._cachedDeployments = null
     this._deploymentsCacheTime = 0
+    this._useV1Api = false
+    this._authType = null
     // Only initialize if properly configured
     if (this.isAvailable()) {
       try {
@@ -22,42 +61,191 @@ class AzureOpenAIProvider extends BaseProvider {
     }
   }
 
-  initializeClient() {
-    // Check if using API key or Azure AD authentication
-    if (this.config.AZURE_USE_AD_AUTH === 'true') {
-      try {
-        const credential = new DefaultAzureCredential()
-        const azureADTokenProvider = getBearerTokenProvider(
-          credential,
-          'https://cognitiveservices.azure.com/.default'
-        )
+  /**
+   * Get the current authentication type
+   * @returns {string|null}
+   */
+  getAuthType() {
+    return this._authType
+  }
 
-        this.azureClient = new AzureOpenAI({
-          azureADTokenProvider,
-          apiVersion: this.config.AZURE_OPENAI_API_VERSION || '2025-04-01-preview',
-          endpoint: this.config.AZURE_OPENAI_ENDPOINT,
-          timeout: 30000, // Reduced timeout for individual requests
-          maxRetries: 2, // Add retry logic
-          defaultQuery: { 'api-version': '2025-04-01-preview' },
+  /**
+   * Get authentication info for display
+   * @returns {Object}
+   */
+  getAuthInfo() {
+    return {
+      type: this._authType,
+      v1Api: this._useV1Api,
+      endpoint: this.config.AZURE_OPENAI_ENDPOINT || this.config.OPENAI_BASE_URL,
+      valid: this.isAvailable(),
+    }
+  }
+
+  /**
+   * Get provider information including auth details
+   * @returns {string}
+   */
+  getProviderInfo() {
+    const authInfo = this.getAuthInfo()
+    const authDetails = authInfo.type
+      ? `auth: ${authInfo.type}${authInfo.v1Api ? ' (v1 API)' : ''}`
+      : 'not configured'
+    return `Azure OpenAI Provider (${authDetails})`
+  }
+
+  /**
+   * Set OAuth token manually (for external OAuth flows)
+   * @param {string} token - Bearer token
+   */
+  setOAuthToken(token) {
+    this.config.AZURE_OAUTH_TOKEN = token
+    this._cachedDeployments = null
+    this.initializeClient()
+  }
+
+  /**
+   * Detect if using v1 unified API
+   * v1 API uses OPENAI_BASE_URL with /openai/v1/ suffix
+   */
+  isUsingV1Api() {
+    const baseUrl = this.config.OPENAI_BASE_URL || ''
+    return (
+      baseUrl.includes('/openai/v1') ||
+      baseUrl.includes('.openai.azure.com/openai/v1') ||
+      baseUrl.includes('.services.ai.azure.com/openai/v1') ||
+      this.config.AZURE_USE_V1_API === 'true'
+    )
+  }
+
+  initializeClient() {
+    this._useV1Api = this.isUsingV1Api()
+
+    // Priority 1: v1 Unified API with API key
+    if (this._useV1Api && this.config.OPENAI_BASE_URL && this.config.OPENAI_API_KEY) {
+      this.initializeV1Client()
+      this._authType = AzureAuthType.API_KEY_V1
+      return
+    }
+
+    // Priority 2: OAuth token (from OAuth flow or credential detection)
+    if (this.config.AZURE_OAUTH_TOKEN) {
+      this.initializeWithOAuthToken()
+      this._authType = AzureAuthType.OAUTH_TOKEN
+      return
+    }
+
+    // Priority 3: Azure AD authentication (Managed Identity, Service Principal)
+    if (this.config.AZURE_USE_AD_AUTH === 'true') {
+      this.initializeWithAzureAD()
+      this._authType = AzureAuthType.AZURE_AD
+      return
+    }
+
+    // Priority 4: Legacy API with API key
+    if (this.config.AZURE_OPENAI_KEY) {
+      this.initializeWithApiKey()
+      this._authType = AzureAuthType.API_KEY
+      return
+    }
+  }
+
+  /**
+   * Initialize with OAuth token (bearer token)
+   */
+  initializeWithOAuthToken() {
+    const token = this.config.AZURE_OAUTH_TOKEN
+
+    // For v1 API with OAuth token
+    if (this._useV1Api && this.config.OPENAI_BASE_URL) {
+      this.azureClient = new OpenAI({
+        apiKey: token, // OpenAI client uses apiKey field for bearer token
+        baseURL: this.config.OPENAI_BASE_URL,
+        timeout: 30000,
+        maxRetries: 2,
+        defaultHeaders: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      return
+    }
+
+    // For legacy API with OAuth token
+    // Create a custom token provider that returns the static token
+    const staticTokenProvider = async () => token
+
+    this.azureClient = new AzureOpenAI({
+      azureADTokenProvider: staticTokenProvider,
+      apiVersion: this.config.AZURE_OPENAI_API_VERSION || '2025-04-01-preview',
+      endpoint: this.config.AZURE_OPENAI_ENDPOINT,
+      timeout: 30000,
+      maxRetries: 2,
+    })
+  }
+
+  /**
+   * Initialize with v1 unified API (August 2025+)
+   * Uses standard OpenAI client with baseURL
+   */
+  initializeV1Client() {
+    const apiKey = this.config.OPENAI_API_KEY || this.config.AZURE_OPENAI_KEY
+    const baseURL = this.config.OPENAI_BASE_URL
+
+    this.azureClient = new OpenAI({
+      apiKey,
+      baseURL,
+      timeout: 30000,
+      maxRetries: 2,
+    })
+  }
+
+  /**
+   * Initialize with Azure AD authentication
+   */
+  initializeWithAzureAD() {
+    try {
+      const credential = new DefaultAzureCredential()
+      const azureADTokenProvider = getBearerTokenProvider(
+        credential,
+        'https://cognitiveservices.azure.com/.default'
+      )
+
+      // Check if v1 API with token auth
+      if (this._useV1Api && this.config.OPENAI_BASE_URL) {
+        this.azureClient = new OpenAI({
+          baseURL: this.config.OPENAI_BASE_URL,
+          apiKey: azureADTokenProvider,
+          timeout: 30000,
+          maxRetries: 2,
         })
-      } catch (error) {
-        console.error('Failed to initialize Azure AD authentication:', error.message)
-        // Fallback to API key if AD auth fails
-        this.initializeWithApiKey()
+        return
       }
-    } else {
+
+      // Legacy API with Azure AD
+      this.azureClient = new AzureOpenAI({
+        azureADTokenProvider,
+        apiVersion: this.config.AZURE_OPENAI_API_VERSION || '2025-04-01-preview',
+        endpoint: this.config.AZURE_OPENAI_ENDPOINT,
+        timeout: 30000,
+        maxRetries: 2,
+      })
+    } catch (error) {
+      console.error('Failed to initialize Azure AD authentication:', error.message)
+      // Fallback to API key if AD auth fails
       this.initializeWithApiKey()
     }
   }
 
+  /**
+   * Initialize with API key (legacy API)
+   */
   initializeWithApiKey() {
     this.azureClient = new AzureOpenAI({
       apiKey: this.config.AZURE_OPENAI_KEY,
       apiVersion: this.config.AZURE_OPENAI_API_VERSION || '2025-04-01-preview',
       endpoint: this.config.AZURE_OPENAI_ENDPOINT,
-      timeout: 30000, // Reduced timeout for individual requests
-      maxRetries: 2, // Add retry logic
-      defaultQuery: { 'api-version': '2025-04-01-preview' },
+      timeout: 30000,
+      maxRetries: 2,
     })
   }
 
@@ -66,11 +254,27 @@ class AzureOpenAIProvider extends BaseProvider {
   }
 
   isAvailable() {
-    const { AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_KEY, AZURE_USE_AD_AUTH } = this.config
-    // Must have endpoint, and either API key or AD auth enabled
+    // v1 API: OPENAI_BASE_URL with Azure endpoint + OPENAI_API_KEY
+    const baseUrl = this.config.OPENAI_BASE_URL || ''
+    const isAzureV1 =
+      (baseUrl.includes('.openai.azure.com') || baseUrl.includes('.services.ai.azure.com')) &&
+      (this.config.OPENAI_API_KEY || this.config.AZURE_OAUTH_TOKEN)
+
+    if (isAzureV1) {
+      return true
+    }
+
+    // OAuth token with endpoint
+    const { AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_KEY, AZURE_USE_AD_AUTH, AZURE_OAUTH_TOKEN } =
+      this.config
     const hasEndpoint = AZURE_OPENAI_ENDPOINT && AZURE_OPENAI_ENDPOINT.trim() !== ''
+
+    // Auth options: API key, AD auth, or OAuth token
     const hasAuth =
-      (AZURE_OPENAI_KEY && AZURE_OPENAI_KEY.trim() !== '') || AZURE_USE_AD_AUTH === 'true'
+      (AZURE_OPENAI_KEY && AZURE_OPENAI_KEY.trim() !== '') ||
+      AZURE_USE_AD_AUTH === 'true' ||
+      (AZURE_OAUTH_TOKEN && AZURE_OAUTH_TOKEN.trim() !== '')
+
     return hasEndpoint && hasAuth
   }
 

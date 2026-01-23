@@ -96,14 +96,76 @@ export class OpenAIProvider extends BaseProvider {
     try {
       const models = await this.openai.models.list()
       return models.data
-        .filter((m) => m.id.includes('gpt') || m.id.includes('o1'))
+        .filter(
+          (m) =>
+            m.id.includes('gpt') ||
+            m.id.includes('o1') ||
+            m.id.includes('o3') ||
+            m.id.includes('o4')
+        )
         .map((m) => ({
           name: m.id,
           id: m.id,
           description: `OpenAI ${m.id}`,
         }))
     } catch (_error) {
-      return []
+      // Return known models as fallback (GPT-5.x series, December 2025)
+      return [
+        {
+          id: 'gpt-5.2',
+          name: 'gpt-5.2',
+          description: 'GPT-5.2 - Flagship model for coding and agentic tasks (Dec 2025)',
+          contextWindow: 400000,
+          maxOutput: 128000,
+        },
+        {
+          id: 'gpt-5.2-codex',
+          name: 'gpt-5.2-codex',
+          description: 'GPT-5.2-Codex - Most advanced agentic coding model',
+          features: ['agentic_coding', 'context_compaction', 'cybersecurity'],
+        },
+        {
+          id: 'gpt-5',
+          name: 'gpt-5',
+          description: 'GPT-5 - General purpose flagship model',
+          contextWindow: 272000,
+        },
+        {
+          id: 'gpt-5-mini',
+          name: 'gpt-5-mini',
+          description: 'GPT-5 Mini - Smaller, faster GPT-5 variant',
+        },
+        {
+          id: 'gpt-5-nano',
+          name: 'gpt-5-nano',
+          description: 'GPT-5 Nano - Lightweight for high-volume tasks',
+        },
+        {
+          id: 'o4',
+          name: 'o4',
+          description: 'o4 - Latest reasoning model',
+          features: ['advanced_reasoning'],
+        },
+        {
+          id: 'o4-mini',
+          name: 'o4-mini',
+          description: 'o4-mini - Cost-effective reasoning model',
+          features: ['advanced_reasoning', 'cost_effective'],
+        },
+        {
+          id: 'gpt-4.1',
+          name: 'gpt-4.1',
+          description: 'GPT-4.1 - Previous generation with 1M context',
+          contextWindow: 1000000,
+          features: ['prompt_caching', 'cost_reduction'],
+        },
+        {
+          id: 'gpt-4o',
+          name: 'gpt-4o',
+          description: 'GPT-4o - Multimodal previous generation',
+          features: ['vision', 'multimodal'],
+        },
+      ]
     }
   }
 

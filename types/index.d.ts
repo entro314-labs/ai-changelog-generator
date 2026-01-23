@@ -181,29 +181,30 @@ export interface CommitAnalysis {
 }
 
 export interface CurrentChangesAnalysis {
-  staged: {
-    files: string[]
+  changes: Array<{
+    path: string
+    filePath: string
+    status: string
+    category: string
+    importance: string
+    diff: string
     additions: number
     deletions: number
+    language?: string
+    complexity?: string
+    businessRelevance?: string
+    risk?: string
+  }>
+  analysis: {
     summary: string
-  }
-  unstaged: {
-    files: string[]
-    additions: number
-    deletions: number
-    summary: string
-  }
-  untracked: {
-    files: string[]
-    categories: Record<string, string[]>
-    recommendations: string[]
-  }
-  aiAnalysis?: {
-    model: AIModel
+    category: string
     impact: string
-    suggestions: string[]
-    readiness: 'ready' | 'needs-work' | 'incomplete'
-  }
+    userFacing: boolean
+    complexity?: string
+    risk?: string
+  } | null
+  summary: string
+  error?: string
 }
 
 export interface RepositoryHealthCheck {
@@ -345,6 +346,34 @@ export class AIChangelogGenerator {
     commitsProcessed: number
     apiCalls: number
     errors: number
+  }
+
+  // Commit message generation with AI and validation
+  generateCommitMessage(options?: {
+    enableValidation?: boolean
+    strictValidation?: boolean
+  }): Promise<CommitMessageResult>
+}
+
+export interface CommitMessageResult {
+  message: string
+  validation: {
+    valid: boolean
+    score: number
+    errors: string[]
+    warnings: string[]
+    suggestions: string[]
+  }
+  branchAnalysis: {
+    branch: string
+    type: string
+    ticket?: string
+    description?: string
+  }
+  suggestedType: {
+    type: string
+    scope?: string
+    reason: string
   }
 }
 

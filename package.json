@@ -1,7 +1,7 @@
 {
   "name": "@entro314labs/ai-changelog-generator",
   "displayName": "AI Changelog Generator",
-  "version": "3.8.0",
+  "version": "4.1.1",
   "type": "module",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
   "main": "src/ai-changelog-generator.js",
@@ -73,16 +73,16 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
-    "@aws-sdk/client-bedrock-runtime": "^3.966.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.974.0",
     "@azure/identity": "^4.13.0",
     "@clack/prompts": "^0.11.0",
-    "@google/genai": "^1.35.0",
+    "@google/genai": "^1.38.0",
     "@google/generative-ai": "^0.24.1",
-    "@huggingface/hub": "^2.7.1",
-    "@huggingface/inference": "^4.13.5",
+    "@huggingface/hub": "^2.7.2",
+    "@huggingface/inference": "^4.13.10",
     "@lmstudio/sdk": "^1.5.0",
-    "@modelcontextprotocol/sdk": "^1.25.2",
-    "@modelcontextprotocol/server-filesystem": "2025.12.18",
+    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@modelcontextprotocol/server-filesystem": "2026.1.14",
     "boxen": "^8.0.1",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
@@ -93,16 +93,19 @@
     "js-yaml": "^4.1.1",
     "ollama": "^0.6.3",
     "openai": "^6.16.0",
-    "ora": "^9.0.0",
+    "ora": "^9.1.0",
     "yargs": "^18.0.0"
+  },
+  "optionalDependencies": {
+    "keytar": "^7.9.0"
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "^2.1.2",
-    "@types/node": "25.0.5",
+    "@types/node": "25.0.10",
     "@vitest/browser": "latest",
     "@vitest/coverage-v8": "latest",
     "@vitest/ui": "latest",
-    "tempy": "^3.1.0",
+    "tempy": "^3.1.1",
     "vitest": "latest"
   },
   "keywords": [
@@ -145,8 +148,8 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=22.21.1",
-    "pnpm": ">=10.27.0"
+    "node": ">=22.22.0",
+    "pnpm": ">=10.28.1"
   },
   "funding": {
     "type": "github",
@@ -158,8 +161,8 @@
     }
   },
   "volta": {
-    "node": "22.21.1",
-    "pnpm": "10.27.0"
+    "node": "22.22.0",
+    "pnpm": "10.28.1"
   },
   "pnpm": {
     "overrides": {

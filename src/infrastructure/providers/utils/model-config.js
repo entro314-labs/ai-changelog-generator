@@ -23,79 +23,125 @@ function addWarningToCache(key) {
 
 /**
  * Standard model configurations for each provider
- * Updated 2025 models based on Complete AI Providers & Models Integration.md
+ * Updated January 2026 - Latest models and SDK conventions
  */
 export const MODEL_CONFIGS = {
   openai: {
-    complexModel: 'gpt-4o',
-    standardModel: 'gpt-4.1',
-    mediumModel: 'gpt-4.1-mini',
-    smallModel: 'gpt-4.1-nano',
-    fallbacks: ['gpt-4.1', 'gpt-4o', 'o1'],
+    // GPT-5.2 is the newest flagship model (December 2025)
+    complexModel: 'gpt-5.2',
+    standardModel: 'gpt-5.2',
+    mediumModel: 'gpt-5-mini',
+    smallModel: 'gpt-5-nano',
+    reasoningModel: 'o4',
+    codingModel: 'gpt-5.2-codex',
+    fallbacks: ['gpt-5.2', 'gpt-5', 'gpt-4.1', 'gpt-4o'],
+    // GPT-5.2 features
+    contextWindow: 400000,
+    maxOutputTokens: 128000,
   },
 
   anthropic: {
-    complexModel: 'claude-opus-4-20250617',
-    standardModel: 'claude-sonnet-4-20250514',
-    mediumModel: 'claude-3.7-sonnet-20250114',
-    smallModel: 'claude-3.5-haiku-20241022',
+    // Claude 4.5 series (November 2025) - hybrid reasoning models
+    complexModel: 'claude-opus-4-5-20251124',
+    standardModel: 'claude-sonnet-4-5-20250929',
+    mediumModel: 'claude-sonnet-4-20250514',
+    smallModel: 'claude-haiku-4-5-20251001',
+    reasoningModel: 'claude-opus-4-5-20251124',
     fallbacks: [
+      'claude-sonnet-4-5-20250929',
+      'claude-opus-4-5-20251124',
       'claude-sonnet-4-20250514',
-      'claude-3.5-sonnet-20241022',
-      'claude-3.5-haiku-20241022',
+      'claude-haiku-4-5-20251001',
     ],
+    // Claude 4.5 features
+    contextWindow: 200000,
+    extendedContext: 1000000, // 1M tokens (beta)
+    supportsEffortParameter: true, // low, medium, high
+    supportsToolSearch: true, // beta: advanced-tool-use-2025-11-20
   },
 
   google: {
-    complexModel: 'gemini-2.5-pro',
-    standardModel: 'gemini-2.5-flash',
-    mediumModel: 'gemini-2.0-flash',
-    smallModel: 'gemini-2.0-flash-001',
-    fallbacks: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'],
+    // Gemini 3 series (November-December 2025)
+    complexModel: 'gemini-3-pro',
+    standardModel: 'gemini-3-flash',
+    mediumModel: 'gemini-2.5-flash',
+    smallModel: 'gemini-2.5-flash',
+    reasoningModel: 'gemini-3-pro',
+    fallbacks: ['gemini-3-flash', 'gemini-3-pro', 'gemini-2.5-pro', 'gemini-2.5-flash'],
+    // Gemini 3 features
+    contextWindow: 1000000, // 1M tokens
+    supportsThinkingLevel: true, // thinking_level parameter
+    supportsThoughtSignatures: true, // encrypted reasoning chain
   },
 
   vertex: {
-    complexModel: 'gemini-2.5-pro',
-    standardModel: 'gemini-2.5-flash',
-    mediumModel: 'gemini-2.0-flash',
-    smallModel: 'gemini-2.0-flash-001',
-    fallbacks: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'],
+    // Gemini 3 on Vertex AI
+    complexModel: 'gemini-3-pro',
+    standardModel: 'gemini-3-flash',
+    mediumModel: 'gemini-2.5-flash',
+    smallModel: 'gemini-2.5-flash',
+    reasoningModel: 'gemini-3-pro',
+    fallbacks: ['gemini-3-flash', 'gemini-3-pro', 'gemini-2.5-pro', 'gemini-2.5-flash'],
     // Vertex AI configuration
     requiresAuth: true,
     location: 'us-central1',
+    contextWindow: 1000000,
+    supportsThinkingLevel: true,
+    supportsThoughtSignatures: true,
   },
 
   azure: {
-    // Azure uses deployment names - should detect from actual deployments
-    complexModel: 'gpt-4.1',
-    standardModel: 'gpt-4.1',
-    mediumModel: 'gpt-4.1',
-    smallModel: 'gpt-4.1',
-    fallbacks: ['gpt-4.1', 'gpt-4o', 'gpt-35-turbo'],
+    // Azure AI Foundry - v1 API (no api-version required)
+    complexModel: 'gpt-5.2',
+    standardModel: 'gpt-5',
+    mediumModel: 'gpt-5-mini',
+    smallModel: 'gpt-5-nano',
+    reasoningModel: 'o4',
+    codingModel: 'gpt-5.2-codex',
+    fallbacks: ['gpt-5.2', 'gpt-5', 'gpt-4.1', 'gpt-4o', 'gpt-35-turbo'],
     // Hub-specific configuration
     isHub: true,
     detectDeployments: true,
     supportedProviders: ['openai', 'microsoft', 'meta', 'anthropic'],
     defaultProvider: 'openai',
+    // v1 API (August 2025+) - no api-version required
+    useV1Api: true,
     // Azure-specific models (available via deployments)
     hubModels: {
-      openai: ['gpt-4o', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'o3', 'o4'],
-      microsoft: ['phi-3', 'phi-3.5'],
-      meta: ['llama-3.1', 'llama-3.2'],
-      anthropic: ['claude-3.5-sonnet'],
+      openai: [
+        'gpt-5.2',
+        'gpt-5.2-codex',
+        'gpt-5',
+        'gpt-5-mini',
+        'gpt-5-nano',
+        'gpt-5-chat',
+        'gpt-4.1',
+        'gpt-4.1-nano',
+        'gpt-4o',
+        'o4',
+        'o4-mini',
+        'o3',
+        'gpt-image-1.5',
+      ],
+      microsoft: ['phi-3', 'phi-3.5', 'phi-4'],
+      meta: ['llama-3.1', 'llama-3.2', 'llama-3.3', 'llama-4'],
+      anthropic: ['claude-3.5-sonnet', 'claude-sonnet-4'],
+      openWeight: ['gpt-oss-120b', 'gpt-oss-20b'], // OpenAI's open-weight models
     },
   },
 
   bedrock: {
-    // Amazon Bedrock - Multi-provider AI hub
-    complexModel: 'anthropic.claude-opus-4-v1:0',
-    standardModel: 'anthropic.claude-sonnet-4-v1:0',
-    mediumModel: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-    smallModel: 'anthropic.claude-3-5-haiku-20241022-v1:0',
+    // Amazon Bedrock - Claude 4.5 models (September-November 2025)
+    complexModel: 'anthropic.claude-opus-4-5-v1:0',
+    standardModel: 'anthropic.claude-sonnet-4-5-v1:0',
+    mediumModel: 'anthropic.claude-sonnet-4-v1:0',
+    smallModel: 'anthropic.claude-haiku-4-5-v1:0',
+    reasoningModel: 'anthropic.claude-opus-4-5-v1:0',
     fallbacks: [
+      'anthropic.claude-sonnet-4-5-v1:0',
+      'anthropic.claude-opus-4-5-v1:0',
       'anthropic.claude-sonnet-4-v1:0',
-      'anthropic.claude-3-5-sonnet-20241022-v2:0',
-      'meta.llama3-1-70b-instruct-v1:0',
+      'meta.llama4-scout-v1:0',
     ],
     // Hub-specific configuration
     isHub: true,
@@ -106,47 +152,63 @@ export const MODEL_CONFIGS = {
     // Bedrock model mappings by provider
     hubModels: {
       anthropic: [
+        'anthropic.claude-opus-4-5-v1:0',
+        'anthropic.claude-sonnet-4-5-v1:0',
+        'anthropic.claude-haiku-4-5-v1:0',
         'anthropic.claude-opus-4-v1:0',
         'anthropic.claude-sonnet-4-v1:0',
         'anthropic.claude-3-5-sonnet-20241022-v2:0',
         'anthropic.claude-3-5-haiku-20241022-v1:0',
       ],
       meta: [
+        'meta.llama4-scout-v1:0',
+        'meta.llama4-maverick-v1:0',
+        'meta.llama3-3-70b-instruct-v1:0',
+        'meta.llama3-2-90b-instruct-v1:0',
         'meta.llama3-1-405b-instruct-v1:0',
         'meta.llama3-1-70b-instruct-v1:0',
-        'meta.llama3-1-8b-instruct-v1:0',
       ],
       amazon: ['amazon.titan-text-premier-v1:0', 'amazon.titan-text-express-v1'],
       ai21: ['ai21.jamba-1-5-large-v1:0', 'ai21.jamba-1-5-mini-v1:0'],
       cohere: ['cohere.command-r-plus-v1:0', 'cohere.command-r-v1:0'],
     },
+    // Extended context for Claude 4.5 (1M tokens in preview)
+    extendedContext: 1000000,
   },
 
   huggingface: {
-    complexModel: 'meta-llama/Llama-3.1-70B-Instruct',
-    standardModel: 'meta-llama/Llama-3.1-8B-Instruct',
-    mediumModel: 'meta-llama/Llama-3.2-3B-Instruct',
-    smallModel: 'meta-llama/Llama-3.2-1B-Instruct',
+    // Latest Llama and open models
+    complexModel: 'meta-llama/Llama-4-Scout',
+    standardModel: 'meta-llama/Llama-3.3-70B-Instruct',
+    mediumModel: 'meta-llama/Llama-3.2-11B-Vision-Instruct',
+    smallModel: 'meta-llama/Llama-3.2-3B-Instruct',
+    reasoningModel: 'Qwen/Qwen3-235B-A22B',
     fallbacks: [
-      'meta-llama/Llama-3.1-8B-Instruct',
+      'meta-llama/Llama-3.3-70B-Instruct',
+      'meta-llama/Llama-3.1-70B-Instruct',
+      'Qwen/Qwen3-30B-A3B',
       'microsoft/DialoGPT-medium',
-      'google/flan-t5-base',
     ],
   },
 
   ollama: {
-    complexModel: 'llama3.1:70b',
-    standardModel: 'llama3.1',
-    mediumModel: 'llama3.1:8b',
+    // Latest local models (January 2026)
+    complexModel: 'qwen3:235b',
+    standardModel: 'llama4:scout',
+    mediumModel: 'llama3.3:70b',
     smallModel: 'llama3.2:3b',
-    fallbacks: ['llama3.1', 'llama3.2', 'mistral'],
+    reasoningModel: 'deepseek-r1:32b',
+    codingModel: 'qwen2.5-coder:32b',
+    fallbacks: ['llama4:scout', 'llama3.3', 'qwen3', 'deepseek-r1', 'mistral'],
+    // Thinking mode support
+    supportsThinkingMode: true,
   },
 
   lmstudio: {
-    complexModel: 'llama-3.2-1b-instruct',
-    standardModel: 'llama-3.2-1b-instruct',
-    mediumModel: 'llama-3.2-1b-instruct',
-    smallModel: 'llama-3.2-1b-instruct',
+    complexModel: 'llama-4-scout',
+    standardModel: 'llama-3.3-70b-instruct',
+    mediumModel: 'llama-3.2-11b-vision-instruct',
+    smallModel: 'llama-3.2-3b-instruct',
     fallbacks: ['local-model'],
   },
 }
@@ -249,10 +311,45 @@ export function getProviderModelConfig(providerName, config = {}, availableModel
 /**
  * Model capabilities database
  * Defines what each model family supports
- * Token limits removed as requested - left blank
+ * Updated January 2026
  */
 export const MODEL_CAPABILITIES = {
-  // OpenAI Models
+  // OpenAI Models - GPT-5.x series (2025-2026)
+  'gpt-5.2': {
+    vision: true,
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    multimodal: true,
+    coding_optimized: true,
+    context_window: 400000,
+    max_output: 128000,
+    flagship: true,
+  },
+
+  'gpt-5.2-codex': {
+    vision: true,
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    coding_optimized: true,
+    agentic_coding: true,
+    context_compaction: true,
+    cybersecurity: true,
+  },
+
+  'gpt-5': {
+    vision: true,
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    multimodal: true,
+    context_window: 272000,
+  },
+
   'gpt-4o': {
     vision: true,
     tool_use: true,
@@ -260,6 +357,7 @@ export const MODEL_CAPABILITIES = {
     reasoning: true,
     large_context: true,
     multimodal: true,
+    previous_generation: true,
   },
 
   'gpt-4.1': {
@@ -272,11 +370,20 @@ export const MODEL_CAPABILITIES = {
     cost_reduction: 0.75, // 75% cost reduction with caching
   },
 
-  o1: {
+  o4: {
     reasoning: true,
+    advanced_reasoning: true,
     tool_use: true,
     large_context: true,
+    next_generation: true,
+  },
+
+  'o4-mini': {
+    reasoning: true,
     advanced_reasoning: true,
+    tool_use: true,
+    large_context: true,
+    cost_effective: true,
   },
 
   o3: {
@@ -284,19 +391,61 @@ export const MODEL_CAPABILITIES = {
     advanced_reasoning: true,
     tool_use: true,
     large_context: true,
-    azure_only: true,
   },
 
-  o4: {
+  o1: {
     reasoning: true,
-    advanced_reasoning: true,
     tool_use: true,
     large_context: true,
-    azure_only: true,
-    next_generation: true,
+    advanced_reasoning: true,
+    previous_generation: true,
   },
 
-  // Anthropic Models
+  // Anthropic Models - Claude 4.5 series (November 2025)
+  'claude-opus-4-5': {
+    vision: true,
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    hybrid_reasoning: true,
+    extended_thinking: true,
+    coding_optimized: true,
+    parallel_tool_use: true,
+    effort_parameter: true, // low, medium, high
+    tool_search: true, // advanced-tool-use-2025-11-20
+    most_capable: true,
+    context_window: 200000,
+    extended_context: 1000000, // beta
+  },
+
+  'claude-sonnet-4-5': {
+    vision: true,
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    hybrid_reasoning: true,
+    extended_thinking: true,
+    coding_optimized: true,
+    agentic_coding: true,
+    computer_use: true,
+    context_window: 200000,
+    extended_context: 1000000, // beta
+  },
+
+  'claude-haiku-4-5': {
+    vision: true,
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    hybrid_reasoning: true,
+    extended_thinking: true,
+    fast_processing: true,
+    cost_effective: true,
+    context_window: 200000,
+  },
+
   'claude-sonnet-4': {
     vision: true,
     tool_use: true,
@@ -335,15 +484,58 @@ export const MODEL_CAPABILITIES = {
     json_mode: true,
     reasoning: true,
     large_context: true,
+    previous_generation: true,
   },
 
   'claude-3': {
     vision: true,
     tool_use: true, // Only Opus and Sonnet
     json_mode: true, // Only Opus and Sonnet
+    deprecated: true,
   },
 
-  // Google Models (Gemini & Vertex AI)
+  // Google Models - Gemini 3 series (November-December 2025)
+  'gemini-3-pro': {
+    vision: true,
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    multimodal: true,
+    thinking_level: true, // thinking_level parameter
+    thought_signatures: true, // encrypted reasoning chain
+    agentic_workflows: true,
+    autonomous_coding: true,
+    context_window: 1000000,
+    most_capable: true,
+  },
+
+  'gemini-3-flash': {
+    vision: true,
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    multimodal: true,
+    thinking_level: true,
+    thought_signatures: true,
+    fast_processing: true,
+    pro_level_intelligence: true,
+    context_window: 1000000,
+  },
+
+  'gemini-2.5-pro': {
+    vision: true,
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    multimodal: true,
+    thinking_mode: true,
+    context_window: 2097152,
+    previous_generation: true,
+  },
+
   'gemini-2.5': {
     vision: true,
     tool_use: true,
@@ -352,7 +544,7 @@ export const MODEL_CAPABILITIES = {
     large_context: true,
     multimodal: true,
     thinking_mode: true,
-    most_capable: true,
+    previous_generation: true,
   },
 
   'gemini-2.0': {
@@ -363,6 +555,7 @@ export const MODEL_CAPABILITIES = {
     large_context: true,
     multimodal: true,
     fast_processing: true,
+    previous_generation: true,
   },
 
   'gemini-1.5': {
@@ -374,8 +567,18 @@ export const MODEL_CAPABILITIES = {
     deprecated: true,
   },
 
-  // Hugging Face Models
-  'llama-3.1': {
+  // Open-source/Local Models - Llama 4, Qwen 3, DeepSeek
+  'llama-4': {
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    multimodal: true,
+    open_source: true,
+    community_license: true,
+  },
+
+  'llama-3.3': {
     tool_use: true,
     json_mode: true,
     reasoning: true,
@@ -388,7 +591,46 @@ export const MODEL_CAPABILITIES = {
     json_mode: true,
     reasoning: true,
     open_source: true,
+    multimodal: true, // 90B has vision
     lightweight: true,
+  },
+
+  'llama-3.1': {
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    open_source: true,
+    previous_generation: true,
+  },
+
+  qwen3: {
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    multimodal: true, // qwen3-vl
+    thinking_mode: true,
+    open_source: true,
+    context_window: 32768,
+    extended_context: 131072, // with YaRN
+  },
+
+  'qwen2.5-coder': {
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    coding_optimized: true,
+    open_source: true,
+  },
+
+  'deepseek-r1': {
+    reasoning: true,
+    advanced_reasoning: true,
+    thinking_mode: true,
+    json_mode: true,
+    open_source: true,
+    cost_effective: true,
   },
 
   // Amazon Bedrock Models
@@ -398,6 +640,16 @@ export const MODEL_CAPABILITIES = {
     json_mode: true,
     reasoning: true,
     large_context: true,
+    bedrock_hosted: true,
+  },
+
+  'meta.llama4': {
+    tool_use: true,
+    json_mode: true,
+    reasoning: true,
+    large_context: true,
+    multimodal: true,
+    open_source: true,
     bedrock_hosted: true,
   },
 

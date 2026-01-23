@@ -629,9 +629,7 @@ class CommitCommand extends BaseCommand {
       if (error.message.includes('No changes')) {
         EnhancedConsole.info('Try making some changes first, then run the commit command.')
       } else if (error.message.includes('git')) {
-        EnhancedConsole.info(
-          'Make sure you have uncommitted changes.'
-        )
+        EnhancedConsole.info('Make sure you have uncommitted changes.')
       }
     }
   }
@@ -662,7 +660,9 @@ class ProvidersCommand extends BaseCommand {
         break
       default:
         EnhancedConsole.error('Unknown provider subcommand')
-        EnhancedConsole.info('Available subcommands: list, switch, configure, validate, status, models')
+        EnhancedConsole.info(
+          'Available subcommands: list, switch, configure, validate, status, models'
+        )
     }
   }
 

@@ -6,11 +6,11 @@
  */
 
 import { exec } from 'node:child_process'
-import { promisify } from 'node:util'
 import fs from 'node:fs'
 import path, { dirname } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -312,7 +312,10 @@ class AIChangelogMCPServer {
 
       let result
 
-      if (source === 'working-dir' || (source === 'auto' && (await this.hasWorkingDirectoryChanges()))) {
+      if (
+        source === 'working-dir' ||
+        (source === 'auto' && (await this.hasWorkingDirectoryChanges()))
+      ) {
         // Generate from working directory changes using ChangelogService
         // Access the changelogService through the orchestrator
         await this.changelogOrchestrator.ensureInitialized()

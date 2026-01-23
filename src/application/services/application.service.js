@@ -15,35 +15,66 @@ export class ApplicationService {
       this.options.cwd = repositoryPath
     }
 
-    this.configManager = new ConfigurationManager(options.configPath)
+    // Pass full options to ConfigurationManager so it can receive config object from extension
+    this.configManager = new ConfigurationManager(options.configPath, null, options)
     this.orchestrator = new ChangelogOrchestrator(this.configManager, this.options)
     this.initialized = false
+    this.initializationError = null
 
     // Apply options
     if (options.noColor || process.env.NO_COLOR) {
       colors.disable()
     }
 
-    // Wait for orchestrator to initialize
-    this.initializeAsync()
+    // Start initialization (don't await here to keep constructor sync)
+    this.initializationPromise = this.initializeAsync()
   }
 
   async initializeAsync() {
     try {
-      // Wait for orchestrator services to be ready
-      await this.orchestrator.ensureInitialized()
+      // Wait for orchestrator services to be ready with timeout
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Initialization timeout after 10 seconds')), 10000)
+      )
+
+      await Promise.race([this.orchestrator.ensureInitialized(), timeoutPromise])
+
       this.initialized = true
     } catch (error) {
+      this.initializationError = error
       console.error(
         colors.errorMessage('Application service initialization failed:'),
         error.message
       )
+      // Don't throw - allow graceful degradation
     }
   }
 
   async ensureInitialized() {
-    if (!this.initialized) {
-      await this.initializeAsync()
+    if (this.initialized) {
+      return
+    }
+
+    if (this.initializationError) {
+      throw new Error(`Service not initialized: ${this.initializationError.message}`)
+    }
+
+    // Wait for initialization to complete
+    await this.initializationPromise
+
+    if (this.initializationError) {
+      throw new Error(`Service initialization failed: ${this.initializationError.message}`)
+      console.error(colors.errorMessage('Application service error:'), error.message)
+      throw error
+    }
+  }
+
+  async analyzeRepository(options = {}) {
+    try {
+      return await this.orchestrator.analyzeRepository(options)
+    } catch (error) {
+      console.error(colors.errorMessage('Repository analysis error:'), error.message)
+      throw error
     }
   }
 
@@ -58,16 +89,7 @@ export class ApplicationService {
         dryRun,
       })
     } catch (error) {
-      console.error(colors.errorMessage('Application service error:'), error.message)
-      throw error
-    }
-  }
-
-  async analyzeRepository(options = {}) {
-    try {
-      return await this.orchestrator.analyzeRepository(options)
-    } catch (error) {
-      console.error(colors.errorMessage('Repository analysis error:'), error.message)
+      console.error(colors.errorMessage('Changelog generation error:'), error.message)
       throw error
     }
   }
@@ -282,13 +304,119 @@ export class ApplicationService {
     }
   }
 
-  // Commit message generation
-  async generateCommitMessage() {
+  // Commit message generation with AI and validation
+  async generateCommitMessage(options = {}) {
     try {
       await this.ensureInitialized()
-      return await this.orchestrator.interactiveService.generateCommitSuggestion()
+
+      // Get current staged files and branch context
+      const { analyzeBranchIntelligence, getSuggestedCommitType, getWorkingDirectoryChanges } =
+        await import('../../shared/utils/utils.js')
+
+      // Get working directory changes (don't rely on staging service which expects interactive mode)
+      const cwd = this.options.cwd || this.options.repositoryPath
+
+      const branchAnalysis = analyzeBranchIntelligence(null, cwd)
+      console.log('[generateCommitMessage] Branch analysis:', branchAnalysis)
+      console.log('[generateCommitMessage] Getting working directory changes from:', cwd)
+
+      const workingChanges = getWorkingDirectoryChanges(cwd)
+      console.log('[generateCommitMessage] Found', workingChanges.length, 'working changes')
+
+      if (!workingChanges || workingChanges.length === 0) {
+        throw new Error('No changes detected in working directory')
+      }
+
+      // Get detailed file changes with diffs using GitService
+      const stagedFiles = []
+      for (const change of workingChanges) {
+        const fileWithDiff = await this.orchestrator.gitService.analyzeWorkingDirectoryFileChange(
+          change.status,
+          change.filePath
+        )
+        stagedFiles.push({
+          status: change.status,
+          path: change.filePath,
+          filePath: change.filePath,
+          diff: fileWithDiff?.diff || '',
+          additions: fileWithDiff?.additions || 0,
+          deletions: fileWithDiff?.deletions || 0,
+        })
+      }
+      console.log('[generateCommitMessage] Enriched', stagedFiles.length, 'files with diffs')
+
+      const suggestedType = getSuggestedCommitType(branchAnalysis, stagedFiles)
+      console.log('[generateCommitMessage] Suggested type:', suggestedType)
+
+      // Generate AI commit message with branch intelligence
+      let commitMessage
+      try {
+        console.log('[generateCommitMessage] Attempting AI generation...')
+        commitMessage = await this.orchestrator.generateAICommitMessage(
+          branchAnalysis,
+          suggestedType,
+          stagedFiles
+        )
+        console.log('[generateCommitMessage] AI generated:', commitMessage)
+      } catch (error) {
+        console.log('[generateCommitMessage] AI generation failed, using fallback:', error.message)
+        // Fallback to rule-based generation
+        commitMessage = this.orchestrator.generateBranchAwareCommitMessage(
+          branchAnalysis,
+          suggestedType,
+          stagedFiles
+        )
+        console.log('[generateCommitMessage] Fallback generated:', commitMessage)
+      }
+
+      if (!commitMessage) {
+        throw new Error('Failed to generate commit message')
+      }
+
+      // Validate the generated message
+      console.log('[generateCommitMessage] Validating message...')
+      const validationResult = await this.orchestrator.validationService.validateCommitMessage(
+        commitMessage,
+        { branchAnalysis, stagedFiles, suggestedType }
+      )
+      console.log('[generateCommitMessage] Validation result:', validationResult)
+
+      // Improve if needed (only if validation enabled)
+      let improvedMessage = commitMessage
+      if (options.enableValidation && !validationResult.valid) {
+        console.log('[generateCommitMessage] Attempting to improve message...')
+        const improvementResult = await this.orchestrator.validationService.improveCommitMessage(
+          commitMessage,
+          { branchAnalysis, stagedFiles, suggestedType }
+        )
+        if (improvementResult.improved) {
+          improvedMessage = improvementResult.message
+          console.log('[generateCommitMessage] Improved to:', improvedMessage)
+        }
+      }
+
+      const result = {
+        message: improvedMessage,
+        validation: validationResult,
+        branchAnalysis,
+        suggestedType,
+      }
+      console.log('[generateCommitMessage] Returning result:', result)
+      return result
     } catch (error) {
       console.error(colors.errorMessage('Commit message generation error:'), error.message)
+      console.error('[generateCommitMessage] Full error:', error)
+      throw error
+    }
+  }
+
+  // Validate commit message
+  async validateCommitMessage(message, context = {}) {
+    try {
+      await this.ensureInitialized()
+      return await this.orchestrator.validationService.validateCommitMessage(message, context)
+    } catch (error) {
+      console.error(colors.errorMessage('Commit validation error:'), error.message)
       throw error
     }
   }

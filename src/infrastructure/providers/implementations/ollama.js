@@ -1,3 +1,17 @@
+/**
+ * Ollama Provider for AI Changelog Generator
+ * Supports local models via Ollama (January 2026)
+ *
+ * Recommended models:
+ * - llama4:scout / llama4:maverick - Meta's latest multimodal models
+ * - qwen3:235b / qwen3:30b - Alibaba's flagship MoE with thinking mode
+ * - deepseek-r1:32b - Advanced reasoning model
+ * - qwen2.5-coder:32b - Code-optimized model
+ * - llama3.3:70b - Previous gen reliable option
+ *
+ * Install with: ollama pull <model-name>
+ */
+
 import process from 'node:process'
 
 import { Ollama } from 'ollama'
@@ -175,6 +189,86 @@ class OllamaProvider extends BaseProvider {
         { modelName }
       )
     }
+  }
+
+  getProviderModelConfig() {
+    return {
+      // Latest recommended models (January 2026)
+      complexModel: 'qwen3:235b',
+      standardModel: 'llama4:scout',
+      mediumModel: 'llama3.3:70b',
+      smallModel: 'llama3.2:3b',
+      reasoningModel: 'deepseek-r1:32b',
+      codingModel: 'qwen2.5-coder:32b',
+      default: 'llama4:scout',
+      temperature: 0.7,
+      maxTokens: 1024,
+    }
+  }
+
+  getCapabilities(modelName) {
+    // Determine capabilities based on model name
+    const isQwen3 = modelName && modelName.includes('qwen3')
+    const isDeepSeek = modelName && modelName.includes('deepseek')
+    const isLlama4 = modelName && modelName.includes('llama4')
+    const isCoder = modelName && modelName.includes('coder')
+
+    return {
+      completion: true,
+      streaming: true,
+      // Tool use supported by newer models
+      tool_use: isQwen3 || isLlama4 || (modelName && modelName.includes('llama3.3')),
+      json_mode: true,
+      // Thinking mode for reasoning models
+      thinking_mode: isQwen3 || isDeepSeek,
+      reasoning: isQwen3 || isDeepSeek || isLlama4,
+      // Vision for multimodal models
+      vision: isLlama4 || (modelName && modelName.includes('qwen3-vl')),
+      coding_optimized: isCoder || isQwen3,
+      offline: true,
+      privacy_focused: true,
+    }
+  }
+
+  // Get recommended models for common use cases
+  getRecommendedModels() {
+    return [
+      {
+        id: 'llama4:scout',
+        name: 'Llama 4 Scout',
+        description: "Meta's latest multimodal model - balanced performance",
+        useCase: 'general',
+        install: 'ollama pull llama4:scout',
+      },
+      {
+        id: 'qwen3:235b',
+        name: 'Qwen 3 235B',
+        description: "Alibaba's flagship MoE with thinking mode",
+        useCase: 'complex_reasoning',
+        install: 'ollama pull qwen3:235b',
+      },
+      {
+        id: 'deepseek-r1:32b',
+        name: 'DeepSeek R1 32B',
+        description: 'Advanced reasoning model - best for reasoning tasks',
+        useCase: 'reasoning',
+        install: 'ollama pull deepseek-r1:32b',
+      },
+      {
+        id: 'qwen2.5-coder:32b',
+        name: 'Qwen 2.5 Coder 32B',
+        description: 'Code-optimized model - best for coding tasks',
+        useCase: 'coding',
+        install: 'ollama pull qwen2.5-coder:32b',
+      },
+      {
+        id: 'llama3.3:70b',
+        name: 'Llama 3.3 70B',
+        description: 'Previous gen reliable option for general use',
+        useCase: 'general',
+        install: 'ollama pull llama3.3:70b',
+      },
+    ]
   }
 }
 

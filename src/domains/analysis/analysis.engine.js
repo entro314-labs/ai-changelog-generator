@@ -1,6 +1,7 @@
 import process from 'node:process'
 
 import colors from '../../shared/constants/colors.js'
+import { EnhancedConsole } from '../../shared/utils/cli-ui.js'
 import {
   assessBusinessRelevance,
   assessChangeComplexity,
@@ -13,7 +14,6 @@ import {
   getWorkingDirectoryChanges,
   performSemanticAnalysis,
 } from '../../shared/utils/utils.js'
-import { EnhancedConsole } from '../../shared/utils/cli-ui.js'
 
 export class AnalysisEngine {
   constructor(gitService, aiAnalysisService, gitManager = null) {
@@ -54,6 +54,7 @@ export class AnalysisEngine {
     try {
       // Get cwd from git manager if available
       const cwd = this.gitService?.gitManager?.options?.cwd
+      console.log(`[AnalysisEngine] analyzeCurrentChanges called with cwd: ${cwd || 'undefined'}`)
       const changes = getWorkingDirectoryChanges(cwd)
 
       if (changes.length === 0) {
@@ -103,7 +104,6 @@ export class AnalysisEngine {
               semanticChanges: { changeType: 'unknown', patterns: [], frameworks: [] },
               functionalImpact: { scope: 'local', severity: 'low' },
             })
-
           }
         } catch (error) {
           EnhancedConsole.error(`Error processing change ${i}:`, change, error.message)
@@ -552,7 +552,6 @@ export class AnalysisEngine {
         totalCommits: commits.length,
         suggestions,
       }
-
     } catch (error) {
       EnhancedConsole.warn(`Commit pattern analysis failed: ${error.message}`)
       return {
@@ -622,7 +621,6 @@ export class AnalysisEngine {
         totalChanges: changes.length,
         details: `Detected ${detectedTypes.size} change types from ${changes.length} changes`,
       }
-
     } catch (error) {
       EnhancedConsole.warn(`Change type detection failed: ${error.message}`)
       return {
@@ -708,7 +706,6 @@ export class AnalysisEngine {
         recommendations,
         filesAnalyzed: files.length,
       }
-
     } catch (error) {
       EnhancedConsole.warn(`Code quality assessment failed: ${error.message}`)
       return {

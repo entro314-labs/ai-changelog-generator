@@ -67,10 +67,29 @@ export class AnthropicProvider extends BaseProvider {
           temperature: options.temperature || 0.3,
         }
 
+        // Claude 4.5 "effort" parameter (Opus 4.5 only) - controls reasoning depth
+        // Valid values: 'low', 'medium', 'high'
+        if (options.effort && this.isOpus45Model(params.model)) {
+          params.effort = options.effort
+        }
+
         // Add tool calling if provided
         if (options.tools) {
           params.tools = options.tools
           params.tool_choice = options.tool_choice || 'auto'
+        }
+
+        // Tool search beta (advanced-tool-use-2025-11-20) for Claude 4.5 models
+        // Enables working with hundreds/thousands of tools
+        if (options.tool_search && this.is45Model(params.model)) {
+          params.betas = params.betas || []
+          params.betas.push('advanced-tool-use-2025-11-20')
+        }
+
+        // Extended context (1M tokens beta) for Claude 4.5 models
+        if (options.extended_context && this.is45Model(params.model)) {
+          params.betas = params.betas || []
+          params.betas.push('extended-context-2025-09-29')
         }
 
         // Add streaming if requested
@@ -108,6 +127,16 @@ export class AnthropicProvider extends BaseProvider {
     )
   }
 
+  // Check if model is a Claude 4.5 model (supports new features)
+  is45Model(modelName) {
+    return modelName && (modelName.includes('4-5') || modelName.includes('4.5'))
+  }
+
+  // Check if model is Opus 4.5 (supports effort parameter)
+  isOpus45Model(modelName) {
+    return modelName && modelName.includes('opus-4-5')
+  }
+
   async generateText(messages, model = null) {
     const response = await this.generateCompletion(messages, { model })
     return response
@@ -115,27 +144,63 @@ export class AnthropicProvider extends BaseProvider {
 
   async getAvailableModels() {
     // Anthropic doesn't provide a models endpoint, return known models
-    // Use direct model names to avoid circular dependency with mixins
+    // Claude 4.5 series (November 2025) - hybrid reasoning models
     return [
       {
-        name: 'claude-opus-4-20250514',
-        id: 'claude-opus-4-20250514',
-        description: 'Claude Opus 4 - Most capable model for complex tasks (2025)',
+        name: 'claude-opus-4-5-20251124',
+        id: 'claude-opus-4-5-20251124',
+        description: 'Claude Opus 4.5 - Most intelligent model with effort parameter (Nov 2025)',
+        features: [
+          'hybrid_reasoning',
+          'extended_thinking',
+          'effort_parameter',
+          'tool_search',
+          '200k_context',
+          '1M_context_beta',
+        ],
+      },
+      {
+        name: 'claude-sonnet-4-5-20250929',
+        id: 'claude-sonnet-4-5-20250929',
+        description: 'Claude Sonnet 4.5 - Best for coding, agents, and computer use (Sep 2025)',
+        features: [
+          'hybrid_reasoning',
+          'extended_thinking',
+          'agentic_coding',
+          'computer_use',
+          '200k_context',
+          '1M_context_beta',
+        ],
+      },
+      {
+        name: 'claude-haiku-4-5-20251001',
+        id: 'claude-haiku-4-5-20251001',
+        description: 'Claude Haiku 4.5 - Fast hybrid reasoning model (Oct 2025)',
+        features: [
+          'hybrid_reasoning',
+          'extended_thinking',
+          'fast',
+          'cost_effective',
+          '200k_context',
+        ],
       },
       {
         name: 'claude-sonnet-4-20250514',
         id: 'claude-sonnet-4-20250514',
-        description: 'Claude Sonnet 4 - Latest balanced model (2025)',
+        description: 'Claude Sonnet 4 - Balanced performance (May 2025)',
+        features: ['coding_optimized', 'balanced', '200k_context'],
       },
       {
-        name: 'claude-3.7-sonnet-20250219',
-        id: 'claude-3.7-sonnet-20250219',
-        description: 'Claude 3.7 Sonnet - Enhanced reasoning capabilities',
+        name: 'claude-opus-4-20250514',
+        id: 'claude-opus-4-20250514',
+        description: 'Claude Opus 4 - Previous flagship model (May 2025)',
+        features: ['extended_thinking', 'parallel_tools', '200k_context'],
       },
       {
         name: 'claude-3-5-haiku-20241022',
         id: 'claude-3-5-haiku-20241022',
         description: 'Claude 3.5 Haiku - Fast and efficient',
+        features: ['fast', 'cost_effective'],
       },
     ]
   }
@@ -153,7 +218,7 @@ export class AnthropicProvider extends BaseProvider {
       return {
         success: true,
         model: response.model,
-        sdk_version: '0.56.0',
+        sdk_version: '0.71.2',
       }
     } catch (error) {
       return {

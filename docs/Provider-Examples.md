@@ -17,7 +17,7 @@ AZURE_OPENAI_KEY=your-azure-key
 
 ## Provider-Specific Configuration
 
-### OpenAI (GPT-4.1 Series)
+### OpenAI (GPT-5 Series)
 
 ```env
 # Required
@@ -30,38 +30,60 @@ OPENAI_TIMEOUT=60000
 OPENAI_MAX_RETRIES=2
 ```
 
-**Available Models:**
+**Available Models (Latest Generation):**
 
-- `gpt-4o` (flagship model)
-- `gpt-4.1-standard` (balanced performance)
+- `gpt-5.2-pro` (most advanced model with superior reasoning)
+- `gpt-5-pro` (flagship general-purpose model)
+- `gpt-5-codex` (specialized for agentic coding in Codex)
+- `o4-mini` (fast reasoning model, successor to o3-mini)
+- `o3` (advanced reasoning model)
+- `o3-pro` (enhanced reasoning with more compute)
+- `o3-mini` (cost-efficient reasoning)
+- `o3-deep-research` (most powerful deep research model)
+- `o4-mini-deep-research` (faster, affordable deep research)
+
+**Previous Generation (Fallback Options):**
+
+- `gpt-4.1` (previous flagship, still capable)
 - `gpt-4.1-mini` (cost-optimized)
 - `gpt-4.1-nano` (ultra-efficient)
-- `o1` (reasoning model)
+- `gpt-4o` (multimodal flagship from previous generation)
+- `gpt-4o-mini` (fast and affordable)
 
-### Azure OpenAI (o3/o4 Reasoning Models)
+### Azure OpenAI (GPT-5 & Reasoning Models)
 
 ```env
 # Required
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/openai/v1
 AZURE_OPENAI_KEY=your-api-key
-AZURE_OPENAI_DEPLOYMENT_NAME=o4
-AZURE_OPENAI_API_VERSION=2025-04-01-preview
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-5-pro
 
 # Optional - Azure AD Authentication
 AZURE_USE_AD_AUTH=true
 AZURE_USER_ID=user-123
 ```
 
-**Available Models:**
+**Note:** Azure OpenAI now uses the `/openai/v1` endpoint. No `api-version` parameter is required.
 
-- `o4` (latest reasoning model - Azure exclusive)
-- `o4-mini` (efficient reasoning)
-- `o3` (previous generation reasoning)
-- `o3-mini` (cost-optimized reasoning)
-- `gpt-4o` (multimodal flagship)
-- `gpt-35-turbo` (legacy)
+**Available Models (Latest Generation):**
 
-### Anthropic Claude (Sonnet 4)
+- `gpt-5.2-pro` (most advanced model)
+- `gpt-5-pro` (flagship model)
+- `gpt-5-codex` (agentic coding)
+- `o4-mini` (fast reasoning)
+- `o3` (advanced reasoning)
+- `o3-pro` (enhanced reasoning with more compute)
+- `o3-deep-research` (most powerful deep research)
+- `o4-mini-deep-research` (faster deep research)
+
+**Previous Generation (Fallback Options):**
+
+- `gpt-4.1` (previous flagship)
+- `gpt-4.1-mini` (cost-optimized)
+- `gpt-4o` (multimodal model)
+- `gpt-4o-mini` (fast and affordable)
+
+### Anthropic Claude (4.5 Series)
 
 ```env
 # Required
@@ -73,33 +95,50 @@ ANTHROPIC_TIMEOUT=60000
 ANTHROPIC_MAX_RETRIES=2
 ```
 
-**Available Models:**
+**Available Models (Latest Generation - 4.5 Series):**
 
-- `claude-sonnet-4-20250514` (latest balanced model)
-- `claude-opus-4-20250617` (most capable)
-- `claude-3-5-sonnet-20241022` (previous generation)
-- `claude-3-5-haiku-20241022` (fast and efficient)
+- `claude-opus-4-5-20251101` (best for coding, agents, computer use - $5/$25 per MTok)
+- `claude-sonnet-4-5-20250929` (balanced performance and cost)
+- `claude-haiku-4-5-20251001` (fast and cost-efficient)
 
-### Google AI (Gemini 2.5)
+**Previous Generation (Fallback Options - 4.0 Series):**
+
+- `claude-opus-4-20250617` (previous flagship)
+- `claude-sonnet-4-20250514` (previous balanced model)
+- `claude-haiku-4-20250320` (previous fast model)
+
+**Note:** Claude 4.5 models support extended thinking, 200K context (1M with beta header), and are available on AWS Bedrock, Google Vertex AI, and Microsoft Foundry with regional/global endpoint options.
+
+### Google AI (Gemini 3 Series)
 
 ```env
 # Required
 GOOGLE_API_KEY=your-api-key
 
 # Optional
-GOOGLE_DEFAULT_MODEL=gemini-2.5-flash
+GOOGLE_DEFAULT_MODEL=gemini-3-flash
 GOOGLE_API_VERSION=v1
 GOOGLE_API_ENDPOINT=https://generativelanguage.googleapis.com
 GOOGLE_TIMEOUT=60000
 GOOGLE_MAX_RETRIES=3
 ```
 
-**Available Models:**
+**Available Models (Latest Generation - Gemini 3):**
 
-- `gemini-2.5-pro` (most capable with thinking mode)
-- `gemini-2.5-flash` (fastest)
-- `gemini-2.0-flash` (multimodal)
-- `gemini-1.5-pro` (legacy)
+- `gemini-3-pro` (best multimodal understanding, state-of-the-art reasoning)
+- `gemini-3-pro-preview` (preview of latest capabilities)
+- `gemini-3-flash` (balanced speed and frontier intelligence)
+- `gemini-3-flash-preview` (preview with upgraded visual/spatial reasoning)
+
+**Previous Generation (Fallback Options - Gemini 2.5):**
+
+- `gemini-2.5-pro` (thinking model for complex reasoning, STEM tasks)
+- `gemini-2.5-flash` (price-performance leader for high-volume tasks)
+- `gemini-2.5-flash-lite` (ultra-efficient for simple tasks)
+
+**Note:** `gemini-2.0-flash` is retiring March 3, 2026. Migrate to Gemini 2.5 or 3 series.
+
+**Note:** Gemini 3 models support multimodal function responses, code execution with images, and improved visual/spatial reasoning.
 
 ### Google Vertex AI
 
@@ -114,11 +153,13 @@ VERTEX_CREDENTIALS={"type":"service_account",...}
 # Or use GOOGLE_APPLICATION_CREDENTIALS
 
 # Optional
-VERTEX_MODEL=gemini-2.5-flash
+VERTEX_MODEL=gemini-3-flash
 VERTEX_API_VERSION=v1
 VERTEX_TEMPERATURE=0.7
 VERTEX_MAX_TOKENS=8192
 ```
+
+**Note:** Vertex AI provides enterprise features including Claude models (with regional/global endpoints), Gemini 3 series, and enhanced security/compliance options.
 
 ### Hugging Face (Multi-Provider Routing)
 
@@ -127,20 +168,30 @@ VERTEX_MAX_TOKENS=8192
 HUGGINGFACE_API_KEY=hf_your-token
 
 # Optional
-HUGGINGFACE_MODEL=Qwen/Qwen2.5-72B-Instruct
+HUGGINGFACE_MODEL=Qwen/Qwen3-72B-Instruct
 HUGGINGFACE_PROVIDER=auto
 HUGGINGFACE_ENDPOINT_URL=https://your-endpoint.endpoints.huggingface.cloud
 HUGGINGFACE_TIMEOUT=120000
 ```
 
-**Available Models:**
+**Available Models (Latest Generation - 2026):**
 
-- `Qwen/Qwen2.5-72B-Instruct` (best performance)
-- `meta-llama/Llama-3.3-70B-Instruct` (strong reasoning)
-- `meta-llama/Llama-3.1-8B-Instruct` (balanced)
-- `mistralai/Mixtral-8x22B-Instruct-v0.1` (coding)
+- `deepseek-ai/DeepSeek-R1` (reasoning model, O3-level performance, 1.5B-671B)
+- `deepseek-ai/DeepSeek-V3` (671B parameters, strong coding)
+- `Qwen/Qwen3-72B-Instruct` (latest Qwen with MoE architecture)
+- `meta-llama/Llama-4-70B-Instruct` (Meta's latest generation)
+- `mistralai/Mistral-Large-3` (Mistral's flagship, 2026)
+- `google/gemma-3-27b` (Google's latest open model)
+- `microsoft/phi-4` (Microsoft's efficient 14B model)
 
-**Providers:** `auto`, `replicate`, `together`, `sambanova`, `fal`
+**Previous Generation (Fallback Options):**
+
+- `meta-llama/Llama-3.3-70B-Instruct` (strong general purpose)
+- `Qwen/Qwen2.5-72B-Instruct` (previous Qwen generation)
+- `mistralai/Mixtral-8x22B-Instruct-v0.1` (MoE model)
+- `google/gemma-2-27b` (previous Gemma generation)
+
+**Providers:** `auto`, `replicate`, `together`, `sambanova`, `fal`, `fireworks`
 
 ### Ollama (Local Models)
 
@@ -149,16 +200,29 @@ HUGGINGFACE_TIMEOUT=120000
 OLLAMA_HOST=http://localhost:11434
 
 # Optional
-OLLAMA_MODEL=llama3.1
+OLLAMA_MODEL=llama3.3
 OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 ```
 
-**Available Models:** Any model you have installed locally
+**Popular Models (Latest Generation - 2026):**
 
-- `llama3.1` (recommended default)
-- `codellama` (coding tasks)
-- `mistral` (alternative)
-- `phi` (small model)
+- `llama3.3` (Meta's latest 70B model - highly recommended, state-of-the-art)
+- `deepseek-r1` (reasoning model, 1.5B-671B sizes, O3-level)
+- `gemma3` (Google's latest, 270M-27B sizes)
+- `qwen3` (Alibaba's latest, 0.6B-235B sizes with MoE)
+- `phi4` (Microsoft's 14B efficient model)
+- `phi4-reasoning` (Microsoft's reasoning variant)
+- `gpt-oss` (open GPT models, 20B-120B)
+- `mistral-large-3` (Mistral's latest flagship)
+
+**Previous Generation (Fallback Options):**
+
+- `llama3.2` (1B-3B small models)
+- `llama3.1` (8B-405B models)
+- `gemma2` (2B-27B models)
+- `qwen2.5` (0.5B-72B models)
+- `mistral` (7B general purpose)
+- `codellama` (specialized for coding)
 
 **Setup:**
 
@@ -167,11 +231,17 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 curl -fsSL https://ollama.com/install.sh | sh
 
 # Pull a model
-ollama pull llama3.1
+ollama pull llama3.3
 
 # Start server (usually auto-starts)
 ollama serve
 ```
+
+**Note:** Ollama now supports 100+ models including:
+- Reasoning models: `deepseek-r1`, `phi4-reasoning`, `qwq`
+- Vision models: `llama3.2-vision`, `qwen3-vl`, `minicpm-v`
+- Coding models: `gpt-oss`, `qwen3-coder`, `deepseek-coder-v2`
+- Embedding models: `nomic-embed-text`, `mxbai-embed-large`
 
 ### LM Studio (Local Deployment)
 
@@ -225,18 +295,24 @@ OLLAMA_HOST=http://localhost:11434
 OPENAI_API_KEY=sk-your-key
 
 # Use efficient models
-HUGGINGFACE_MODEL=meta-llama/Llama-3.1-8B-Instruct
-OLLAMA_MODEL=llama3.1
+HUGGINGFACE_MODEL=deepseek-ai/DeepSeek-R1-7B
+OLLAMA_MODEL=deepseek-r1:7b
+OPENAI_MODEL=gpt-4.1-mini
 PROVIDER_PRIORITY=["ollama","huggingface","openai"]
 ```
+
+**Note:** DeepSeek-R1 offers O3-level reasoning at significantly lower cost:
+- Cloud: Use via Hugging Face Inference API
+- Local: Use via Ollama (zero cost) - `deepseek-r1:7b` for fast inference, `deepseek-r1:70b` for best quality
+- Alternative: Llama 3.3 for general-purpose tasks
 
 ### Enterprise Setup
 
 ```env
 # Enterprise-grade providers
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/openai/v1
 AZURE_OPENAI_KEY=your-key
-AZURE_OPENAI_DEPLOYMENT_NAME=o4
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-5-pro
 AZURE_USE_AD_AUTH=true
 
 VERTEX_PROJECT_ID=your-project-id
@@ -247,6 +323,13 @@ ANTHROPIC_API_KEY=sk-ant-your-key
 # Prioritize enterprise providers
 PROVIDER_PRIORITY=["azure","vertex","anthropic"]
 ```
+
+**Note:** Enterprise deployments benefit from:
+- SLAs and priority processing tiers (Azure, OpenAI)
+- Regional data residency (Vertex AI, AWS Bedrock, Microsoft Foundry)
+- Azure AD authentication (Azure OpenAI)
+- Batch API discounts (50% off for non-urgent requests)
+- Prompt caching (Claude 4.5: 5-min or 1-hour cache options)
 
 ## Testing Your Configuration
 
@@ -266,13 +349,17 @@ ai-changelog validate --models
 ### CLI Testing
 
 ```bash
-# Test with different providers
-ai-changelog --provider openai
-ai-changelog --provider anthropic --model claude-sonnet-4
-ai-changelog --provider google --model gemini-2.5-pro
+# Test with different providers (latest models)
+ai-changelog --provider openai --model gpt-5.2-pro
+ai-changelog --provider anthropic --model claude-opus-4-5-20251101
+ai-changelog --provider google --model gemini-3-pro
+
+# Test reasoning models
+ai-changelog --provider openai --model o3
+ai-changelog --provider ollama --model deepseek-r1:7b
 
 # Test local providers
-ai-changelog --provider ollama
+ai-changelog --provider ollama --model llama3.3
 ai-changelog --provider lmstudio
 ```
 
@@ -391,11 +478,11 @@ ai-changelog test-providers
 ```bash
 # Fast local development
 export OLLAMA_HOST=http://localhost:11434
-ai-changelog --provider ollama
+ai-changelog --provider ollama --model llama3.3  # or deepseek-r1:7b for reasoning
 
-# Production changelog
+# Production changelog with reasoning
 export ANTHROPIC_API_KEY=sk-ant-...
-ai-changelog --provider anthropic --model claude-sonnet-4 --detailed
+ai-changelog --provider anthropic --model claude-opus-4-5-20251101 --detailed
 ```
 
 ### CI/CD Integration
@@ -414,9 +501,9 @@ steps:
 ### Cost Monitoring
 
 ```bash
-# Use cost-effective models
-ai-changelog --provider huggingface --model meta-llama/Llama-3.1-8B-Instruct
+# Use cost-effective models with reasoning
+ai-changelog --provider huggingface --model deepseek-ai/DeepSeek-R1-7B
 
 # Local processing (zero cost)
-ai-changelog --provider ollama --model llama3.1
+ai-changelog --provider ollama --model deepseek-r1:7b
 ```

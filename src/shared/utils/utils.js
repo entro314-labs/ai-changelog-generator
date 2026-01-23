@@ -1437,14 +1437,20 @@ export function getWorkingDirectoryChanges(cwd = undefined) {
     const execOptions = { encoding: 'utf8' }
     if (cwd) {
       execOptions.cwd = cwd
+      console.log(`[getWorkingDirectoryChanges] Running in cwd: ${cwd}`)
+    } else {
+      console.log(`[getWorkingDirectoryChanges] Running in process.cwd(): ${process.cwd()}`)
     }
     const result = execSync('git status --porcelain', execOptions)
+    console.log(`[getWorkingDirectoryChanges] Git status result length: ${result.length}`)
 
     if (!result.trim()) {
+      console.log('[getWorkingDirectoryChanges] No changes detected (empty result)')
       return []
     }
 
     const lines = result.split('\n').filter((line) => line.trim())
+    console.log(`[getWorkingDirectoryChanges] Found ${lines.length} changed files`)
 
     const changes = lines.map((line) => {
       const status = line.substring(0, 2).trim() || '??'
@@ -2158,9 +2164,12 @@ export function assessChangeComplexity(diff) {
 /**
  * Get current git branch name
  */
-export function getCurrentBranch() {
+export function getCurrentBranch(cwd = process.cwd()) {
   try {
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim()
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', {
+      encoding: 'utf8',
+      cwd,
+    }).trim()
     return branch !== 'HEAD' ? branch : null
   } catch (_error) {
     console.warn(colors.warning('Could not determine current branch'))
@@ -2172,8 +2181,8 @@ export function getCurrentBranch() {
  * Extract branch context and intelligence from branch name
  * Based on better-commits patterns: type/ticket-description, feat/ABC-123-add-feature
  */
-export function analyzeBranchIntelligence(branchName = null) {
-  const branch = branchName || getCurrentBranch()
+export function analyzeBranchIntelligence(branchName = null, cwd = null) {
+  const branch = branchName || getCurrentBranch(cwd || process.cwd())
 
   if (!branch) {
     return {

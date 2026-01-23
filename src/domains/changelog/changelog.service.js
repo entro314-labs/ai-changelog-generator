@@ -2210,8 +2210,11 @@ export class ChangelogService {
       // Enhanced analysis of changes with diff content for AI analysis
       const enhancedChanges = await this.enhanceChangesWithDiff(rawChanges)
       const changesSummary = summarizeFileChanges(enhancedChanges)
-      
-      console.log('DEBUG generateComprehensiveWorkspaceChangelog changesSummary:', JSON.stringify(changesSummary))
+
+      console.log(
+        'DEBUG generateComprehensiveWorkspaceChangelog changesSummary:',
+        JSON.stringify(changesSummary)
+      )
 
       // Use DiffProcessor for intelligent processing
       const analysisMode = options.analysisMode || 'standard'
@@ -2266,7 +2269,7 @@ export class ChangelogService {
       // Enhanced analysis of changes with diff content for AI analysis
       const enhancedChanges = await this.enhanceChangesWithDiff(rawChanges)
       const changesSummary = summarizeFileChanges(enhancedChanges)
-      
+
       console.log('DEBUG: enhancedChanges length:', enhancedChanges.length)
       console.log('DEBUG: changesSummary:', changesSummary)
 
@@ -2281,7 +2284,7 @@ export class ChangelogService {
 
       const processedResult = diffProcessor.processFiles(enhancedChanges)
       const { processedFiles, patterns } = processedResult
-      
+
       console.log('DEBUG: changesSummary type:', typeof changesSummary)
       console.log('DEBUG: changesSummary:', JSON.stringify(changesSummary))
       console.log('DEBUG: processedResult:', JSON.stringify(processedResult))
@@ -2520,8 +2523,11 @@ Generate one entry per file or logical change group. Only describe what you can 
   }
 
   async generateAIChangelogContentFromChanges(changes, changesSummary, analysisMode = 'standard') {
-    console.log('DEBUG generateAIChangelogContentFromChanges changesSummary:', JSON.stringify(changesSummary))
-    
+    console.log(
+      'DEBUG generateAIChangelogContentFromChanges changesSummary:',
+      JSON.stringify(changesSummary)
+    )
+
     if (!this.aiAnalysisService.hasAI) {
       console.log(colors.infoMessage('AI not available, using rule-based analysis...'))
       return this.generateBasicChangelogContentFromChanges(changes, changesSummary)
@@ -2563,7 +2569,12 @@ Generate one entry per file or logical change group. Only describe what you can 
         .join('\n')
 
       // Build comprehensive prompt with processed changes
-      console.log('DEBUG before prompt, changesSummary:', changesSummary ? 'defined' : 'undefined', 'totalFiles:', changesSummary?.totalFiles)
+      console.log(
+        'DEBUG before prompt, changesSummary:',
+        changesSummary ? 'defined' : 'undefined',
+        'totalFiles:',
+        changesSummary?.totalFiles
+      )
       const prompt = `Generate a comprehensive AI changelog for the following working directory changes:
 
 **Analysis Mode**: ${analysisMode}
@@ -2746,14 +2757,14 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
     if (!context) {
       return ''
     }
-    
+
     let section = '## Context Analysis\n\n'
-    
+
     // Handle totalFiles from either structure
     if (context.totalFiles !== undefined) {
       section += `- **Total Files:** ${context.totalFiles}\n`
     }
-    
+
     // Handle categories from summarizeFileChanges structure
     if (context.categories && typeof context.categories === 'object') {
       const categoryNames = Object.keys(context.categories)
@@ -2761,7 +2772,7 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
         section += `- **Affected Areas:** ${categoryNames.join(', ')}\n`
       }
     }
-    
+
     // Handle stats if available
     if (context.stats) {
       const statParts = []
@@ -2772,12 +2783,12 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
         section += `- **Changes:** ${statParts.join(', ')}\n`
       }
     }
-    
+
     // Handle languages if available
     if (context.languages && Array.isArray(context.languages) && context.languages.length > 0) {
       section += `- **Languages:** ${context.languages.join(', ')}\n`
     }
-    
+
     // Legacy properties for backward compatibility
     if (context.primaryCategory) {
       section += `- **Primary Category:** ${context.primaryCategory}\n`
@@ -2788,10 +2799,14 @@ ONLY describe what you can literally see in the diff content. Do not invent conn
     if (context.complexity) {
       section += `- **Complexity:** ${context.complexity}\n`
     }
-    
+
     section += '\n'
 
-    if (context.recommendations && Array.isArray(context.recommendations) && context.recommendations.length > 0) {
+    if (
+      context.recommendations &&
+      Array.isArray(context.recommendations) &&
+      context.recommendations.length > 0
+    ) {
       section += '### Recommendations\n\n'
       context.recommendations.forEach((rec) => {
         section += `- ${rec}\n`

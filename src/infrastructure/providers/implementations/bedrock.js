@@ -1,7 +1,7 @@
 /**
  * Amazon Bedrock Provider for AI Changelog Generator
  * Uses AWS SDK v3 for Bedrock Runtime
- * Supports Claude, Llama, and other Bedrock models
+ * Supports Claude 4.5, Llama 4, and other Bedrock models (January 2026)
  */
 
 import process from 'node:process'
@@ -70,7 +70,7 @@ export class BedrockProvider extends BaseProvider {
   }
 
   getDefaultModel() {
-    return 'anthropic.claude-sonnet-4-20250514-v1:0'
+    return 'anthropic.claude-sonnet-4-5-v1:0'
   }
 
   async generateCompletion(messages, options = {}) {
@@ -230,11 +230,60 @@ export class BedrockProvider extends BaseProvider {
 
   async getAvailableModels() {
     return [
-      // Claude models (latest 2025)
+      // Claude 4.5 models (November 2025) - Latest with hybrid reasoning
       {
-        name: 'anthropic.claude-opus-4-20250514-v1:0',
-        id: 'anthropic.claude-opus-4-20250514-v1:0',
-        description: 'Claude Opus 4 - Most capable model for complex tasks',
+        name: 'anthropic.claude-opus-4-5-v1:0',
+        id: 'anthropic.claude-opus-4-5-v1:0',
+        description: 'Claude Opus 4.5 - Most intelligent with effort parameter (Nov 2025)',
+        contextWindow: 200000,
+        extendedContext: 1000000, // 1M tokens in preview
+        capabilities: {
+          reasoning: true,
+          hybrid_reasoning: true,
+          extended_thinking: true,
+          function_calling: true,
+          json_mode: true,
+          multimodal: true,
+          effort_parameter: true,
+        },
+      },
+      {
+        name: 'anthropic.claude-sonnet-4-5-v1:0',
+        id: 'anthropic.claude-sonnet-4-5-v1:0',
+        description: 'Claude Sonnet 4.5 - Best for coding and agents (Sep 2025)',
+        contextWindow: 200000,
+        extendedContext: 1000000, // 1M tokens in preview
+        capabilities: {
+          reasoning: true,
+          hybrid_reasoning: true,
+          extended_thinking: true,
+          function_calling: true,
+          json_mode: true,
+          multimodal: true,
+          agentic_coding: true,
+          computer_use: true,
+        },
+      },
+      {
+        name: 'anthropic.claude-haiku-4-5-v1:0',
+        id: 'anthropic.claude-haiku-4-5-v1:0',
+        description: 'Claude Haiku 4.5 - Fast hybrid reasoning (Oct 2025)',
+        contextWindow: 200000,
+        capabilities: {
+          reasoning: true,
+          hybrid_reasoning: true,
+          extended_thinking: true,
+          function_calling: true,
+          json_mode: true,
+          multimodal: true,
+          fast: true,
+        },
+      },
+      // Claude 4 models (previous generation)
+      {
+        name: 'anthropic.claude-opus-4-v1:0',
+        id: 'anthropic.claude-opus-4-v1:0',
+        description: 'Claude Opus 4 - Previous flagship (May 2025)',
         contextWindow: 200000,
         capabilities: {
           reasoning: true,
@@ -245,30 +294,45 @@ export class BedrockProvider extends BaseProvider {
         },
       },
       {
-        name: 'anthropic.claude-sonnet-4-20250514-v1:0',
-        id: 'anthropic.claude-sonnet-4-20250514-v1:0',
-        description: 'Claude Sonnet 4 - Balanced performance and capability',
+        name: 'anthropic.claude-sonnet-4-v1:0',
+        id: 'anthropic.claude-sonnet-4-v1:0',
+        description: 'Claude Sonnet 4 - Balanced performance (May 2025)',
         contextWindow: 200000,
         capabilities: {
           reasoning: true,
           function_calling: true,
           json_mode: true,
           multimodal: true,
+        },
+      },
+      // Meta Llama 4 models (latest)
+      {
+        name: 'meta.llama4-scout-v1:0',
+        id: 'meta.llama4-scout-v1:0',
+        description: 'Llama 4 Scout - Latest multimodal Llama (2025)',
+        contextWindow: 128000,
+        capabilities: {
+          reasoning: true,
+          function_calling: true,
+          json_mode: true,
+          multimodal: true,
+          open_source: true,
         },
       },
       {
-        name: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-        id: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-        description: 'Claude 3.7 Sonnet with reasoning capabilities',
-        contextWindow: 200000,
+        name: 'meta.llama4-maverick-v1:0',
+        id: 'meta.llama4-maverick-v1:0',
+        description: 'Llama 4 Maverick - Advanced multimodal (2025)',
+        contextWindow: 128000,
         capabilities: {
           reasoning: true,
           function_calling: true,
           json_mode: true,
           multimodal: true,
+          open_source: true,
         },
       },
-      // Meta Llama models
+      // Meta Llama 3.x models (previous generation)
       {
         name: 'meta.llama3-3-70b-instruct-v1:0',
         id: 'meta.llama3-3-70b-instruct-v1:0',
@@ -311,26 +375,31 @@ export class BedrockProvider extends BaseProvider {
 
   getProviderModelConfig() {
     return {
-      smallModel: 'anthropic.claude-3-haiku-20240307-v1:0',
-      mediumModel: 'anthropic.claude-sonnet-4-20250514-v1:0',
-      standardModel: 'anthropic.claude-sonnet-4-20250514-v1:0',
-      complexModel: 'anthropic.claude-opus-4-20250514-v1:0',
-      reasoningModel: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-      default: 'anthropic.claude-sonnet-4-20250514-v1:0',
+      smallModel: 'anthropic.claude-haiku-4-5-v1:0',
+      mediumModel: 'anthropic.claude-sonnet-4-v1:0',
+      standardModel: 'anthropic.claude-sonnet-4-5-v1:0',
+      complexModel: 'anthropic.claude-opus-4-5-v1:0',
+      reasoningModel: 'anthropic.claude-opus-4-5-v1:0',
+      default: 'anthropic.claude-sonnet-4-5-v1:0',
       temperature: 0.3,
       maxTokens: 2000,
     }
   }
 
   getModelCapabilities(modelName) {
+    const isClaude45 = modelName.includes('4-5') || modelName.includes('4.5')
+    const isLlama4 = modelName.includes('llama4')
     return {
       reasoning:
         modelName.includes('claude') || modelName.includes('llama') || modelName.includes('titan'),
-      function_calling: modelName.includes('claude'),
+      hybrid_reasoning: isClaude45,
+      extended_thinking: isClaude45,
+      function_calling: modelName.includes('claude') || isLlama4,
       json_mode: true,
-      multimodal: modelName.includes('claude') || modelName.includes('llama3-2'),
+      multimodal: modelName.includes('claude') || modelName.includes('llama3-2') || isLlama4,
       largeContext: modelName.includes('claude') || modelName.includes('llama'),
-      advancedReasoning: modelName.includes('opus-4') || modelName.includes('3-7-sonnet'),
+      advancedReasoning: modelName.includes('opus') || isClaude45,
+      effort_parameter: modelName.includes('opus-4-5'),
       awsManaged: true,
     }
   }

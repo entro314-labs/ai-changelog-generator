@@ -916,33 +916,43 @@ export class ChangelogOrchestrator {
         ? `Branch: ${branchAnalysis.branch} (${branchAnalysis.type || 'unknown'} type, ${branchAnalysis.confidence}% confidence)`
         : `Branch: ${branchAnalysis?.branch || 'unknown'}`
 
-    const fileChanges = stagedFiles.map((f) => `${f.status} ${f.path}`).join('\n')
+    // Build detailed file changes with content preview
+    const fileChangesWithContent = stagedFiles
+      .map((f) => {
+        let entry = `${f.status} ${f.path}`
+        if (f.diff && f.diff.length > 0) {
+          // Include a preview of the diff (first 500 chars to stay within token limits)
+          const diffPreview = f.diff.substring(0, 500)
+          entry += `\n${diffPreview}${f.diff.length > 500 ? '...' : ''}`
+        }
+        return entry
+      })
+      .join('\n\n')
 
     // Build detailed context about the changes
     const changesSummary = {
-      added: stagedFiles.filter((f) => f.status === 'A').length,
+      added: stagedFiles.filter((f) => f.status === 'A' || f.status === '??').length,
       modified: stagedFiles.filter((f) => f.status === 'M').length,
       deleted: stagedFiles.filter((f) => f.status === 'D').length,
     }
 
-    const prompt = `Generate a high-quality conventional commit message for the following staged changes:
+    const prompt = `Generate a high-quality conventional commit message for the following changes:
 
 ${branchInfo}
 ${branchAnalysis?.ticket ? `Related ticket: ${branchAnalysis.ticket}` : ''}
 
-File changes (${stagedFiles.length} files):
-${fileChanges}
-
 Change summary: ${changesSummary.added} added, ${changesSummary.modified} modified, ${changesSummary.deleted} deleted
-
 Suggested commit type: ${suggestedType.type} (${suggestedType.confidence}% confidence from ${suggestedType.source})
+
+File changes with content (${stagedFiles.length} files):
+${fileChangesWithContent}
 
 Requirements:
 - Use conventional commit format: type(scope): description
 - Keep subject line under 72 characters
 - Use imperative mood ("add", not "added")
-- Be specific and descriptive about what changed
-- Include a body if the changes are complex
+- Be specific and descriptive about what's actually being added/changed based on the file content shown above
+- For new projects with many files, describe the overall purpose/functionality being added
 - Use the suggested type unless the changes clearly indicate otherwise
 
 Generate only the commit message, no explanation.`

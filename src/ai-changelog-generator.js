@@ -167,6 +167,18 @@ export class AIChangelogGenerator {
     }
   }
 
+  // Commit message generation with AI and validation
+  async generateCommitMessage(options = {}) {
+    try {
+      return await this.appService.generateCommitMessage(options)
+    } catch (error) {
+      if (!this.silent) {
+        console.error(colors.errorMessage('Commit message generation failed:'), error.message)
+      }
+      throw error
+    }
+  }
+
   // Configuration methods - simple delegation
   setAnalysisMode(mode) {
     this.analysisMode = mode

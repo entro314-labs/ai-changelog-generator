@@ -167,10 +167,10 @@ export class CommitMessageValidationService {
     }
 
     if (subject.length > this.config.maxSubjectLength) {
-      errors.push(
+      warnings.push(
         `Subject too long (${subject.length} chars, maximum ${this.config.maxSubjectLength})`
       )
-      suggestions.push('Move additional details to the commit body')
+      suggestions.push('Consider moving additional details to the commit body')
     }
 
     // Conventional commit format validation

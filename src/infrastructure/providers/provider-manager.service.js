@@ -5,6 +5,7 @@ import colors from '../../shared/constants/colors.js'
 import { AnthropicProvider } from './implementations/anthropic.js'
 import AzureOpenAIProvider from './implementations/azure.js'
 import DummyProvider from './implementations/dummy.js'
+import GitHubCopilotProvider from './implementations/github-copilot.js'
 import GoogleProvider from './implementations/google.js'
 import HuggingFaceProvider from './implementations/huggingface.js'
 import LMStudioProvider from './implementations/lmstudio.js'
@@ -17,6 +18,11 @@ import VertexAIProvider from './implementations/vertex.js'
  * ProviderManager Service
  *
  * Manages AI provider loading, selection, and fallback logic
+ * Supports:
+ * - Traditional API key authentication
+ * - OAuth tokens (Google, Azure)
+ * - GitHub Copilot (via GitHub authentication)
+ * - Auto-detected credentials from CLI tools
  */
 export class ProviderManagerService {
   constructor(config = {}, options = {}) {
@@ -29,11 +35,12 @@ export class ProviderManagerService {
       ...options,
     }
 
-    // Static provider mapping with new classes
+    // Static provider mapping with all supported providers
     this.providerClasses = {
       anthropic: AnthropicProvider,
       azure: AzureOpenAIProvider,
       dummy: DummyProvider,
+      'github-copilot': GitHubCopilotProvider,
       google: GoogleProvider,
       huggingface: HuggingFaceProvider,
       lmstudio: LMStudioProvider,
@@ -140,6 +147,7 @@ export class ProviderManagerService {
       'anthropic',
       'azure',
       'google',
+      'github-copilot',
       'vertex',
       'huggingface',
       'ollama',
@@ -361,7 +369,17 @@ export class ProviderManagerService {
    * Get configured provider priority order
    */
   getProviderPriority() {
-    return ['openai', 'anthropic', 'azure', 'google', 'vertex', 'huggingface', 'ollama', 'lmstudio']
+    return [
+      'openai',
+      'anthropic',
+      'azure',
+      'google',
+      'github-copilot',
+      'vertex',
+      'huggingface',
+      'ollama',
+      'lmstudio',
+    ]
   }
 
   /**

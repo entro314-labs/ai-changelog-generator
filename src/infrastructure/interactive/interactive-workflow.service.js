@@ -1,5 +1,5 @@
-import process from 'node:process'
 import { execSync } from 'node:child_process'
+import process from 'node:process'
 
 import colors from '../../shared/constants/colors.js'
 import { EnhancedConsole, SimpleSpinner } from '../../shared/utils/cli-ui.js'
@@ -479,7 +479,10 @@ Example output format:
 
     lines.forEach((line) => {
       // Remove numbering and clean up
-      const cleaned = line.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').trim()
+      const cleaned = line
+        .replace(/^\d+\.\s*/, '')
+        .replace(/^-\s*/, '')
+        .trim()
 
       // Must be a reasonable length
       if (!cleaned || cleaned.length < 10 || cleaned.length > 100) {
