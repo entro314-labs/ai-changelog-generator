@@ -19,50 +19,50 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        
+        uses: actions/checkout@v6
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
-          
+          node-version: '24.19.0'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: latest
-          
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: Run tests
         run: pnpm test
 
   release:
     needs: test
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
-          
+          node-version: '24.19.0'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: latest
-          
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: Update version (if workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -73,40 +73,45 @@ jobs:
           git commit -m "chore: bump version to ${{ github.event.inputs.version }}"
           git tag v${{ github.event.inputs.version }}
           git push origin HEAD --tags
-          
-      - name: Get version and changelog
+
+      - name: Get version
         id: get-info
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+            VERSION="${INPUT_VERSION}"
           else
             VERSION=${GITHUB_REF#refs/tags/v}
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
-          # Generate changelog using the tool itself
-          if [ -f "bin/ai-changelog.js" ]; then
-            echo "Generating changelog with AI..."
-            CHANGELOG_CONTENT=$(pnpm changelog --no-color 2>/dev/null || echo "## Changes\n\nSee commit history for details.")
-          else
-            CHANGELOG_CONTENT="## Changes\n\nSee commit history for details."
-          fi
-          
-          # Save changelog to file for use in release
-          echo "$CHANGELOG_CONTENT" > /tmp/changelog.md
-          
-      - name: Build artifacts (if build script exists)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # Build first: the CLI only exists under dist/ after `pnpm run build`, so the
+      # previous `[ -f bin/ai-changelog.js ]` probe never matched and the release
+      # notes silently fell back to a placeholder on every single release.
+      - name: Build
+        run: pnpm run build
+
+      - name: Generate release notes with the tool itself
         run: |
-          if pnpm run --if-present build; then
-            echo "Build completed"
-            # Create release archive
-            tar -czf ai-changelog-generator-v${{ steps.get-info.outputs.version }}.tar.gz \
-              bin/ src/ types/ *.md *.json *.js *.sh LICENSE
-          else
-            echo "No build script found, creating source archive"
-            tar -czf ai-changelog-generator-v${{ steps.get-info.outputs.version }}.tar.gz \
-              bin/ src/ types/ *.md *.json *.js *.sh LICENSE
+          if ! pnpm run changelog -- --no-color > /tmp/changelog.md 2>/dev/null; then
+            printf '## Changes\n\nSee commit history for details.\n' > /tmp/changelog.md
           fi
+          if [ ! -s /tmp/changelog.md ]; then
+            printf '## Changes\n\nSee commit history for details.\n' > /tmp/changelog.md
+          fi
+
+      # Ship the exact tarball npm would publish, rather than a hand-rolled archive
+      # of source globs. The old `tar ... *.js ...` also failed outright, because no
+      # .js files remain at the repo root after the TypeScript migration.
+      - name: Pack npm artifact
+        id: pack
+        run: |
+          PACKAGE_TARBALL=$(pnpm pack --json | node -e \
+            "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const r=JSON.parse(d);console.log(Array.isArray(r)?r[0].filename:r.filename)})")
+          echo "tarball=$PACKAGE_TARBALL" >> "$GITHUB_OUTPUT"
+          echo "Packed $PACKAGE_TARBALL"
+          tar -tzf "$PACKAGE_TARBALL" | head -40
 
       - name: Build MCPB Package
         id: mcpb
@@ -115,7 +120,7 @@ jobs:
           manifest: 'manifest.json'
           output: 'ai-changelog-generator'
           package-manager: 'pnpm'
-          node-version: '22'
+          node-version: '24.19.0'
           upload-artifact: 'false'
 
       - name: Display MCPB Build Info
@@ -127,7 +132,7 @@ jobs:
           echo "   SHA256: ${{ steps.mcpb.outputs.shasum }}"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ steps.get-info.outputs.version }}
           name: Release v${{ steps.get-info.outputs.version }}
@@ -135,5 +140,5 @@ jobs:
           draft: false
           prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           files: |
-            ai-changelog-generator-v${{ steps.get-info.outputs.version }}.tar.gz
+            ${{ steps.pack.outputs.tarball }}
             ai-changelog-generator.mcpb

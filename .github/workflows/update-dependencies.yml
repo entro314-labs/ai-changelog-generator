@@ -9,30 +9,30 @@ on:
 jobs:
   update-dependencies:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        
+        uses: actions/checkout@v6
+
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
-          
+          node-version: '24.19.0'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: latest
-          
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: Update dependencies
         run: pnpm up --latest
-        
+
       - name: Run tests
         run: pnpm test
-        
+
       - name: Check for changes
         id: verify-changed-files
         run: |
@@ -41,7 +41,7 @@ jobs:
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
-          
+
       - name: Create Pull Request
         if: steps.verify-changed-files.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
@@ -51,20 +51,20 @@ jobs:
           title: 'chore: update dependencies'
           body: |
             ## 🔄 Dependency Updates
-            
+
             This PR contains automated dependency updates.
-            
+
             ### Changes
             - Updated all dependencies to latest versions
             - Tests have passed successfully
-            
+
             ### Review Checklist
             - [ ] All tests are passing
             - [ ] No breaking changes introduced
             - [ ] Security vulnerabilities addressed (if any)
-            
+
             ---
-            
+
             This PR was created automatically by the dependency update workflow.
           branch: chore/update-dependencies
           delete-branch: true
