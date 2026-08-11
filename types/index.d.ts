@@ -71,7 +71,23 @@ export interface BranchAnalysis {
 }
 
 // AI Provider Types
-export type AIProvider = 'openai' | 'azure' | 'auto'
+export type AIProvider =
+  | 'openai'
+  | 'azure'
+  | 'anthropic'
+  | 'google'
+  | 'vertex'
+  | 'bedrock'
+  | 'ollama'
+  | 'lmstudio'
+  | 'huggingface'
+  | 'github-copilot'
+  | 'mock'
+  | 'dummy'
+  | 'auto'
+
+// Known OpenAI/Azure model identifiers retain autocomplete, while `(string & {})`
+// keeps provider-specific names (claude-*, gemini-*, "gpt-5.2", etc.) assignable.
 export type AIModel =
   | 'gpt-4.1'
   | 'gpt-4.1-mini'
@@ -84,6 +100,7 @@ export type AIModel =
   | 'o4-mini' // Latest reasoning models
   | 'o3'
   | 'o3-mini' // Previous generation reasoning models
+  | (string & {})
 
 export interface ModelCapabilities {
   reasoning: boolean
@@ -135,7 +152,7 @@ export interface AIResponse {
 
 // Analysis Types
 export type AnalysisMode = 'standard' | 'detailed' | 'enterprise'
-export type OutputFormat = 'markdown' | 'json'
+export type OutputFormat = 'markdown' | 'json' | 'html'
 export type TemplateType = 'standard' | 'keep-a-changelog' | 'simple' | 'semantic' | 'github'
 
 export interface ChangelogOptions {
@@ -224,6 +241,15 @@ export interface RepositoryHealthCheck {
 }
 
 // Configuration Types
+
+// Result of validating the runtime configuration. Synchronous in the implementation
+// (src/application/services/application.service.ts).
+export interface ValidationResult {
+  valid: boolean
+  issues: string[]
+  recommendations: string[]
+}
+
 export interface ConfigManager {
   get(key: string): any
   getAll(): Record<string, any>
@@ -245,6 +271,13 @@ export interface ConfigManager {
   } | null
   validate(): boolean
   createSampleConfig(): void
+  setActiveProvider(name: string): void
+  getDefaultAnalysisMode(): AnalysisMode
+  getDefaultOutputFormat(): OutputFormat
+  getIncludeAttribution(): boolean
+  getRateLimitDelay(): number
+  getMaxRetries(): number
+  getCommitIgnoreRegex(): RegExp
 }
 
 // MCP Server Types
@@ -337,8 +370,9 @@ export class AIChangelogGenerator {
   setAnalysisMode(mode: AnalysisMode): void
   setModelOverride(model: AIModel): void
 
-  // Validation
-  validateConfiguration(): Promise<void>
+  // Validation — resolves to a ValidationResult (the underlying ApplicationService
+  // method is synchronous; this public method is async and awaits it).
+  validateConfiguration(): Promise<ValidationResult>
 
   // Metrics
   getMetrics(): {

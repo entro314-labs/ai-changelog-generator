@@ -1,0 +1,269 @@
+/**
+ * Abstract Base Provider for AI models.
+ * Defines the interface that all provider plugins must implement.
+ */
+import { AbstractMethodError } from '../../../shared/utils/error-classes.js'
+
+export interface ProviderMessage {
+  role: string
+  content: any
+}
+
+export interface ProviderCapabilities {
+  [key: string]: boolean | number | string | undefined
+}
+
+export type ProviderConfig = Record<string, any>
+export type ProviderResult = Record<string, any>
+export type ProviderModelDescriptor = string | Record<string, any>
+
+export class BaseProvider {
+  [key: string]: any
+  config: ProviderConfig
+  modelConfig: ProviderConfig | null
+  capabilities: ProviderCapabilities
+
+  constructor(config: ProviderConfig) {
+    if (this.constructor === BaseProvider) {
+      throw new AbstractMethodError(
+        "Abstract classes can't be instantiated",
+        'BaseProvider',
+        'constructor'
+      )
+    }
+    this.config = config
+    this.modelConfig = null
+    this.capabilities = {}
+  }
+
+  /**
+   * Returns the name of the provider.
+   * @returns {string} The provider's name (e.g., 'openai', 'azure').
+   */
+  getName() {
+    throw new AbstractMethodError(
+      'Method "getName()" must be implemented',
+      this.constructor.name,
+      'getName'
+    )
+  }
+
+  /**
+   * Checks if the provider is available and configured correctly.
+   * @returns {boolean} True if the provider is available, false otherwise.
+   */
+  isAvailable(): boolean {
+    throw new AbstractMethodError(
+      'Method "isAvailable()" must be implemented',
+      this.constructor.name,
+      'isAvailable'
+    )
+  }
+
+  /**
+   * Generates a completion from the AI model.
+   * @param {Array<object>} messages - The array of messages for the conversation.
+   * @param {object} options - Additional options for the completion (e.g., max_tokens).
+   * @returns {Promise<object>} The AI's response.
+   */
+  async generateCompletion(
+    _messages: ProviderMessage[],
+    _options: ProviderConfig = {}
+  ): Promise<ProviderResult> {
+    throw new AbstractMethodError(
+      'Method "generateCompletion()" must be implemented',
+      this.constructor.name,
+      'generateCompletion'
+    )
+  }
+
+  /**
+   * Recommends a model based on the commit details.
+   * @param {object} commitDetails - Details about the commit (e.g., files changed, lines changed).
+   * @returns {object} The recommended model and reason.
+   */
+  getModelRecommendation(_commitDetails: ProviderConfig): ProviderResult {
+    throw new AbstractMethodError(
+      'Method "getModelRecommendation()" must be implemented',
+      this.constructor.name,
+      'getModelRecommendation'
+    )
+  }
+
+  /**
+   * Selects optimal model based on analysis
+   * @param {object} commitInfo - Commit analysis information
+   * @returns {Promise<object>} Optimal model selection
+   */
+  async selectOptimalModel(commitInfo: ProviderConfig): Promise<ProviderResult> {
+    try {
+      return this.getModelRecommendation(commitInfo)
+    } catch (error) {
+      console.warn(`Warning: Model selection failed: ${error.message}. Using default model.`)
+      return { model: this.getDefaultModel(), reason: 'fallback' }
+    }
+  }
+
+  /**
+   * Validates if a specific model is available for the provider.
+   * @param {string} modelName - The name of the model to validate.
+   * @returns {Promise<object>} An object indicating availability and capabilities.
+   */
+  async validateModelAvailability(_modelName: string): Promise<ProviderResult> {
+    throw new AbstractMethodError(
+      'Method "validateModelAvailability()" must be implemented',
+      this.constructor.name,
+      'validateModelAvailability'
+    )
+  }
+
+  /**
+   * Tests the connection to the provider's API.
+   * @returns {Promise<object>} An object indicating success or failure.
+   */
+  async testConnection(): Promise<ProviderResult> {
+    throw new AbstractMethodError(
+      'Method "testConnection()" must be implemented',
+      this.constructor.name,
+      'testConnection'
+    )
+  }
+
+  /**
+   * Gets the capabilities of the provider or a specific model.
+   * @param {string} [modelName] - Optional model name to get specific capabilities.
+   * @returns {object} An object listing the provider's capabilities.
+   */
+  getCapabilities(_modelName?: string): ProviderCapabilities {
+    throw new AbstractMethodError(
+      'Method "getCapabilities()" must be implemented',
+      this.constructor.name,
+      'getCapabilities'
+    )
+  }
+
+  /**
+   * Gets available models for this provider
+   * @returns {Promise<Array>} List of available models
+   */
+  getAvailableModels(): ProviderModelDescriptor[] | Promise<ProviderModelDescriptor[]> {
+    throw new AbstractMethodError(
+      'Method "getAvailableModels()" must be implemented',
+      this.constructor.name,
+      'getAvailableModels'
+    )
+  }
+
+  /**
+   * Gets the default model for this provider
+   * @returns {string} Default model name
+   */
+  getDefaultModel(): string {
+    throw new AbstractMethodError(
+      'Method "getDefaultModel()" must be implemented',
+      this.constructor.name,
+      'getDefaultModel'
+    )
+  }
+
+  /**
+   * Gets provider configuration
+   * @returns {object} Provider configuration
+   */
+  getConfiguration(): ProviderConfig {
+    return this.config || {}
+  }
+
+  /**
+   * Gets required environment variables for this provider
+   * @returns {Array<string>} List of required env vars
+   */
+  getRequiredEnvVars(): string[] {
+    throw new AbstractMethodError(
+      'Method "getRequiredEnvVars()" must be implemented',
+      this.constructor.name,
+      'getRequiredEnvVars'
+    )
+  }
+
+  /**
+   * Gets provider information for display purposes.
+   * @returns {string} Provider information string.
+   */
+  getProviderInfo(): string | ProviderConfig {
+    return `${this.getName()} provider`
+  }
+
+  /**
+   * Test a specific model
+   * @param {string} modelName - Model to test
+   * @returns {Promise<object>} Test result
+   */
+  async testModel(modelName: string): Promise<ProviderResult> {
+    try {
+      const startTime = Date.now()
+      await this.generateCompletion([{ role: 'user', content: 'Test message' }], {
+        model: modelName,
+        max_tokens: 5,
+      })
+      const responseTime = Date.now() - startTime
+      return { success: true, responseTime }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
+   * Gets provider-specific configuration for the model config system
+   * @returns {object} Provider model configuration
+   */
+  getProviderModelConfig(): ProviderConfig {
+    // AI_TEMPERATURE is the single configured sampling default; it feeds
+    // buildRequestParams via `defaults.temperature`. Per-call options still win.
+    const configuredTemperature = Number.parseFloat(this.config?.AI_TEMPERATURE)
+
+    return (
+      this.modelConfig || {
+        default: this.getDefaultModel(),
+        temperature: Number.isFinite(configuredTemperature) ? configuredTemperature : 0.3,
+        maxTokens: 1000,
+      }
+    )
+  }
+
+  /**
+   * Gets provider configuration for client initialization
+   * @returns {object} Provider configuration
+   */
+  getProviderConfig(): ProviderConfig {
+    return {
+      name: this.getName(),
+      config: this.config,
+      available: this.isAvailable(),
+    }
+  }
+
+  buildClientOptions(extraDefaults: ProviderConfig = {}): ProviderConfig {
+    return {
+      ...this.getProviderConfig(),
+      ...extraDefaults,
+    }
+  }
+
+  handleProviderError(
+    error: Error,
+    operation: string,
+    context: ProviderConfig = {}
+  ): ProviderResult {
+    return {
+      available: false,
+      provider: this.getName(),
+      operation,
+      error: error.message,
+      context,
+      timestamp: new Date().toISOString(),
+    }
+  }
+}
+
+export default BaseProvider
