@@ -158,7 +158,7 @@ See the tool in action with our interactive mode demo:
 
 ![Interactive Demo](docs/media/demo-interactive-optimized.gif)
 
-*Interactive mode with guided setup and provider selection*
+_Interactive mode with guided setup and provider selection_
 
 ### Quick Generation
 
@@ -166,7 +166,7 @@ Watch how fast you can generate professional changelogs:
 
 ![Quick Demo](docs/media/demo-quick-real.gif)
 
-*Generate changelogs from recent commits in seconds*
+_Generate changelogs from recent commits in seconds_
 
 ### Video Walkthrough
 
@@ -294,14 +294,14 @@ changelog:
     - chore
 
   headlines:
-    feat: "🚀 Features"
-    fix: "🐛 Bug Fixes"
-    perf: "⚡ Performance"
-    refactor: "♻️ Refactoring"
-    docs: "📚 Documentation"
+    feat: '🚀 Features'
+    fix: '🐛 Bug Fixes'
+    perf: '⚡ Performance'
+    refactor: '♻️ Refactoring'
+    docs: '📚 Documentation'
 
-  commitUrl: "https://github.com/user/repo/commit/%commit%"
-  issueUrl: "https://github.com/user/repo/issues/%issue%"
+  commitUrl: 'https://github.com/user/repo/commit/%commit%'
+  issueUrl: 'https://github.com/user/repo/issues/%issue%'
 ```
 
 ## Examples
@@ -347,13 +347,12 @@ ai-changelog health --detailed
 
 ## Documentation
 
-- **[Getting Started Guide](./docs/getting-started.md)** - Complete setup and first changelog
-- **[AI Provider Setup](./docs/providers.md)** - Configure OpenAI, Claude, and other providers
-- **[Configuration Reference](./docs/configuration.md)** - All YAML and environment options
-- **[MCP Integration](./docs/mcp-integration.md)** - Claude Desktop and MCP server setup
-- **[Desktop Extension (MCPB)](./MCPB_BUILD.md)** - Build and package as Claude Desktop Extension
-- **[API Reference](./docs/api-reference.md)** - All commands, options, and programmatic usage
+- **[Environment Variables](./docs/ENVIRONMENT_VARIABLES.md)** - Provider credentials, model overrides, gateway setup, and all runtime options
+- **[Desktop Extension (MCPB)](./docs/MCPB_BUILD.md)** - Build and package as a Claude Desktop Extension, including MCP server setup
+- **[Publishing](./docs/PUBLISHING.md)** - Release and publish process
+- **[Roadmap](./docs/TODO.md)** - Planned and in-progress work
 - **[Demo Media](./docs/media/)** - Interactive demos, GIFs, and video walkthroughs
+- **[Contributing](./CONTRIBUTING.md)** - Development setup and contribution guide
 
 ### Claude Desktop Extension
 
@@ -366,7 +365,7 @@ Install AI Changelog Generator in Claude Desktop with **one click** using the MC
 
 No configuration files, no terminal commands - just drag, drop, and start generating changelogs!
 
-**For developers:** Learn how to build and package the extension in [MCPB_BUILD.md](./MCPB_BUILD.md)
+**For developers:** Learn how to build and package the extension in [MCPB_BUILD.md](./docs/MCPB_BUILD.md)
 
 ```bash
 # Build Desktop Extension
@@ -404,8 +403,8 @@ We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md)
 <path d="M20 18c1.1 0 1.99-.9 1.99-2L22 5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2H0c0 1.1.9 2 2 2h20c1.1 0 2-.9 2-2h-4zM4 5h16v11H4V5zm8 14c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" fill="#6B7280"/>
 </svg>
 
-- **Node.js**: >= 22.0.0
-- **npm**: >= 8.0.0 or **pnpm** >= 7.0.0 (recommended)
+- **Node.js**: >= 24.19.0
+- **npm**: >= 8.0.0 or **pnpm** >= 11.20.0 (recommended)
 - **Git**: Any recent version with repository history
 - **AI Provider**: API key for at least one supported provider (or local Ollama setup)
 
@@ -427,7 +426,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 - **GitHub Issues**: [Report bugs and request features](https://github.com/entro314-labs/AI-changelog-generator/issues)
 - **Discussions**: [Community discussions and Q&A](https://github.com/entro314-labs/AI-changelog-generator/discussions)
 - **Documentation**: [Complete guides and API reference](https://github.com/entro314-labs/AI-changelog-generator#readme)
-- **Examples**: [Real-world usage examples](./examples/)
+- **Configuration**: [Environment variables and provider setup](./docs/ENVIRONMENT_VARIABLES.md)
 
 ---
 

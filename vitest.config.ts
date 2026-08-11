@@ -1,6 +1,9 @@
-import path from 'node:path'
+import path, { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { defineConfig } from 'vitest/config'
+
+const currentDirectory = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   test: {
@@ -28,12 +31,16 @@ export default defineConfig({
       },
     },
 
-    // Test timeout for async operations - increased for complex service initialization
+    // Test timeout for async operations - increased for complex service initialization.
+    // hookTimeout matches testTimeout because several suites dynamically import the
+    // provider graph inside a hook; the first such import pays a one-time cold
+    // transform cost for the vendor SDKs (Vercel AI SDK, AWS, Google) that is far
+    // larger than the ~2s runtime import cost measured against the built output.
     testTimeout: 30000,
-    hookTimeout: 15000,
+    hookTimeout: 30000,
 
     // Reporters
-    reporter: ['default', 'html'],
+    reporters: ['default', 'html', 'json'],
 
     // Output files
     outputFile: {
@@ -41,16 +48,16 @@ export default defineConfig({
       json: './test/vitest-results/results.json',
     },
 
-    // Pool options for better performance
-    pool: 'forks', // Use forks instead of threads to support process.chdir()
-    poolOptions: {
-      forks: {
-        singleFork: false,
-      },
-    },
+    // Use forks instead of threads to support process.chdir() in legacy tests.
+    pool: 'forks',
 
-    // Watch mode configuration
-    watch: true,
+    // CLI suites spawn their own Node processes and contain wall-clock assertions.
+    // Running test files concurrently makes those assertions measure worker
+    // contention instead of CLI behavior.
+    fileParallelism: false,
+
+    // Explicit run mode for CI and local verification commands.
+    watch: false,
 
     // Mock configuration
     mockReset: true,
@@ -61,8 +68,8 @@ export default defineConfig({
   // Resolve aliases for easier imports
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@test': path.resolve(__dirname, './test'),
+      '@': path.resolve(currentDirectory, './src'),
+      '@test': path.resolve(currentDirectory, './test'),
     },
   },
 

@@ -86,14 +86,17 @@ Our `manifest.json` follows the MCPB 0.3 specification:
 ## Key Changes from DXT
 
 ### Version Field
+
 - **Old (DXT):** `"dxt_version": "0.1"`
 - **New (MCPB):** `"mcpb_version": "0.3"`
 
 ### File Extension
+
 - **Old:** `.dxt` files
 - **New:** `.mcpb` files
 
 ### Manifest Enhancements
+
 - More detailed tool declarations with argument schemas
 - Better user configuration UI support
 - Enhanced platform-specific configurations
@@ -127,9 +130,11 @@ MCPB supports detailed tool definitions:
 The extension supports multiple AI providers. Users configure these in Claude Desktop:
 
 ### Required Configuration
+
 - **None** - Extension works without configuration but with limited functionality
 
 ### Optional Configuration
+
 - **AI_PROVIDER**: Choose provider (openai, azure, claude, google, ollama, lmstudio)
 - **OPENAI_API_KEY**: OpenAI API key for GPT models
 - **AZURE_OPENAI_KEY**: Azure OpenAI API key
@@ -138,6 +143,7 @@ The extension supports multiple AI providers. Users configure these in Claude De
 - And more...
 
 Configuration values are:
+
 - Stored securely in OS keychain
 - Injected as environment variables at runtime
 - Validated before enabling the extension
@@ -209,6 +215,7 @@ The manifest supports platform-specific configurations:
 ### Template Variables
 
 Available in manifest:
+
 - `${__dirname}` - Extension installation directory
 - `${user_config.key}` - User-provided configuration
 - `${HOME}`, `${TEMP}`, etc. - System environment variables
@@ -314,6 +321,7 @@ pnpm mcpb:build      # Validate + Pack (full build)
 This project migrated from DXT to MCPB format:
 
 ### What Changed
+
 - ✅ `dxt_version` → `mcpb_version`
 - ✅ `.dxt` → `.mcpb` file extension
 - ✅ Enhanced tool declarations with argument schemas
@@ -321,6 +329,7 @@ This project migrated from DXT to MCPB format:
 - ✅ Better cross-platform support
 
 ### Backward Compatibility
+
 - Legacy `server/index.js` maintained for old installations
 - `bin/ai-changelog-dxt.js` retained with deprecation notice
 - Existing DXT installations will continue to work

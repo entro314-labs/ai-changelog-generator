@@ -64,14 +64,14 @@ The core of the provider system consists of two main components:
 
 ```javascript
 // lib/providers/my-new-provider.js
-const BaseProvider = require('./base-provider');
+const BaseProvider = require('./base-provider')
 
 class MyNewProvider extends BaseProvider {
   constructor(config) {
-    super(config);
-    this.client = null;
+    super(config)
+    this.client = null
     if (this.isAvailable()) {
-      this.initializeClient();
+      this.initializeClient()
     }
   }
 
@@ -81,13 +81,13 @@ class MyNewProvider extends BaseProvider {
     this.client = new MyProviderSDK({
       apiKey: this.config.MY_PROVIDER_API_KEY,
       // Add other configuration options
-    });
+    })
   }
 
   // Implement other required methods...
 }
 
-module.exports = MyNewProvider;
+module.exports = MyNewProvider
 ```
 
 ### 3. Implement the `BaseProvider` Interface
@@ -122,7 +122,7 @@ async generateCompletion(messages, options) {
   }
 
   const modelName = options.model || this.config.MY_PROVIDER_DEFAULT_MODEL;
-  
+
   // Prepare parameters for the API call
   const params = {
     model: modelName,
@@ -145,7 +145,7 @@ async generateCompletion(messages, options) {
   }
 
   // Handle JSON mode if supported
-  if (options.response_format?.type === 'json_object' && 
+  if (options.response_format?.type === 'json_object' &&
       this.getCapabilities(modelName).json_mode) {
     params.response_format = { type: 'json_object' };
   }
@@ -172,20 +172,20 @@ async generateCompletion(messages, options) {
 getModelRecommendation(commitDetails) {
   // Recommend models based on commit complexity
   if (commitDetails.breaking || commitDetails.complex) {
-    return { 
-      model: 'my-provider-advanced-model', 
-      reason: 'Complex or breaking change detected' 
+    return {
+      model: 'my-provider-advanced-model',
+      reason: 'Complex or breaking change detected'
     };
   }
   if (commitDetails.lines > 500 || commitDetails.files > 15) {
-    return { 
-      model: 'my-provider-standard-model', 
-      reason: 'Medium-large commit size' 
+    return {
+      model: 'my-provider-standard-model',
+      reason: 'Medium-large commit size'
     };
   }
-  return { 
-    model: 'my-provider-basic-model', 
-    reason: 'Standard commit size' 
+  return {
+    model: 'my-provider-basic-model',
+    reason: 'Standard commit size'
   };
 }
 ```
@@ -197,27 +197,27 @@ async validateModelAvailability(modelName) {
   if (!this.isAvailable()) {
     return { available: false, error: 'Provider not configured' };
   }
-  
+
   try {
     // Check if the model exists and is available
     const models = await this.client.listModels();
     const isAvailable = models.some(model => model.id === modelName);
-    
+
     if (isAvailable) {
-      return { 
-        available: true, 
+      return {
+        available: true,
         capabilities: this.getCapabilities(modelName)
       };
     } else {
-      return { 
-        available: false, 
+      return {
+        available: false,
         error: `Model ${modelName} is not available`,
         alternatives: this.getSuggestedModels(modelName)
       };
     }
   } catch (error) {
-    return { 
-      available: false, 
+    return {
+      available: false,
       error: error.message,
       alternatives: this.getSuggestedModels(modelName)
     };
@@ -238,15 +238,15 @@ async testConnection() {
   if (!this.isAvailable()) {
     return { success: false, error: 'Provider not configured.' };
   }
-  
+
   try {
     const response = await this.generateCompletion([
       { role: 'user', content: 'Test connection' }
     ], { max_tokens: 10 });
-    
-    return { 
-      success: true, 
-      response: response.content, 
+
+    return {
+      success: true,
+      response: response.content,
       model: response.model,
       sdk_version: '1.0.0', // Your SDK version
       features: {
@@ -266,7 +266,7 @@ async testConnection() {
 ```javascript
 getCapabilities(modelName) {
   const model = modelName || this.config.MY_PROVIDER_DEFAULT_MODEL;
-  
+
   // Base capabilities
   const capabilities = {
     vision: false,
@@ -275,7 +275,7 @@ getCapabilities(modelName) {
     reasoning: false,
     large_context: false
   };
-  
+
   // Set capabilities based on model
   if (model.includes('advanced')) {
     capabilities.vision = true;
@@ -287,7 +287,7 @@ getCapabilities(modelName) {
     capabilities.json_mode = true;
     capabilities.tool_use = true;
   }
-  
+
   return capabilities;
 }
 ```
@@ -302,8 +302,8 @@ Implement streaming support in your `generateCompletion` method:
 
 ```javascript
 if (options.stream) {
-  const stream = await this.client.createChatCompletionStream(params);
-  return { stream, model: modelName };
+  const stream = await this.client.createChatCompletionStream(params)
+  return { stream, model: modelName }
 }
 ```
 
@@ -315,14 +315,14 @@ Implement function/tool calling support:
 
 ```javascript
 if (options.tools && this.getCapabilities(modelName).tool_use) {
-  params.tools = options.tools;
-  params.tool_choice = options.tool_choice || 'auto';
+  params.tools = options.tools
+  params.tool_choice = options.tool_choice || 'auto'
 }
 
 // Later, extract tool calls from the response if present
-let toolCalls = null;
+let toolCalls = null
 if (response.choices[0]?.message?.tool_calls?.length > 0) {
-  toolCalls = response.choices[0].message.tool_calls;
+  toolCalls = response.choices[0].message.tool_calls
 }
 ```
 
@@ -331,9 +331,8 @@ if (response.choices[0]?.message?.tool_calls?.length > 0) {
 Implement JSON mode support:
 
 ```javascript
-if (options.response_format?.type === 'json_object' && 
-    this.getCapabilities(modelName).json_mode) {
-  params.response_format = { type: 'json_object' };
+if (options.response_format?.type === 'json_object' && this.getCapabilities(modelName).json_mode) {
+  params.response_format = { type: 'json_object' }
 }
 ```
 
@@ -344,25 +343,23 @@ For providers that support vision/multimodal inputs:
 ```javascript
 // Handle content arrays (multimodal)
 if (Array.isArray(message.content)) {
-  const parts = [];
-  
+  const parts = []
+
   for (const item of message.content) {
     if (item.type === 'text') {
-      parts.push(item.text);
+      parts.push(item.text)
     } else if (item.type === 'image_url') {
       // Handle image URLs based on your provider's format
-      const imageUrl = typeof item.image_url === 'string' 
-        ? item.image_url 
-        : item.image_url.url;
-      
+      const imageUrl = typeof item.image_url === 'string' ? item.image_url : item.image_url.url
+
       parts.push({
         // Format according to your provider's API
         type: 'image',
-        url: imageUrl
-      });
+        url: imageUrl,
+      })
     }
   }
-  
+
   // Use parts in your API call
 }
 ```
@@ -391,12 +388,11 @@ Then, run `pnpm install` to install it.
      MY_PROVIDER_DEFAULT_MODEL: process.env.MY_PROVIDER_DEFAULT_MODEL || 'default-model',
      MY_PROVIDER_TIMEOUT: process.env.MY_PROVIDER_TIMEOUT || '60000',
      MY_PROVIDER_MAX_RETRIES: process.env.MY_PROVIDER_MAX_RETRIES || '3',
-     MY_PROVIDER_USER_ID: process.env.MY_PROVIDER_USER_ID
-   };
+     MY_PROVIDER_USER_ID: process.env.MY_PROVIDER_USER_ID,
+   }
    ```
 
 2. **`lib/ai-changelog-generator.js`**: Integrate your provider into the interactive setup wizard (`promptForConfig` function).
-
    - Add your provider to the `choices` list.
    - Add a new `when` block to prompt the user for the API key if they select your provider.
    - Update the logic that writes the `.env.local` file to include your provider's configuration.
@@ -409,29 +405,29 @@ Create tests to verify that your provider works correctly:
 
 ```javascript
 // test/providers/my-provider.test.js
-const MyProvider = require('../../lib/providers/my-new-provider');
+const MyProvider = require('../../lib/providers/my-new-provider')
 const config = {
   MY_PROVIDER_API_KEY: 'test-key',
-  MY_PROVIDER_DEFAULT_MODEL: 'test-model'
-};
+  MY_PROVIDER_DEFAULT_MODEL: 'test-model',
+}
 
 describe('MyProvider', () => {
-  let provider;
-  
+  let provider
+
   beforeEach(() => {
-    provider = new MyProvider(config);
-  });
-  
+    provider = new MyProvider(config)
+  })
+
   test('getName returns correct provider name', () => {
-    expect(provider.getName()).toBe('myprovider');
-  });
-  
+    expect(provider.getName()).toBe('myprovider')
+  })
+
   test('isAvailable returns true when API key is provided', () => {
-    expect(provider.isAvailable()).toBe(true);
-  });
-  
+    expect(provider.isAvailable()).toBe(true)
+  })
+
   // Add more tests for other methods
-});
+})
 ```
 
 2. Run the test script:

@@ -11,7 +11,7 @@ This directory contains demo materials showcasing the AI Changelog Generator in 
 - **Duration**: ~30 seconds
 - **Showcases**: Interactive CLI, provider setup, guided changelog creation
 
-### ⚡ Quick Generation Demo  
+### ⚡ Quick Generation Demo
 
 - **File**: `demo-quick-real.gif`
 - **Description**: Demonstrates rapid changelog generation from recent commits
@@ -56,6 +56,6 @@ vhs docs/media/demo-quick-real.tape
 ## File Sizes
 
 - `demo-interactive-optimized.gif`: ~886KB (optimized for web)
-- `demo-interactive.gif`: ~1.2MB (high quality)  
+- `demo-interactive.gif`: ~1.2MB (high quality)
 - `demo-quick-real.gif`: ~272KB
 - `demo-interactive.mp4`: ~610KB

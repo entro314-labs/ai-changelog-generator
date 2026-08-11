@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "ai-changelog-generator",
   "display_name": "AI Changelog Generator",
-  "version": "4.0.0",
+  "version": "4.2.2",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
   "long_description": "Generate intelligent changelogs from git commits using AI. Supports multiple providers including OpenAI, Claude, Gemini, Ollama, and LM Studio. Perfect for automating release documentation with smart commit analysis and categorization.\n\nFeatures:\n- Automatic changelog generation from git commits\n- Working directory change analysis\n- Multiple AI provider support (OpenAI, Azure, Claude, Gemini, Ollama, LM Studio)\n- Interactive and batch modes\n- Repository health analysis\n- Branch analysis and recommendations\n- Commit categorization and impact assessment",
   "author": {
@@ -20,10 +20,10 @@
   "icon": "icon.png",
   "server": {
     "type": "node",
-    "entry_point": "bin/ai-changelog-mcp.js",
+    "entry_point": "dist/bin/ai-changelog-mcp.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/bin/ai-changelog-mcp.js"],
+      "args": ["${__dirname}/dist/bin/ai-changelog-mcp.js"],
       "env": {
         "AI_PROVIDER": "${user_config.AI_PROVIDER}",
         "OPENAI_API_KEY": "${user_config.OPENAI_API_KEY}",
@@ -35,7 +35,7 @@
         "HUGGINGFACE_API_KEY": "${user_config.HUGGINGFACE_API_KEY}",
         "VERTEX_PROJECT_ID": "${user_config.VERTEX_PROJECT_ID}",
         "OLLAMA_HOST": "${user_config.OLLAMA_HOST}",
-        "LMSTUDIO_API_BASE": "${user_config.LMSTUDIO_API_BASE}",
+        "LMSTUDIO_BASE_URL": "${user_config.LMSTUDIO_BASE_URL}",
         "DEFAULT_ANALYSIS_MODE": "${user_config.DEFAULT_ANALYSIS_MODE}"
       }
     }
@@ -56,18 +56,6 @@
     {
       "name": "configure_providers",
       "description": "Manage AI providers - list, switch, test, and configure"
-    },
-    {
-      "name": "analyze_stash",
-      "description": "List and analyze git stashed changes with AI-powered insights"
-    },
-    {
-      "name": "list_provider_models",
-      "description": "List available AI models for configured providers"
-    },
-    {
-      "name": "check_provider_health",
-      "description": "Check health status and connectivity of all AI providers"
     }
   ],
   "tools_generated": false,
@@ -75,7 +63,7 @@
     "AI_PROVIDER": {
       "type": "string",
       "title": "AI Provider",
-      "description": "Choose your preferred AI provider, choose from: azure, openai, google, huggingface, ollama, lmstudio",
+      "description": "Choose your preferred AI provider (openai, anthropic, azure, google, bedrock, huggingface, github-copilot, vertex, ollama, lmstudio)",
       "required": false,
       "sensitive": false,
       "default": "openai"
@@ -133,7 +121,7 @@
     "AZURE_OPENAI_DEPLOYMENT_NAME": {
       "type": "string",
       "title": "Azure Deployment Name",
-      "description": "Your Azure OpenAI deployment name (e.g., gpt-4o)",
+      "description": "Your Azure OpenAI deployment name (e.g., gpt-5.6-terra)",
       "required": false,
       "sensitive": false
     },
@@ -152,9 +140,9 @@
       "sensitive": false,
       "default": "http://localhost:11434"
     },
-    "LMSTUDIO_API_BASE": {
+    "LMSTUDIO_BASE_URL": {
       "type": "string",
-      "title": "LM Studio API Base",
+      "title": "LM Studio Base URL",
       "description": "Your LM Studio server URL",
       "required": false,
       "sensitive": false,

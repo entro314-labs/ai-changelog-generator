@@ -5,6 +5,7 @@ High-level roadmap and feature planning for the AI Changelog Generator project.
 ## 🔧 **Incomplete Implementations & Placeholders**
 
 ### Core Functionality Issues
+
 - [x] **Git Commit Execution** - `ai-changelog commit` command with full interactive workflow (interactive staging, AI message generation, commit execution)
 - [x] **AI Commit Message Generation** - Implemented with branch intelligence, conventional commit validation, and multiple suggestions
 - [x] **Vertex AI Image Fetching** - Remote image fetching implemented in `vertex.js` via `getImageData()` with base64 conversion
@@ -21,16 +22,19 @@ High-level roadmap and feature planning for the AI Changelog Generator project.
 - [ ] **BaseCommand Abstract Pattern** - The `execute()` method in BaseCommand throws error, but this is intentional abstract pattern - child classes properly override it
 
 ### Template System
+
 - [ ] **Custom Template Engine Implementation** - Currently only TypeScript definitions exist, need actual template rendering
 - [ ] **Template Sharing Platform** - Implement community template repository mentioned in types
 - [x] **Visual Template Rendering** - HTML output format implemented (`--format html`), PDF pending
 
 ### Provider Improvements
+
 - [x] **Mock Provider** - Fully implemented with failure simulation, latency controls, model recommendations, and conventional commit parsing
 - [x] **Provider Failure Simulation** - Mock provider has configurable `MOCK_FAILURE_RATE` and `MOCK_SHOULD_FAIL` settings
 - [ ] **Development Mode Detection** - Better handling of development vs production provider selection
 
 ### Error Handling & UX
+
 - [x] **Abstract Method Error System** - `AbstractMethodError` class implemented in `error-classes.js` and used across codebase
 - [ ] **Better Placeholder Messages** - Replace generic "undefined" returns with meaningful error messages
 - [ ] **Development Phase Warnings** - Remove hardcoded "development phase" messages when features are complete

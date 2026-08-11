@@ -11,102 +11,137 @@ This document lists all environment variables supported by the AI Changelog Gene
 
 ## AI Provider Selection
 
-| Variable | Description | Default | Options |
-|----------|-------------|---------|---------|
-| `AI_PROVIDER` | Which AI provider to use | `auto` | `auto`, `openai`, `azure`, `anthropic`, `google`, `vertex`, `huggingface`, `ollama`, `lmstudio` |
+| Variable      | Description              | Default | Options                                                                                                                                        |
+| ------------- | ------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AI_PROVIDER` | Which AI provider to use | `auto`  | `auto`, `vercel-gateway`, `openai`, `azure`, `anthropic`, `google`, `vertex`, `huggingface`, `bedrock`, `github-copilot`, `ollama`, `lmstudio` |
+
+## Vercel AI Gateway Configuration
+
+Routes through the Vercel AI Gateway, so one credential reaches every model the gateway fronts.
+Models are addressed as `<provider>/<model>` (for example `deepseek/deepseek-v4-flash-0731`).
+
+| Variable              | Description                                    | Required | Example                              |
+| --------------------- | ---------------------------------------------- | -------- | ------------------------------------ |
+| `AI_GATEWAY_API_KEY`  | Gateway API key                                | Yes\*    | `vck_...`                            |
+| `VERCEL_OIDC_TOKEN`   | Vercel OIDC token, used when no API key is set | No       | `eyJ...`                             |
+| `AI_GATEWAY_MODEL`    | Default gateway model                          | No       | `deepseek/deepseek-v4-flash-0731`    |
+| `AI_GATEWAY_BASE_URL` | Override the gateway endpoint                  | No       | `https://ai-gateway.vercel.sh/v4/ai` |
+
+\* Either `AI_GATEWAY_API_KEY` or Vercel OIDC. When running on Vercel the OIDC token normally
+arrives as a request header and never appears in the environment, so the provider treats a Vercel
+runtime as "credentials may be supplied per request".
+
+The default model is the pinned `deepseek/deepseek-v4-flash-0731` snapshot. It is pinned rather than
+floating so that generated changelogs stay reproducible; override with `AI_MODEL` or
+`AI_GATEWAY_MODEL`.
 
 ## OpenAI Configuration
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `OPENAI_API_KEY` | OpenAI API key from platform.openai.com | Yes | `sk-...` |
+| Variable         | Description                             | Required | Example  |
+| ---------------- | --------------------------------------- | -------- | -------- |
+| `OPENAI_API_KEY` | OpenAI API key from platform.openai.com | Yes      | `sk-...` |
 
 ## Azure OpenAI Configuration
 
-| Variable | Description | Required | Default | Example |
-|----------|-------------|----------|---------|---------|
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI endpoint URL | Yes | - | `https://your-resource.openai.azure.com` |
-| `AZURE_OPENAI_KEY` | Azure OpenAI API key | Yes* | - | `your-azure-key` |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | Model deployment name | No | `gpt-4o` | `o4`, `gpt-4`, `gpt-35-turbo` |
-| `AZURE_OPENAI_API_VERSION` | API version | No | `2024-10-21` | `2025-04-01-preview` |
-| `AZURE_USE_AD_AUTH` | Use Azure AD authentication | No | `false` | `true`, `false` |
-| `AZURE_USER_ID` | Azure AD user ID | No | - | `user-123` |
-| `AZURE_OPENAI_USE_V1_API` | Use v1 API compatibility | No | `true` | `true`, `false` |
+| Variable                       | Description                                                                      | Required | Default         | Example                                             |
+| ------------------------------ | -------------------------------------------------------------------------------- | -------- | --------------- | --------------------------------------------------- |
+| `AZURE_OPENAI_ENDPOINT`        | Azure OpenAI resource endpoint. The runtime derives `/openai/v1/` automatically. | Yes      | -               | `https://your-resource.openai.azure.com`            |
+| `AZURE_OPENAI_KEY`             | Azure OpenAI API key                                                             | Yes\*    | -               | `your-azure-key`                                    |
+| `AZURE_OPENAI_DEPLOYMENT_NAME` | Model deployment name                                                            | No       | `gpt-5.6-terra` | `gpt-5.6-sol`, `gpt-5.6-luna`, `gpt-5.4-nano`       |
+| `OPENAI_BASE_URL`              | Optional explicit Azure v1 base URL override                                     | No       | -               | `https://your-resource.openai.azure.com/openai/v1/` |
+| `AZURE_USE_AD_AUTH`            | Use Azure AD authentication                                                      | No       | `false`         | `true`, `false`                                     |
+| `AZURE_USER_ID`                | Azure AD user ID                                                                 | No       | -               | `user-123`                                          |
 
-*Required unless using Azure AD authentication
+\*Required unless using Azure AD authentication
 
 ## Anthropic (Claude) Configuration
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `ANTHROPIC_API_KEY` | Anthropic API key from console.anthropic.com | Yes | `sk-ant-...` |
+| Variable            | Description                                  | Required | Example      |
+| ------------------- | -------------------------------------------- | -------- | ------------ |
+| `ANTHROPIC_API_KEY` | Anthropic API key from console.anthropic.com | Yes      | `sk-ant-...` |
 
 ## Google AI Configuration
 
-| Variable | Description | Required | Default | Example |
-|----------|-------------|----------|---------|---------|
-| `GOOGLE_API_KEY` | Google AI API key | Yes | - | `your-google-key` |
-| `GOOGLE_API_ENDPOINT` | Custom Google AI endpoint | No | `https://generativelanguage.googleapis.com` | Custom endpoint URL |
+| Variable              | Description               | Required | Default                                     | Example             |
+| --------------------- | ------------------------- | -------- | ------------------------------------------- | ------------------- |
+| `GOOGLE_API_KEY`      | Google AI API key         | Yes      | -                                           | `your-google-key`   |
+| `GOOGLE_API_ENDPOINT` | Custom Google AI endpoint | No       | `https://generativelanguage.googleapis.com` | Custom endpoint URL |
 
 ## Google Vertex AI Configuration
 
-| Variable | Description | Required | Default | Example |
-|----------|-------------|----------|---------|---------|
-| `VERTEX_PROJECT_ID` | Google Cloud Project ID | Yes | - | `my-project-123` |
-| `VERTEX_LOCATION` | Google Cloud region | No | `us-central1` | `us-central1`, `europe-west1` |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON | No | - | `/path/to/credentials.json` |
+| Variable                         | Description                  | Required | Default       | Example                       |
+| -------------------------------- | ---------------------------- | -------- | ------------- | ----------------------------- |
+| `VERTEX_PROJECT_ID`              | Google Cloud Project ID      | Yes      | -             | `my-project-123`              |
+| `VERTEX_LOCATION`                | Google Cloud region          | No       | `us-central1` | `us-central1`, `europe-west1` |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON | No       | -             | `/path/to/credentials.json`   |
 
 ## Hugging Face Configuration
 
-| Variable | Description | Required | Example |
-|----------|-------------|----------|---------|
-| `HUGGINGFACE_API_KEY` | Hugging Face token | Yes | `hf_...` |
-| `HUGGINGFACE_ENDPOINT_URL` | Custom endpoint for private deployments | No | `https://your-endpoint.endpoints.huggingface.cloud` |
+| Variable                   | Description                             | Required | Example                                             |
+| -------------------------- | --------------------------------------- | -------- | --------------------------------------------------- |
+| `HUGGINGFACE_API_KEY`      | Hugging Face token                      | Yes      | `hf_...`                                            |
+| `HUGGINGFACE_ENDPOINT_URL` | Custom endpoint for private deployments | No       | `https://your-endpoint.endpoints.huggingface.cloud` |
 
 ## Ollama Configuration (Local Models)
 
-| Variable | Description | Required | Default | Example |
-|----------|-------------|----------|---------|---------|
-| `OLLAMA_HOST` | Ollama server URL | No | `http://localhost:11434` | `http://localhost:11434` |
-| `OLLAMA_MODEL` | Default model to use | No | `llama3` | `llama3`, `codellama`, `mistral` |
+| Variable       | Description          | Required | Default                  | Example                                        |
+| -------------- | -------------------- | -------- | ------------------------ | ---------------------------------------------- |
+| `OLLAMA_HOST`  | Ollama server URL    | No       | `http://localhost:11434` | `http://localhost:11434`                       |
+| `OLLAMA_MODEL` | Default model to use | No       | `llama4:scout`           | `llama4:scout`, `qwen3:32b`, `deepseek-r1:32b` |
 
 ## LM Studio Configuration (Local Models)
 
-| Variable | Description | Required | Default | Example |
-|----------|-------------|----------|---------|---------|
-| `LMSTUDIO_BASE_URL` | LM Studio server URL | No | `http://localhost:1234/v1` | `http://localhost:1234/v1` |
-| `LMSTUDIO_API_KEY` | LM Studio API key | No | `lm-studio` | `lm-studio` |
+| Variable            | Description          | Required | Default                    | Example                    |
+| ------------------- | -------------------- | -------- | -------------------------- | -------------------------- |
+| `LMSTUDIO_BASE_URL` | LM Studio server URL | No       | `http://localhost:1234/v1` | `http://localhost:1234/v1` |
+| `LMSTUDIO_API_KEY`  | LM Studio API key    | No       | `lm-studio`                | `lm-studio`                |
 
 ## Application Behavior Settings
 
-| Variable | Description | Default | Options |
-|----------|-------------|---------|---------|
-| `DEFAULT_ANALYSIS_MODE` | Default analysis depth | `standard` | `standard`, `detailed`, `enterprise` |
-| `GIT_PATH` | Git repository path | Current directory | `/path/to/repo` |
-| `OUTPUT_FORMAT` | Output format | `markdown` | `markdown`, `json` |
-| `INCLUDE_ATTRIBUTION` | Include attribution footer | `true` | `true`, `false` |
+| Variable                | Description                   | Default           | Options                              |
+| ----------------------- | ----------------------------- | ----------------- | ------------------------------------ |
+| `DEFAULT_ANALYSIS_MODE` | Default analysis depth        | `standard`        | `standard`, `detailed`, `enterprise` |
+| `GIT_PATH`              | Git repository path           | Current directory | `/path/to/repo`                      |
+| `OUTPUT_FORMAT`         | Output format                 | `markdown`        | `markdown`, `json`, `html`           |
+| `INCLUDE_ATTRIBUTION`   | Include attribution footer    | `true`            | `true`, `false`                      |
+| `AI_MODEL`              | Cross-provider model override | Provider default  | `deepseek/deepseek-v4-flash-0731`    |
+| `AI_TEMPERATURE`        | Sampling temperature          | `0.3`             | `0.0` - `1.0`                        |
+| `AI_CACHE_ENABLED`      | Cache model responses         | `true`            | `true`, `false`                      |
+
+### Response caching
+
+Gateway model responses are cached on the model boundary, keyed by a SHA-256 of the model identity
+plus the response-affecting call parameters (prompt, sampling settings, tools, response format).
+Transport fields such as abort signals and headers are excluded, so they cannot defeat the cache.
+
+Entries live in a small in-memory LRU backed by JSON files under
+`~/.cache/ai-changelog-generator/model-responses`, so a `--dry-run` preview followed by a real run
+does not pay for the same analysis twice. Entries expire after 24 hours and the directory is capped.
+Every failure path falls open: a cache problem never turns a working generation into an error.
+
+Set `AI_CACHE_ENABLED=false` to disable.
 
 ## Performance & Rate Limiting
 
-| Variable | Description | Default | Example |
-|----------|-------------|---------|---------|
-| `RATE_LIMIT_DELAY` | Delay between API requests (ms) | `1000` | `1000`, `2000` |
-| `MAX_RETRIES` | Maximum retry attempts | `3` | `3`, `5` |
+| Variable           | Description                     | Default | Example        |
+| ------------------ | ------------------------------- | ------- | -------------- |
+| `RATE_LIMIT_DELAY` | Delay between API requests (ms) | `1000`  | `1000`, `2000` |
+| `MAX_RETRIES`      | Maximum retry attempts          | `3`     | `3`, `5`       |
 
 ## Debugging & Development
 
-| Variable | Description | Default | Options |
-|----------|-------------|---------|---------|
-| `DEBUG` | Enable debug mode | `false` | `true`, `false` |
-| `VERBOSE` | Enable verbose output | `false` | `true`, `false` |
-| `NO_COLOR` | Disable colored output | `false` | `true`, `false` |
-| `NODE_DISABLE_COLORS` | Alternative color disable | - | `1` |
-| `TERM` | Terminal type override | - | `dumb` |
+| Variable              | Description               | Default | Options         |
+| --------------------- | ------------------------- | ------- | --------------- |
+| `DEBUG`               | Enable debug mode         | `false` | `true`, `false` |
+| `VERBOSE`             | Enable verbose output     | `false` | `true`, `false` |
+| `NO_COLOR`            | Disable colored output    | `false` | `true`, `false` |
+| `NODE_DISABLE_COLORS` | Alternative color disable | -       | `1`             |
+| `TERM`                | Terminal type override    | -       | `dumb`          |
 
 ## Advanced Configuration
 
-| Variable | Description | Example |
-|----------|-------------|---------|
+| Variable              | Description                     | Example |
+| --------------------- | ------------------------------- | ------- |
 | `npm_package_version` | Package version (auto-detected) | `3.0.2` |
 
 ## Usage Examples
@@ -125,7 +160,6 @@ AI_PROVIDER=azure
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
 AZURE_OPENAI_KEY=your-key
 AZURE_OPENAI_DEPLOYMENT_NAME=o4
-AZURE_OPENAI_API_VERSION=2025-04-01-preview
 ```
 
 ### Local Ollama Setup
@@ -193,7 +227,7 @@ Copy the following template to your `.env.local` file and uncomment/configure th
 # AI Changelog Generator - Environment Configuration
 # ==============================================================================
 # Copy this file to .env.local and configure your settings
-# 
+#
 # Quick Start:
 # 1. Copy relevant sections below to .env.local
 # 2. Configure at least one AI provider
@@ -220,11 +254,10 @@ AI_PROVIDER=auto
 # Azure OpenAI Service configuration
 # AZURE_OPENAI_ENDPOINT=
 # AZURE_OPENAI_KEY=
-# AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
-# AZURE_OPENAI_API_VERSION=2024-10-21
+# AZURE_OPENAI_DEPLOYMENT_NAME=gpt-5.6-terra
+# OPENAI_BASE_URL=
 # AZURE_USE_AD_AUTH=false
 # AZURE_USER_ID=
-# AZURE_OPENAI_USE_V1_API=true
 
 # ==============================================================================
 # ANTHROPIC (CLAUDE) CONFIGURATION
@@ -299,11 +332,11 @@ AI_PROVIDER=auto
 
 ## Getting API Keys
 
-| Provider | Where to Get API Key | Documentation |
-|----------|---------------------|---------------|
-| OpenAI | [platform.openai.com](https://platform.openai.com/account/api-keys) | [OpenAI Docs](https://platform.openai.com/docs) |
-| Azure OpenAI | [Azure Portal](https://portal.azure.com) | [Azure OpenAI Docs](https://docs.microsoft.com/azure/cognitive-services/openai/) |
-| Anthropic | [console.anthropic.com](https://console.anthropic.com/) | [Anthropic Docs](https://docs.anthropic.com/) |
-| Google AI | [aistudio.google.com](https://aistudio.google.com/app/apikey) | [Google AI Docs](https://ai.google.dev/) |
-| Hugging Face | [huggingface.co](https://huggingface.co/settings/tokens) | [HF Docs](https://huggingface.co/docs) |
-| Local Models | Install Ollama or LM Studio | [Ollama](https://ollama.ai/), [LM Studio](https://lmstudio.ai/) |
+| Provider     | Where to Get API Key                                                | Documentation                                                                    |
+| ------------ | ------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| OpenAI       | [platform.openai.com](https://platform.openai.com/account/api-keys) | [OpenAI Docs](https://platform.openai.com/docs)                                  |
+| Azure OpenAI | [Azure Portal](https://portal.azure.com)                            | [Azure OpenAI Docs](https://docs.microsoft.com/azure/cognitive-services/openai/) |
+| Anthropic    | [console.anthropic.com](https://console.anthropic.com/)             | [Anthropic Docs](https://docs.anthropic.com/)                                    |
+| Google AI    | [aistudio.google.com](https://aistudio.google.com/app/apikey)       | [Google AI Docs](https://ai.google.dev/)                                         |
+| Hugging Face | [huggingface.co](https://huggingface.co/settings/tokens)            | [HF Docs](https://huggingface.co/docs)                                           |
+| Local Models | Install Ollama or LM Studio                                         | [Ollama](https://ollama.ai/), [LM Studio](https://lmstudio.ai/)                  |
