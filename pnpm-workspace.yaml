@@ -1,5 +1,13 @@
-packages:
-  - 'vscode-extension'
+packages: []
 
-onlyBuiltDependencies:
-  - esbuild
+overrides:
+  'tmp@<=0.2.3': '>=0.2.5'
+
+allowBuilds:
+  '@entro314labs/ai-changelog-generator': true
+  '@google/genai': true
+  '@vscode/vsce-sign': true
+  esbuild: true
+  keytar: true
+  protobufjs: true
+minimumReleaseAge: 0

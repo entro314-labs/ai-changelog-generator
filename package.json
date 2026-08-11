@@ -1,136 +1,36 @@
 {
   "name": "@entro314labs/ai-changelog-generator",
   "displayName": "AI Changelog Generator",
-  "version": "4.1.1",
-  "type": "module",
+  "version": "5.0.0",
   "description": "AI-powered changelog generator with MCP server support - works with most providers, online and local models",
-  "main": "src/ai-changelog-generator.js",
-  "types": "types/index.d.ts",
-  "workspaces": [
-    "vscode-extension"
-  ],
-  "bin": {
-    "ai-changelog": "./bin/ai-changelog.js",
-    "ai-changelog-mcp": "./bin/ai-changelog-mcp.js"
-  },
-  "files": [
-    "bin/",
-    "src/",
-    "types/",
-    "manifest.json",
-    "ai-changelog.sh",
-    "ai-changelog-mcp.sh",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md"
-  ],
-  "scripts": {
-    "start": "node bin/ai-changelog.js",
-    "changelog": "node bin/ai-changelog.js",
-    "changelog:detailed": "node bin/ai-changelog.js --detailed",
-    "changelog:enterprise": "node bin/ai-changelog.js --enterprise",
-    "changelog:interactive": "node bin/ai-changelog.js --interactive",
-    "changelog:analyze": "node bin/ai-changelog.js --analyze",
-    "changelog:preview": "node bin/ai-changelog.js --dry-run",
-    "changelog:no-color": "node bin/ai-changelog.js --no-color",
-    "mcp": "node bin/ai-changelog-mcp.js",
-    "mcp:start": "node bin/ai-changelog-mcp.js",
-    "demo": "node test/test-end-to-end-full.js",
-    "lint": "exec biome lint src/",
-    "lint:fix": "exec biome lint --write src/",
-    "lint:fix-unsafe": "exec biome lint --unsafe --write src/",
-    "format": "exec biome format --write src/",
-    "format:unsafe": "exec biome format --write src/",
-    "format:check": "exec biome format src/",
-    "check": "exec biome check src/",
-    "check:fix": "exec biome check --write src/",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
-    "test:providers": "vitest run test/providers.test.js",
-    "test:cli": "vitest run test/cli.test.js",
-    "test:core": "vitest run test/core.test.js",
-    "test:services": "vitest run test/services.test.js",
-    "test:utils": "vitest run test/utils.test.js",
-    "test:integration": "vitest run test/integration.test.js",
-    "test:mcp": "vitest run test/mcp.test.js",
-    "test:styling": "vitest run test/cli-ui.test.js test/colors.test.js test/styling-integration.test.js",
-    "test:styling-e2e": "vitest run test/cli-styling-e2e.test.js --testTimeout=60000",
-    "test:git": "node src/domains/git/git.service.js info",
-    "setup": "node scripts/setup-azure-openai.js",
-    "providers:test": "node test/test-providers.js",
-    "providers:validate": "node test/test-provider-switching.js",
-    "git:info": "node src/domains/git/git.service.js info",
-    "git:commits": "node src/domains/git/git.service.js commits 10",
-    "git:stats": "node src/domains/git/git.service.js stats 5",
-    "mcpb:init": "mcpb init .",
-    "mcpb:validate": "mcpb validate manifest.json",
-    "mcpb:pack": "mcpb pack . ai-changelog-generator.mcpb",
-    "mcpb:build": "pnpm mcpb:validate && pnpm mcpb:pack",
-    "mcpb:info": "mcpb info ai-changelog-generator.mcpb",
-    "postinstall": "node -e \"console.log('🎉 AI Changelog Generator installed!⚡ Quick Start:  ai-changelog                 - Generate changelog  ai-changelog --detailed      - Detailed analysis  ai-changelog --interactive   - Interactive mode  ai-changelog-mcp            - Start MCP server🤖 AI Models Supported:  • GPT-4.1 series (1M context, 75% cost reduction)  • o3/o4 reasoning models (Azure-only)  • Automatic model selection📖 Docs: https://github.com/entro314-labs/AI-changelog-generator© All trademarks belong to their respective owners.')\""
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
-    "@aws-sdk/client-bedrock-runtime": "^3.974.0",
-    "@azure/identity": "^4.13.0",
-    "@clack/prompts": "^0.11.0",
-    "@google/genai": "^1.38.0",
-    "@google/generative-ai": "^0.24.1",
-    "@huggingface/hub": "^2.7.2",
-    "@huggingface/inference": "^4.13.10",
-    "@lmstudio/sdk": "^1.5.0",
-    "@modelcontextprotocol/sdk": "^1.25.3",
-    "@modelcontextprotocol/server-filesystem": "2026.1.14",
-    "boxen": "^8.0.1",
-    "chalk": "^5.6.2",
-    "cli-table3": "^0.6.5",
-    "dotenv": "^17.2.3",
-    "figures": "^6.1.0",
-    "google-auth-library": "^10.5.0",
-    "gradient-string": "^3.0.0",
-    "js-yaml": "^4.1.1",
-    "ollama": "^0.6.3",
-    "openai": "^6.16.0",
-    "ora": "^9.1.0",
-    "yargs": "^18.0.0"
-  },
-  "optionalDependencies": {
-    "keytar": "^7.9.0"
-  },
-  "devDependencies": {
-    "@anthropic-ai/mcpb": "^2.1.2",
-    "@types/node": "25.0.10",
-    "@vitest/browser": "latest",
-    "@vitest/coverage-v8": "latest",
-    "@vitest/ui": "latest",
-    "tempy": "^3.1.1",
-    "vitest": "latest"
-  },
   "keywords": [
-    "changelog",
-    "git",
     "ai",
     "automation",
-    "openai",
     "azure",
-    "gpt-4.1",
-    "reasoning-models",
-    "o3",
-    "o3-mini",
-    "o4",
-    "o4-mini",
-    "mcp",
-    "model-context-protocol",
+    "changelog",
+    "ci-cd",
     "claude",
     "cli",
     "commit-analysis",
-    "semantic-versioning",
-    "release-notes",
+    "deepseek",
     "devops",
-    "ci-cd"
+    "git",
+    "gpt-5",
+    "local-llm",
+    "mcp",
+    "model-context-protocol",
+    "ollama",
+    "openai",
+    "reasoning-models",
+    "release-notes",
+    "semantic-versioning",
+    "vercel-ai-gateway"
   ],
+  "homepage": "https://github.com/entro314-labs/AI-changelog-generator#readme",
+  "bugs": {
+    "url": "https://github.com/entro314-labs/AI-changelog-generator/issues"
+  },
+  "license": "MIT",
   "author": {
     "name": "entro314-labs",
     "url": "https://github.com/entro314-labs"
@@ -139,40 +39,140 @@
     "type": "git",
     "url": "git+https://github.com/entro314-labs/AI-changelog-generator.git"
   },
-  "bugs": {
-    "url": "https://github.com/entro314-labs/AI-changelog-generator/issues"
-  },
-  "homepage": "https://github.com/entro314-labs/AI-changelog-generator#readme",
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
-  "engines": {
-    "node": ">=22.22.0",
-    "pnpm": ">=10.28.1"
-  },
   "funding": {
     "type": "github",
     "url": "https://github.com/sponsors/entro314-labs"
+  },
+  "bin": {
+    "ai-changelog": "./dist/bin/ai-changelog.js",
+    "ai-changelog-mcp": "./dist/bin/ai-changelog-mcp.js"
+  },
+  "files": [
+    "dist/",
+    "manifest.json",
+    "ai-changelog.sh",
+    "ai-changelog-mcp.sh",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "type": "module",
+  "main": "./dist/src/ai-changelog-generator.js",
+  "types": "./dist/src/ai-changelog-generator.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/src/ai-changelog-generator.js",
+      "types": "./dist/src/ai-changelog-generator.d.ts"
+    },
+    "./credentials/unified-credential-manager": {
+      "import": "./dist/src/infrastructure/credentials/unified-credential-manager.js",
+      "types": "./dist/src/infrastructure/credentials/unified-credential-manager.d.ts"
+    },
+    "./credentials/credential-testing-service": {
+      "import": "./dist/src/infrastructure/credentials/credential-testing-service.js",
+      "types": "./dist/src/infrastructure/credentials/credential-testing-service.d.ts"
+    },
+    "./credentials/credential-discovery-service": {
+      "import": "./dist/src/infrastructure/credentials/credential-discovery-service.js",
+      "types": "./dist/src/infrastructure/credentials/credential-discovery-service.d.ts"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "pnpm exec tsc --noCheck -p tsconfig.json && chmod +x dist/bin/*.js",
+    "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
+    "typecheck:transpile": "pnpm exec tsc --noCheck --noEmit -p tsconfig.json",
+    "start": "pnpm exec tsx bin/ai-changelog.ts",
+    "changelog": "pnpm exec tsx bin/ai-changelog.ts",
+    "changelog:detailed": "pnpm exec tsx bin/ai-changelog.ts --detailed",
+    "changelog:enterprise": "pnpm exec tsx bin/ai-changelog.ts --enterprise",
+    "changelog:interactive": "pnpm exec tsx bin/ai-changelog.ts --interactive",
+    "changelog:analyze": "pnpm exec tsx bin/ai-changelog.ts --analyze",
+    "changelog:preview": "pnpm exec tsx bin/ai-changelog.ts --dry-run",
+    "changelog:no-color": "pnpm exec tsx bin/ai-changelog.ts --no-color",
+    "mcp": "pnpm exec tsx bin/ai-changelog-mcp.ts",
+    "mcp:start": "pnpm exec tsx bin/ai-changelog-mcp.ts",
+    "demo": "pnpm exec tsx test/test-end-to-end-full.ts",
+    "lint": "pnpm exec oxlint . --ignore-pattern node_modules --ignore-pattern dist --ignore-pattern build --ignore-pattern coverage --ignore-pattern test/vitest-results",
+    "lint:fix": "pnpm exec oxlint . --fix --fix-suggestions --ignore-pattern node_modules --ignore-pattern dist --ignore-pattern build --ignore-pattern coverage --ignore-pattern test/vitest-results",
+    "lint:fix-unsafe": "pnpm exec oxlint . --fix --fix-suggestions --fix-dangerously --deny-warnings --ignore-pattern node_modules --ignore-pattern dist --ignore-pattern build --ignore-pattern coverage --ignore-pattern test/vitest-results",
+    "format": "pnpm exec oxfmt --write .",
+    "format:check": "pnpm exec oxfmt --check .",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck",
+    "test": "pnpm run build && vitest run",
+    "test:watch": "pnpm run build && vitest",
+    "test:ui": "pnpm run build && vitest --ui",
+    "test:coverage": "pnpm run build && vitest run --coverage",
+    "test:providers": "pnpm run build && vitest run test/providers.test.ts",
+    "test:cli": "pnpm run build && vitest run test/cli.test.ts",
+    "test:core": "pnpm run build && vitest run test/core.test.ts",
+    "test:services": "pnpm run build && vitest run test/services.test.ts",
+    "test:utils": "pnpm run build && vitest run test/utils.test.ts",
+    "test:integration": "pnpm run build && vitest run test/integration.test.ts",
+    "test:mcp": "pnpm run build && vitest run test/mcp.test.ts",
+    "test:styling": "pnpm run build && vitest run test/cli-ui.test.ts test/colors.test.ts test/styling-integration.test.ts",
+    "test:styling-e2e": "pnpm run build && vitest run test/cli-styling-e2e.test.ts --testTimeout=60000",
+    "test:git": "pnpm exec tsx src/domains/git/git.service.ts info",
+    "setup": "pnpm exec tsx scripts/setup-azure-openai.ts",
+    "providers:test": "pnpm run test:providers",
+    "providers:validate": "pnpm run test:providers",
+    "git:info": "pnpm exec tsx src/domains/git/git.service.ts info",
+    "git:commits": "pnpm exec tsx src/domains/git/git.service.ts commits 10",
+    "git:stats": "pnpm exec tsx src/domains/git/git.service.ts stats 5",
+    "mcpb:init": "mcpb init .",
+    "mcpb:validate": "mcpb validate manifest.json",
+    "mcpb:pack": "mcpb pack . ai-changelog-generator.mcpb",
+    "mcpb:build": "pnpm run mcpb:validate && pnpm run mcpb:pack",
+    "mcpb:info": "mcpb info ai-changelog-generator.mcpb",
+    "prepublishOnly": "pnpm run check && pnpm run build && pnpm run test",
+    "postinstall": "node -e \"console.log('🎉 AI Changelog Generator installed!⚡ Quick Start:  ai-changelog                 - Generate changelog  ai-changelog --detailed      - Detailed analysis  ai-changelog --interactive   - Interactive mode  ai-changelog-mcp            - Start MCP server🤖 AI Models Supported:  • Vercel AI Gateway (one key, every model)  • GPT-5.6, Claude 5, Gemini 3.x, DeepSeek V4  • Local models via Ollama / LM Studio  • Automatic model selection📖 Docs: https://github.com/entro314-labs/AI-changelog-generator© All trademarks belong to their respective owners.')\""
+  },
+  "dependencies": {
+    "@ai-sdk/gateway": "^4.0.47",
+    "@anthropic-ai/sdk": "^0.116.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.1107.0",
+    "@azure/identity": "^4.13.1",
+    "@clack/prompts": "1.7.0",
+    "@google/genai": "^2.16.0",
+    "@huggingface/inference": "^4.13.25",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "ai": "^7.0.59",
+    "dotenv": "^17.4.2",
+    "gradient-string": "^3.0.0",
+    "js-yaml": "^5.2.3",
+    "ollama": "^0.6.3",
+    "openai": "^7.4.0",
+    "yargs": "^18.1.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
+    "@types/node": "26.2.0",
+    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/ui": "4.1.10",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
+    "vitest": "4.1.10"
+  },
+  "optionalDependencies": {
+    "keytar": "^7.9.0"
   },
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
   },
-  "volta": {
-    "node": "22.22.0",
-    "pnpm": "10.28.1"
+  "engines": {
+    "node": ">=24.19.0",
+    "pnpm": ">=11.21.0"
   },
-  "pnpm": {
-    "overrides": {
-      "tmp@<=0.2.3": ">=0.2.4"
-    },
-    "onlyBuiltDependencies": [
-      "@entro314labs/ai-changelog-generator",
-      "@vscode/vsce-sign",
-      "esbuild",
-      "keytar"
-    ]
-  }
+  "volta": {
+    "node": "24.19.0",
+    "pnpm": "11.21.0"
+  },
+  "packageManager": "pnpm@11.21.0"
 }

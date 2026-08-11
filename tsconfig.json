@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "lib": ["ES2024"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "moduleDetection": "force",
+    "rootDir": ".",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "checkJs": false,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
+    "skipLibCheck": true,
+    "noEmitOnError": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["bin/**/*.ts", "src/**/*.ts", "test/**/*.{test,spec}.ts", "vitest.config.ts"],
+  "exclude": [
+    "dist",
+    "build",
+    "coverage",
+    "node_modules",
+    "scripts",
+    "server",
+    "test/final-method-check.ts",
+    "test/test-*.ts"
+  ]
+}

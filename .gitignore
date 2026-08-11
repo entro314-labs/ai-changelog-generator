@@ -75,38 +75,23 @@ Thumbs.db
 .tmp/
 
 # Package manager files
-pnpm-lock.yaml
 yarn.lock
 package-lock.json
 test/vitest-results
 
 # Test files (temporary/generated)
-test-*.js
-!test/test-*.js
+test-*.ts
+!test/test-*.ts
 
 # Config backups
 *-updated.json
 claude-desktop-config-updated.json
 
-# Scripts that shouldn't be tracked
-scripts/pre-publish.sh
-
 # Validation files
-validate-*.js
+validate-*.ts
 
 # Platform specific
 platform.*.md
 OpenAI API Models (*
 
-.github/copilot-instructions.md
-AI_CHANGELOG.md
-ai-changelog-generator.mcpb
-docs/AI-Providers-Troubleshooting.md
-docs/Provider-Examples.md
-docs/development-notes.md
-docs/provider-setup-guide.md
-docs/use case scenarios.md
-vscode-extension
-docs/AI-Providers-Troubleshooting.md
-docs/Provider-Examples.md
-docs/provider-setup-guide.md
+.nope

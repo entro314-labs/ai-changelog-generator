@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "eqeqeq": "warn",
+    "no-debugger": "error",
+    "no-unused-vars": "warn",
+    "oxc/no-accumulating-spread": "warn",
+    "typescript/prefer-optional-chain": "warn",
+    "vitest/expect-expect": "off",
+    "vitest/no-conditional-expect": "off",
+    "vitest/require-mock-type-parameters": "off",
+    "vitest/no-focused-tests": "error"
+  },
+  "env": {
+    "builtin": true
+  }
+}

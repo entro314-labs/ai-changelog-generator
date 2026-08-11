@@ -7,10 +7,10 @@ coverage/
 .nyc_output/
 
 # Development scripts and configs
-demo-*.js
-test-*.js
-validate-*.js
-setup-*.js
+demo-*.ts
+test-*.ts
+validate-*.ts
+setup-*.ts
 cli.js
 ai-changelog-generator.js
 generate-ai-changelog.js
@@ -33,7 +33,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
-pnpm-lock.yaml
 package-lock.json
 yarn.lock
 
