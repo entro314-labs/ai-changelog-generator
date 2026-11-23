@@ -33,8 +33,6 @@ jobs:
       # to pnpm to locate the store. Installing it afterwards fails the job.
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 11.20.0
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v6
