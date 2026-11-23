@@ -397,7 +397,7 @@ export class ChangelogOrchestrator {
     await this.ensureInitialized()
 
     // Check for interactive environment
-    if (!(process.stdin.isTTY || process.env.CI)) {
+    if (!process.stdin.isTTY) {
       console.log(colors.warningMessage('Interactive mode requires a TTY terminal.'))
       return { interactive: false, status: 'skipped' }
     }

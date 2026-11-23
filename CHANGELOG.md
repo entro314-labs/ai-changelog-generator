@@ -35,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`--interactive` no longer hangs in CI.** The TTY guard treated a set `CI` variable as an
+  interactive terminal, so the prompt waited forever on a piped stdin. Interactive mode is now
+  skipped with a notice whenever stdin is not a TTY.
 - **Failed commits no longer damage staged work.** Rollback now snapshots the index with
   `git write-tree` and restores it with `git read-tree`. The previous path-based
   `git reset HEAD -- <paths>` unstaged hunks the user had staged before the run whenever a file was
@@ -61,6 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Dependencies updated**: `@anthropic-ai/sdk` 1.13, `@google/genai` 3.6, `ai` 7.0.181, `openai`
+  7.63, `@modelcontextprotocol/server` 2.4, `dotenv` 18 and `@clack/prompts` 1.9, plus minor bumps.
 - **Migrated the MCP server to the v2 SDK** (`@modelcontextprotocol/server` 2.0.0, protocol
   revision 2026-07-28), replacing `@modelcontextprotocol/sdk` 1.x. Tools are now registered with
   `registerTool` and Zod schemas, so the SDK derives the advertised JSON Schema and validates
