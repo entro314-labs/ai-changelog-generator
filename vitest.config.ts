@@ -40,11 +40,10 @@ export default defineConfig({
     hookTimeout: 30000,
 
     // Reporters
-    reporters: ['default', 'html', 'json'],
+    reporters: ['default', ['html', { outputDir: './test/vitest-results' }], 'json'],
 
     // Output files
     outputFile: {
-      html: './test/vitest-results/index.html',
       json: './test/vitest-results/results.json',
     },
 
