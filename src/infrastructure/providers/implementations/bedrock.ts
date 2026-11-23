@@ -55,14 +55,12 @@ export class BedrockProvider extends BaseProvider {
     // Can use default AWS credential chain or explicit credentials
     return !!(
       // Explicit credentials
-      (
-        (this.config.AWS_ACCESS_KEY_ID && this.config.AWS_SECRET_ACCESS_KEY) ||
-        // Or AWS profile/role-based auth (detected at runtime)
-        this.config.AWS_REGION ||
-        // Or default region
-        process.env.AWS_REGION ||
-        process.env.AWS_DEFAULT_REGION
-      )
+      (this.config.AWS_ACCESS_KEY_ID && this.config.AWS_SECRET_ACCESS_KEY) ||
+      // Or AWS profile/role-based auth (detected at runtime)
+      this.config.AWS_REGION ||
+      // Or default region
+      process.env.AWS_REGION ||
+      process.env.AWS_DEFAULT_REGION
     )
   }
 
