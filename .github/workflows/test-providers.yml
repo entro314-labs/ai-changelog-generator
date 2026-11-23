@@ -27,15 +27,15 @@ jobs:
         node-version: ['24.19.0']
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # pnpm must exist before setup-node runs, because `cache: 'pnpm'` shells out
       # to pnpm to locate the store. Installing it afterwards fails the job.
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
